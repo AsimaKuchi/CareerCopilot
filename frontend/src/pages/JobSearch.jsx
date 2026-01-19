@@ -534,23 +534,32 @@ export default function JobSearch({ user }) {
                     <p className="text-amber-600 text-sm mt-1">Please upload your resume in your Profile to use this feature.</p>
                   </div>
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid md:grid-cols-2 gap-4 relative">
                     {/* Original Resume */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-t-lg border border-gray-200 border-b-0">
                         <FileText className="w-4 h-4 text-gray-500" />
                         <span className="font-medium text-gray-700 text-sm">Original Resume</span>
+                        {profile?.resume_filename && (
+                          <span className="ml-auto text-xs text-gray-500">{profile.resume_filename}</span>
+                        )}
                       </div>
                       <div className="p-4 rounded-b-lg bg-gray-50 border border-gray-200 h-[300px] overflow-auto">
                         <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans">
-                          {profile?.resume_text?.substring(0, 2000) || "No resume content available"}
-                          {profile?.resume_text?.length > 2000 && "..."}
+                          {(() => {
+                            const text = profile?.resume_text || "";
+                            // Check if it's base64 encoded (for binary files)
+                            if (text.match(/^[A-Za-z0-9+/=]+$/) && text.length > 100) {
+                              return `[Resume file: ${profile?.resume_filename || "uploaded"}]\n\nThis is a binary file (PDF/DOC). The content will be used for optimization but cannot be displayed as text.\n\nTo see text content here, please upload a .txt file version of your resume.`;
+                            }
+                            return text.substring(0, 3000) + (text.length > 3000 ? "\n\n..." : "");
+                          })()}
                         </pre>
                       </div>
                     </div>
 
-                    {/* Arrow indicator */}
-                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                    {/* Arrow indicator - centered between the two columns */}
+                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-8 z-10">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
                         <ArrowRight className="w-5 h-5 text-white" />
                       </div>
