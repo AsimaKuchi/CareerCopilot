@@ -540,20 +540,18 @@ export default function JobSearch({ user }) {
                       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-t-lg border border-gray-200 border-b-0">
                         <FileText className="w-4 h-4 text-gray-500" />
                         <span className="font-medium text-gray-700 text-sm">Original Resume</span>
+                        {profile?.resume_format && (
+                          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded uppercase">
+                            {profile.resume_format}
+                          </span>
+                        )}
                         {profile?.resume_filename && (
                           <span className="ml-auto text-xs text-gray-500">{profile.resume_filename}</span>
                         )}
                       </div>
                       <div className="p-4 rounded-b-lg bg-gray-50 border border-gray-200 h-[300px] overflow-auto">
-                        <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans">
-                          {(() => {
-                            const text = profile?.resume_text || "";
-                            // Check if it's base64 encoded (for binary files)
-                            if (text.match(/^[A-Za-z0-9+/=]+$/) && text.length > 100) {
-                              return `[Resume file: ${profile?.resume_filename || "uploaded"}]\n\nThis is a binary file (PDF/DOC). The content will be used for optimization but cannot be displayed as text.\n\nTo see text content here, please upload a .txt file version of your resume.`;
-                            }
-                            return text.substring(0, 3000) + (text.length > 3000 ? "\n\n..." : "");
-                          })()}
+                        <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans leading-relaxed">
+                          {profile?.resume_text || "No resume content available. Please upload your resume in your Profile."}
                         </pre>
                       </div>
                     </div>
