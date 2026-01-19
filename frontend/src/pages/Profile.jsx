@@ -77,45 +77,43 @@ export default function Profile({ user }) {
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("File too large. Maximum size is 5MB");
+      e.target.value = "";
       return;
     }
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
+      const formData = new FormData();
+      formData.append("file", file);
+
       const response = await fetch(`${API}/profile/resume`, {
         method: "POST",
         credentials: "include",
         body: formData,
       });
       
-      // Clone response before reading to avoid "body stream already read" error
-      const responseClone = response.clone();
-      
+      const text = await response.text();
       let data;
+      
       try {
-        data = await response.json();
-      } catch (jsonError) {
-        // If JSON parsing fails, try to get text
-        const text = await responseClone.text();
-        console.error("Response was not JSON:", text);
-        throw new Error("Server returned invalid response");
+        data = JSON.parse(text);
+      } catch {
+        console.error("Invalid JSON response:", text);
+        throw new Error("Server error - please try again");
       }
       
       if (!response.ok) {
         throw new Error(data.detail || "Failed to upload resume");
       }
       
-      setProfile({ ...profile, resume_filename: data.filename, resume_text: "uploaded" });
-      toast.success("Resume uploaded successfully");
+      setProfile(prev => ({ ...prev, resume_filename: data.filename, resume_text: "uploaded" }));
+      toast.success("Resume uploaded successfully!");
     } catch (error) {
       console.error("Resume upload error:", error);
       toast.error(error.message || "Failed to upload resume");
     } finally {
       setUploading(false);
-      // Reset input so same file can be selected again
       if (e.target) e.target.value = "";
     }
   };
