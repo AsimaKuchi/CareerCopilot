@@ -612,6 +612,17 @@ async def search_jobs(request: Request, query: JobSearchQuery):
         jobs = filtered_jobs
         logger.info(f"Filtered to {len(jobs)} non-LinkedIn jobs")
         
+        # Get user's existing applications to filter out duplicates
+        existing_applications = await db.applications.find(
+            {"user_id": user.user_id},
+            {"job_id": 1, "_id": 0}
+        ).to_list(500)
+        applied_job_ids = set(app.get("job_id") for app in existing_applications if app.get("job_id"))
+        
+        # Filter out jobs user has already applied to
+        jobs = [job for job in jobs if job.get("job_id") not in applied_job_ids]
+        logger.info(f"After removing applied jobs: {len(jobs)} jobs remaining")
+        
         # Get user profile for matching
         profile = await db.user_profiles.find_one(
             {"user_id": user.user_id},
