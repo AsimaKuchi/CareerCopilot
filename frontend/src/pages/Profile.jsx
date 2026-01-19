@@ -495,6 +495,142 @@ export default function Profile({ user }) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Work Authorization Card */}
+          <Card className="glass-light" data-testid="work-authorization-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-cyan-400" />
+                Work Authorization
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                This helps us filter out jobs that require specific work authorization you may not have.
+              </p>
+              <Select
+                value={profile?.work_authorization || ""}
+                onValueChange={(value) => updateProfile({ work_authorization: value })}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 w-full md:w-80" data-testid="work-authorization-select">
+                  <SelectValue placeholder="Select your work authorization status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="citizen">US Citizen</SelectItem>
+                  <SelectItem value="permanent_resident">Permanent Resident (Green Card)</SelectItem>
+                  <SelectItem value="work_permit">Work Permit / Visa (e.g., H-1B, L-1)</SelectItem>
+                  <SelectItem value="require_sponsorship">Require Visa Sponsorship</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          {/* Industries Card */}
+          <Card className="glass-light" data-testid="industries-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-orange-400" />
+                Target Industries (Max 3)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={profile?.open_to_any_industry || false}
+                    onChange={(e) => updateProfile({ open_to_any_industry: e.target.checked })}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500"
+                    data-testid="open-to-any-industry-checkbox"
+                  />
+                  <span className="text-sm text-foreground">Open to any industry</span>
+                </label>
+              </div>
+              {!profile?.open_to_any_industry && (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {profile?.industries?.map((industry, i) => (
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="bg-white/5 hover:bg-white/10 px-3 py-1 cursor-pointer group"
+                        onClick={() => removeIndustry(i)}
+                      >
+                        {industry}
+                        <X className="w-3 h-3 ml-2 opacity-50 group-hover:opacity-100" />
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Select
+                      value={newIndustry}
+                      onValueChange={setNewIndustry}
+                    >
+                      <SelectTrigger className="bg-white/5 border-white/10 flex-1" data-testid="industry-select">
+                        <SelectValue placeholder="Select an industry" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="technology">Technology / Software</SelectItem>
+                        <SelectItem value="finance">Finance / Banking</SelectItem>
+                        <SelectItem value="healthcare">Healthcare / Medical</SelectItem>
+                        <SelectItem value="retail">Retail / E-commerce</SelectItem>
+                        <SelectItem value="manufacturing">Manufacturing / Industrial</SelectItem>
+                        <SelectItem value="consulting">Consulting / Professional Services</SelectItem>
+                        <SelectItem value="media">Media / Entertainment</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="government">Government / Public Sector</SelectItem>
+                        <SelectItem value="nonprofit">Non-profit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      data-testid="add-industry-btn"
+                      onClick={addIndustry}
+                      disabled={(profile?.industries?.length || 0) >= 3}
+                      className="bg-indigo-500 hover:bg-indigo-600"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {3 - (profile?.industries?.length || 0)} slots remaining
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Seniority Level Card */}
+          <Card className="glass-light" data-testid="seniority-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-violet-400" />
+                Target Seniority Level
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                We'll prioritize roles that match your career level.
+              </p>
+              <Select
+                value={profile?.seniority_level || ""}
+                onValueChange={(value) => updateProfile({ seniority_level: value })}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 w-full md:w-80" data-testid="seniority-select">
+                  <SelectValue placeholder="Select your target seniority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="entry">Entry Level / Intern</SelectItem>
+                  <SelectItem value="junior">Junior (0-2 years)</SelectItem>
+                  <SelectItem value="mid">Mid-Level (2-5 years)</SelectItem>
+                  <SelectItem value="senior">Senior (5-8 years)</SelectItem>
+                  <SelectItem value="lead">Lead / Staff (8+ years)</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="director">Director / VP</SelectItem>
+                  <SelectItem value="executive">Executive (C-Level)</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
