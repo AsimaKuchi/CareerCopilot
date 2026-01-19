@@ -330,27 +330,45 @@ async def update_profile(request: Request, update: ProfileUpdate):
 @api_router.post("/profile/resume")
 async def upload_resume(request: Request, file: UploadFile = File(...)):
     """Upload and parse resume."""
-    user = await get_current_user(request)
-    
-    content = await file.read()
-    
-    # For now, store as text (in production, use PDF parser)
     try:
-        resume_text = content.decode('utf-8')
-    except:
-        resume_text = base64.b64encode(content).decode('utf-8')
+        user = await get_current_user(request)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Auth error in resume upload: {str(e)}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
     
-    await db.user_profiles.update_one(
-        {"user_id": user.user_id},
-        {"$set": {
-            "resume_text": resume_text,
-            "resume_filename": file.filename,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }},
-        upsert=True
-    )
+    try:
+        content = await file.read()
+        
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty file uploaded")
+        
+        # For now, store as text (in production, use PDF parser)
+        try:
+            resume_text = content.decode('utf-8')
+        except UnicodeDecodeError:
+            # Binary file (PDF, DOC) - store as base64
+            resume_text = base64.b64encode(content).decode('utf-8')
+        
+        await db.user_profiles.update_one(
+            {"user_id": user.user_id},
+            {"$set": {
+                "resume_text": resume_text,
+                "resume_filename": file.filename,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        
+        logger.info(f"Resume uploaded for user {user.user_id}: {file.filename}")
+        return {"message": "Resume uploaded successfully", "filename": file.filename}
     
-    return {"message": "Resume uploaded successfully", "filename": file.filename}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload resume: {str(e)}")
 
 # ========================
 # JOB SEARCH ROUTES
