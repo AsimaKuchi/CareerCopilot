@@ -332,9 +332,56 @@ async def update_profile(request: Request, update: ProfileUpdate):
     
     return profile
 
+def extract_text_from_docx(content: bytes) -> str:
+    """Extract text from DOCX file while preserving structure."""
+    try:
+        doc = Document(io.BytesIO(content))
+        lines = []
+        
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if text:
+                # Preserve formatting hints
+                if para.style and para.style.name:
+                    style = para.style.name.lower()
+                    if 'heading' in style or 'title' in style:
+                        lines.append(f"\n{text.upper()}\n{'=' * len(text)}")
+                    else:
+                        lines.append(text)
+                else:
+                    lines.append(text)
+        
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = ' | '.join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                if row_text:
+                    lines.append(row_text)
+        
+        return '\n'.join(lines)
+    except Exception as e:
+        logger.error(f"Error extracting DOCX text: {str(e)}")
+        return ""
+
+def extract_text_from_pdf(content: bytes) -> str:
+    """Extract text from PDF file."""
+    try:
+        reader = PdfReader(io.BytesIO(content))
+        text_parts = []
+        
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                text_parts.append(text)
+        
+        return '\n\n'.join(text_parts)
+    except Exception as e:
+        logger.error(f"Error extracting PDF text: {str(e)}")
+        return ""
+
 @api_router.post("/profile/resume")
 async def upload_resume(request: Request, file: UploadFile = File(...)):
-    """Upload and parse resume."""
+    """Upload and parse resume from DOCX, PDF, or TXT files."""
     try:
         user = await get_current_user(request)
     except HTTPException as e:
@@ -349,25 +396,56 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         if not content:
             raise HTTPException(status_code=400, detail="Empty file uploaded")
         
-        # For now, store as text (in production, use PDF parser)
-        try:
-            resume_text = content.decode('utf-8')
-        except UnicodeDecodeError:
-            # Binary file (PDF, DOC) - store as base64
-            resume_text = base64.b64encode(content).decode('utf-8')
+        filename = file.filename.lower() if file.filename else ""
+        resume_text = ""
+        resume_format = "text"
+        
+        # Parse based on file type
+        if filename.endswith('.docx'):
+            resume_text = extract_text_from_docx(content)
+            resume_format = "docx"
+            if not resume_text:
+                raise HTTPException(status_code=400, detail="Could not extract text from DOCX file")
+        elif filename.endswith('.pdf'):
+            resume_text = extract_text_from_pdf(content)
+            resume_format = "pdf"
+            if not resume_text:
+                raise HTTPException(status_code=400, detail="Could not extract text from PDF file")
+        elif filename.endswith('.doc'):
+            # .doc files are not directly supported, store as base64
+            resume_text = "[Legacy .doc format - please convert to .docx for full text extraction]"
+            resume_format = "doc"
+        else:
+            # Try to decode as text
+            try:
+                resume_text = content.decode('utf-8')
+                resume_format = "text"
+            except UnicodeDecodeError:
+                resume_text = base64.b64encode(content).decode('utf-8')
+                resume_format = "binary"
+        
+        # Store the raw content as base64 for potential future use
+        raw_content_b64 = base64.b64encode(content).decode('utf-8')
         
         await db.user_profiles.update_one(
             {"user_id": user.user_id},
             {"$set": {
                 "resume_text": resume_text,
+                "resume_raw": raw_content_b64,
                 "resume_filename": file.filename,
+                "resume_format": resume_format,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }},
             upsert=True
         )
         
-        logger.info(f"Resume uploaded for user {user.user_id}: {file.filename}")
-        return {"message": "Resume uploaded successfully", "filename": file.filename}
+        logger.info(f"Resume uploaded for user {user.user_id}: {file.filename} (format: {resume_format})")
+        return {
+            "message": "Resume uploaded successfully", 
+            "filename": file.filename,
+            "format": resume_format,
+            "text_extracted": len(resume_text) > 0
+        }
     
     except HTTPException:
         raise
