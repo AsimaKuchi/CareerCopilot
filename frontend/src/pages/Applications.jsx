@@ -130,6 +130,48 @@ export default function Applications({ user }) {
     }
   };
 
+  const handleBulkApprove = async () => {
+    const pendingApps = applications.filter(app => app.status === "pending");
+    if (pendingApps.length === 0) return;
+    
+    setBulkApproveLoading(true);
+    setShowBulkConfirm(false);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const app of pendingApps) {
+      try {
+        const response = await fetch(`${API}/applications/${app.application_id}/approve`, {
+          method: "PUT",
+          credentials: "include",
+        });
+        if (response.ok) {
+          successCount++;
+          setApplications(apps => apps.map(a =>
+            a.application_id === app.application_id
+              ? { ...a, status: "applied", applied_at: new Date().toISOString() }
+              : a
+          ));
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        failCount++;
+      }
+    }
+    
+    setBulkApproveLoading(false);
+    
+    if (successCount > 0 && failCount === 0) {
+      toast.success(`All ${successCount} applications approved and submitted!`);
+    } else if (successCount > 0 && failCount > 0) {
+      toast.warning(`${successCount} approved, ${failCount} failed`);
+    } else {
+      toast.error("Failed to approve applications");
+    }
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case "applied":
