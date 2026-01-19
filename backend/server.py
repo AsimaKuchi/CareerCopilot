@@ -60,6 +60,7 @@ class UserProfile(BaseModel):
     user_id: str
     resume_text: Optional[str] = None
     resume_filename: Optional[str] = None
+    resume_format: Optional[str] = None
     skills: List[str] = []
     experience_years: int = 0
     job_titles: List[str] = []
@@ -67,6 +68,11 @@ class UserProfile(BaseModel):
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
     job_type: List[str] = []  # full-time, part-time, contract, remote
+    # New fields for quality-first matching
+    work_authorization: Optional[str] = None  # citizen, permanent_resident, work_permit, require_sponsorship
+    industries: List[str] = []  # max 3 industries
+    open_to_any_industry: bool = False
+    seniority_level: Optional[str] = None  # entry, junior, mid, senior, lead, manager, director, executive
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProfileUpdate(BaseModel):
@@ -77,6 +83,10 @@ class ProfileUpdate(BaseModel):
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
     job_type: Optional[List[str]] = None
+    work_authorization: Optional[str] = None
+    industries: Optional[List[str]] = None
+    open_to_any_industry: Optional[bool] = None
+    seniority_level: Optional[str] = None
 
 class JobApplication(BaseModel):
     model_config = ConfigDict(extra="ignore")
