@@ -1133,8 +1133,10 @@ async def health():
 # Include the router
 app.include_router(api_router)
 
-# Get frontend URL for CORS
-FRONTEND_URL = os.environ.get('CORS_ORIGINS', 'https://smart-career-4.preview.emergentagent.com')
+# Get frontend URL for CORS - no hardcoded fallback for production safety
+FRONTEND_URL = os.environ.get('CORS_ORIGINS')
+if not FRONTEND_URL:
+    raise ValueError("CORS_ORIGINS environment variable is required")
 origins = [origin.strip() for origin in FRONTEND_URL.split(',')]
 
 app.add_middleware(
