@@ -495,6 +495,29 @@ export default function Applications({ user }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Approve Confirmation Dialog */}
+      <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+        <AlertDialogContent className="bg-background border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve All Pending Applications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will approve and submit all {counts.pending} pending application{counts.pending !== 1 ? 's' : ''}. 
+              Each application will be marked as submitted with its optimized resume and cover letter (if generated).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-white/10">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkApprove}
+              className="bg-emerald-500 hover:bg-emerald-600"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Approve All ({counts.pending})
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
