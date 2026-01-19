@@ -261,12 +261,22 @@ export default function JobSearch({ user }) {
           company: selectedJob.company,
           location: selectedJob.location,
           job_description: selectedJob.full_description || selectedJob.description,
+          optimized_resume: optimizedResume || null,
+          cover_letter: coverLetter || null,
         }),
       });
 
       if (!response.ok) throw new Error("Failed to save application");
 
-      toast.success("Application saved! Review it in Applications.");
+      const savedDocs = [];
+      if (optimizedResume) savedDocs.push("optimized resume");
+      if (coverLetter) savedDocs.push("cover letter");
+      
+      const message = savedDocs.length > 0 
+        ? `Application saved with ${savedDocs.join(" and ")}! Review it in Applications.`
+        : "Application saved! Review it in Applications.";
+      
+      toast.success(message);
       setShowApplyDialog(false);
     } catch (error) {
       toast.error("Failed to save application");
