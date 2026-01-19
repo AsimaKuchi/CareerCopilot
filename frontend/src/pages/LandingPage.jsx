@@ -98,13 +98,22 @@ export default function LandingPage() {
             </div>
             <span className="text-xl font-bold text-foreground">JobMatch AI</span>
           </div>
-          <Button
-            data-testid="header-signin-btn"
-            onClick={handleGoogleLogin}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white"
-          >
-            Sign In
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/how-it-works')}
+              className="text-muted-foreground hover:text-foreground hidden sm:inline-flex"
+            >
+              How It Works
+            </Button>
+            <Button
+              data-testid="header-signin-btn"
+              onClick={handleGoogleLogin}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white"
+            >
+              Sign In
+            </Button>
+          </div>
         </nav>
       </header>
 
