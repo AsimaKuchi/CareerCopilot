@@ -1222,6 +1222,84 @@ async def delete_application(request: Request, application_id: str):
     
     return {"message": "Application deleted"}
 
+def create_docx_from_text(text: str, title: str = None) -> io.BytesIO:
+    """Create a DOCX file from text content."""
+    doc = Document()
+    
+    # Add title if provided
+    if title:
+        doc.add_heading(title, 0)
+    
+    # Split text by newlines and add paragraphs
+    paragraphs = text.split('\n')
+    for para in paragraphs:
+        if para.strip():
+            doc.add_paragraph(para)
+    
+    # Save to BytesIO
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+@api_router.get("/applications/{application_id}/download/resume")
+async def download_resume_docx(request: Request, application_id: str):
+    """Download optimized resume as DOCX file."""
+    user = await get_current_user(request)
+    
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not app_doc.get("optimized_resume"):
+        raise HTTPException(status_code=400, detail="No optimized resume found for this application")
+    
+    # Create DOCX file
+    company = app_doc.get("company", "Company").replace(" ", "_")
+    job_title = app_doc.get("job_title", "Position").replace(" ", "_")
+    filename = f"Resume_{company}_{job_title}.docx"
+    
+    buffer = create_docx_from_text(app_doc["optimized_resume"])
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@api_router.get("/applications/{application_id}/download/cover-letter")
+async def download_cover_letter_docx(request: Request, application_id: str):
+    """Download cover letter as DOCX file."""
+    user = await get_current_user(request)
+    
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not app_doc.get("cover_letter"):
+        raise HTTPException(status_code=400, detail="No cover letter found for this application")
+    
+    # Create DOCX file
+    company = app_doc.get("company", "Company").replace(" ", "_")
+    job_title = app_doc.get("job_title", "Position").replace(" ", "_")
+    filename = f"Cover_Letter_{company}_{job_title}.docx"
+    
+    buffer = create_docx_from_text(app_doc["cover_letter"])
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # ========================
 # DASHBOARD STATS
 # ========================
