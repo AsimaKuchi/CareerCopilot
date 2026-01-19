@@ -871,7 +871,10 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     
     if job_min_salary and user_min_salary:
         if job_min_salary >= user_min_salary:
-            strengths.append("Salary range meets your minimum")
+            salary_str = f"${job_min_salary:,}"
+            if job_max_salary:
+                salary_str += f" - ${job_max_salary:,}"
+            strengths.append(f"Compensation ({salary_str}) meets or exceeds your minimum salary requirement")
             score += 5
         else:
             gaps.append("Salary may be below your minimum requirement")
@@ -884,21 +887,21 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         match_reasoning = f"Not recommended: {skip_reasons[0]}"
     elif score >= 75:
         recommendation = "strong_match"
-        match_reasoning = "Strong match - aligns well with your profile"
+        match_reasoning = f"Strong match for {job_title_display} - your experience and skills align well with what {company_name} is seeking"
     elif score >= 60:
         recommendation = "good_match"
-        match_reasoning = "Good match - worth reviewing"
+        match_reasoning = f"Good potential fit - your background has relevant overlap with this {job_title_display} role"
     elif score >= 45:
         recommendation = "review"
-        match_reasoning = "Potential match - review carefully for fit"
+        match_reasoning = f"Worth considering - review the job requirements carefully to assess fit"
     else:
         recommendation = "weak_match"
-        match_reasoning = "Weak match - may not align with your goals"
+        match_reasoning = f"Limited alignment with your profile - may require significant adaptation"
     
     return {
         "score": score,
         "recommendation": recommendation,
-        "strengths": strengths[:4],  # Limit to top 4
+        "strengths": strengths[:5],  # Limit to top 5 for more detail
         "gaps": gaps[:3],  # Limit to top 3
         "match_reasoning": match_reasoning,
         "skip_reason": skip_reasons[0] if skip_reasons else None
