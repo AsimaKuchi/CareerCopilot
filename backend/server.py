@@ -1313,6 +1313,178 @@ async def download_cover_letter_docx(request: Request, application_id: str):
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+@api_router.get("/applications/{application_id}/autofill-script")
+async def get_autofill_script(request: Request, application_id: str):
+    """Generate a JavaScript auto-fill script for Greenhouse applications."""
+    user = await get_current_user(request)
+    
+    # Get application data
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Get user profile for contact info
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Get user info
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Parse name
+    full_name = user_doc.get("name", "") if user_doc else ""
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    email = user_doc.get("email", "") if user_doc else ""
+    
+    # Get resume and cover letter
+    resume_text = app_doc.get("optimized_resume") or profile.get("resume_text", "") if profile else ""
+    cover_letter = app_doc.get("cover_letter", "")
+    
+    # Escape strings for JavaScript
+    def js_escape(s):
+        if not s:
+            return ""
+        return s.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+    
+    # Generate the auto-fill script
+    script = f'''// JobMatch AI - Greenhouse Auto-Fill Script
+// Application: {js_escape(app_doc.get("job_title", ""))} at {js_escape(app_doc.get("company", ""))}
+// Generated for: {js_escape(full_name)}
+
+(function() {{
+    const data = {{
+        firstName: `{js_escape(first_name)}`,
+        lastName: `{js_escape(last_name)}`,
+        email: `{js_escape(email)}`,
+        resume: `{js_escape(resume_text)}`,
+        coverLetter: `{js_escape(cover_letter)}`
+    }};
+
+    // Helper to fill input fields
+    function fillField(selectors, value) {{
+        if (!value) return false;
+        for (const selector of selectors) {{
+            const elements = document.querySelectorAll(selector);
+            for (const el of elements) {{
+                if (el && (el.offsetParent !== null || el.type === 'hidden')) {{
+                    el.value = value;
+                    el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    console.log('✓ Filled:', selector);
+                    return true;
+                }}
+            }}
+        }}
+        return false;
+    }}
+
+    // Helper to fill text areas
+    function fillTextArea(selectors, value) {{
+        if (!value) return false;
+        for (const selector of selectors) {{
+            const elements = document.querySelectorAll(selector);
+            for (const el of elements) {{
+                if (el && el.offsetParent !== null) {{
+                    el.value = value;
+                    el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    console.log('✓ Filled textarea:', selector);
+                    return true;
+                }}
+            }}
+        }}
+        return false;
+    }}
+
+    console.log('🚀 JobMatch AI Auto-Fill Starting...');
+    console.log('Applying for:', '{js_escape(app_doc.get("job_title", ""))}');
+
+    // Fill first name
+    fillField([
+        'input[name="first_name"]',
+        'input[name="firstName"]',
+        'input[id*="first_name"]',
+        'input[id*="firstName"]',
+        'input[autocomplete="given-name"]',
+        'input[placeholder*="First"]'
+    ], data.firstName);
+
+    // Fill last name
+    fillField([
+        'input[name="last_name"]',
+        'input[name="lastName"]',
+        'input[id*="last_name"]',
+        'input[id*="lastName"]',
+        'input[autocomplete="family-name"]',
+        'input[placeholder*="Last"]'
+    ], data.lastName);
+
+    // Fill email
+    fillField([
+        'input[name="email"]',
+        'input[type="email"]',
+        'input[id*="email"]',
+        'input[autocomplete="email"]',
+        'input[placeholder*="email"]'
+    ], data.email);
+
+    // Fill cover letter textarea
+    fillTextArea([
+        'textarea[name*="cover"]',
+        'textarea[id*="cover"]',
+        'textarea[placeholder*="cover"]',
+        'textarea[placeholder*="Cover"]',
+        'textarea[name*="letter"]',
+        '#cover_letter',
+        '.cover-letter textarea'
+    ], data.coverLetter);
+
+    // Try to fill resume text field if exists (some forms have text input)
+    fillTextArea([
+        'textarea[name*="resume"]',
+        'textarea[id*="resume"]',
+        '#resume_text',
+        '.resume-text textarea'
+    ], data.resume);
+
+    // Handle file upload hint
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    if (fileInputs.length > 0) {{
+        console.log('📎 File upload detected - please upload your resume .docx file manually');
+    }}
+
+    console.log('');
+    console.log('✅ Auto-fill complete!');
+    console.log('📋 Please review all fields before submitting.');
+    console.log('📎 If there\\'s a file upload, use the downloaded .docx resume.');
+    console.log('🔐 Complete any CAPTCHA if required.');
+    
+    alert('JobMatch AI Auto-Fill Complete!\\n\\n✓ Fields have been filled\\n\\nPlease:\\n1. Review all information\\n2. Upload resume file if required\\n3. Complete any CAPTCHA\\n4. Click Submit');
+}})();'''
+
+    return {
+        "script": script,
+        "application": {
+            "job_title": app_doc.get("job_title"),
+            "company": app_doc.get("company"),
+            "apply_link": app_doc.get("apply_link")
+        },
+        "user": {
+            "name": full_name,
+            "email": email
+        }
+    }
+
 # ========================
 # DASHBOARD STATS
 # ========================
