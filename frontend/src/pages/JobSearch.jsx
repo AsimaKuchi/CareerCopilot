@@ -556,7 +556,8 @@ export default function JobSearch({ user }) {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 
