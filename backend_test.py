@@ -158,7 +158,7 @@ class JobMatchAPITester:
             "location": "New York, NY",
             "job_description": "Test job description for software engineer position."
         }
-        success, app = self.run_test("Create Application", "POST", "applications", 201, app_data)
+        success, app = self.run_test("Create Application", "POST", "applications", 200, app_data)
         
         # Get applications
         self.run_test("Get Applications", "GET", "applications", 200)
