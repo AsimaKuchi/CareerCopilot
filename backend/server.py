@@ -584,7 +584,7 @@ def calculate_match_score(job: Dict, profile: Optional[Dict]) -> int:
 
 @api_router.post("/ai/optimize-resume")
 async def optimize_resume(request: Request, req: OptimizeResumeRequest):
-    """Optimize resume for ATS based on job description."""
+    """Optimize resume for ATS based on job description while preserving original format."""
     user = await get_current_user(request)
     
     profile = await db.user_profiles.find_one(
@@ -597,37 +597,56 @@ async def optimize_resume(request: Request, req: OptimizeResumeRequest):
     
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     
+    resume_format = profile.get("resume_format", "text")
+    original_resume = profile.get("resume_text", "")
+    
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"resume_opt_{user.user_id}_{uuid.uuid4().hex[:8]}",
-        system_message="""You are an expert ATS (Applicant Tracking System) resume optimizer. 
-Your job is to optimize resumes to pass ATS scans while maintaining authenticity.
-Focus on:
-1. Keyword optimization from the job description
-2. Proper formatting for ATS parsing
-3. Quantifiable achievements
-4. Action verbs
-5. Relevant skills alignment
-Return the optimized resume in a clean, ATS-friendly format."""
+        system_message="""You are an expert ATS (Applicant Tracking System) resume optimizer.
+
+CRITICAL RULES:
+1. PRESERVE the exact same structure, sections, and formatting as the original resume
+2. Keep all section headers in the same order (e.g., Summary, Experience, Education, Skills)
+3. Maintain the same layout style (bullet points, dates, company names format)
+4. Only modify the CONTENT to add relevant keywords and optimize for ATS
+5. Do NOT add new sections that weren't in the original
+6. Do NOT remove any sections from the original
+7. Do NOT change the overall visual structure
+
+OPTIMIZATION FOCUS:
+- Inject relevant keywords from the job description naturally
+- Strengthen action verbs
+- Add quantifiable metrics where appropriate
+- Ensure skills mentioned in the job description appear in the resume
+- Make sure job titles and experience align with the target role
+
+OUTPUT:
+Return the optimized resume maintaining the EXACT SAME FORMAT as the original."""
     ).with_model("openai", "gpt-5.2")
     
-    prompt = f"""Please optimize this resume for the following job:
+    prompt = f"""Optimize this resume for the following job while STRICTLY PRESERVING the original format and structure.
 
 JOB DESCRIPTION:
 {req.job_description}
 
-CURRENT RESUME:
-{profile['resume_text']}
+ORIGINAL RESUME FORMAT TYPE: {resume_format}
 
-Provide the optimized resume with:
-1. ATS-optimized keywords
-2. Relevant skills highlighted
-3. Achievements quantified where possible
-4. Clean, parseable format"""
+ORIGINAL RESUME CONTENT:
+{original_resume}
+
+INSTRUCTIONS:
+1. Keep the EXACT same section order and structure
+2. Preserve all formatting (headers, bullet points, date formats)
+3. Only modify content to add relevant keywords from the job description
+4. Strengthen action verbs and add metrics where possible
+5. Ensure the optimized resume looks structurally identical to the original
+
+Return the optimized resume in the same format as the original."""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
-        return {"optimized_resume": response}
+        return {"optimized_resume": response, "original_format": resume_format}
     except Exception as e:
         logger.error(f"Resume optimization error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to optimize resume")
