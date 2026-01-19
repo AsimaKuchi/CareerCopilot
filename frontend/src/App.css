@@ -1,9 +1,9 @@
 /* App.css - Additional component styles */
 
-/* Ensure dark background everywhere */
+/* Ensure light background everywhere */
 .App {
   min-height: 100vh;
-  background: hsl(222, 47%, 3%);
+  background: hsl(210, 20%, 98%);
 }
 
 /* Page transitions */
@@ -42,25 +42,25 @@
   overflow: hidden;
 }
 
-/* Prose overrides for dark mode */
-.prose-invert {
-  --tw-prose-body: hsl(215, 20%, 65%);
-  --tw-prose-headings: hsl(210, 40%, 98%);
+/* Prose overrides for light mode */
+.prose {
+  --tw-prose-body: hsl(215, 16%, 47%);
+  --tw-prose-headings: hsl(222, 47%, 11%);
   --tw-prose-links: hsl(239, 84%, 67%);
-  --tw-prose-bold: hsl(210, 40%, 98%);
-  --tw-prose-code: hsl(210, 40%, 98%);
+  --tw-prose-bold: hsl(222, 47%, 11%);
+  --tw-prose-code: hsl(222, 47%, 11%);
 }
 
 /* Custom focus states */
 .custom-focus:focus {
   outline: none;
-  box-shadow: 0 0 0 2px hsl(222, 47%, 3%), 0 0 0 4px hsl(239, 84%, 67%);
+  box-shadow: 0 0 0 2px hsl(210, 20%, 98%), 0 0 0 4px hsl(239, 84%, 67%);
 }
 
 /* Gradient borders */
 .gradient-border {
   position: relative;
-  background: hsl(222, 47%, 7%);
+  background: white;
 }
 
 .gradient-border::before {
@@ -80,9 +80,9 @@
 .shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.03) 50%,
+    rgba(0, 0, 0, 0) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -133,7 +133,7 @@
     to bottom right,
     rgba(255, 255, 255, 0) 0%,
     rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.3) 50%,
     rgba(255, 255, 255, 0) 60%,
     rgba(255, 255, 255, 0) 100%
   );
