@@ -76,8 +76,8 @@ export const Navbar = ({ user }) => {
                 onClick={() => navigate(item.path)}
                 className={`text-sm ${
                   isActive(item.path)
-                    ? "bg-white/10 text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-muted-foreground hover:text-foreground hover:bg-gray-100"
                 }`}
               >
                 <item.icon className="w-4 h-4 mr-2" />
@@ -105,7 +105,7 @@ export const Navbar = ({ user }) => {
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors" data-testid="user-menu-trigger">
+                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors" data-testid="user-menu-trigger">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.picture} alt={user?.name} />
                     <AvatarFallback className="bg-indigo-500 text-white">
@@ -117,12 +117,12 @@ export const Navbar = ({ user }) => {
                   </span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-background border-white/10">
+              <DropdownMenuContent align="end" className="w-56 bg-background border-gray-200">
                 <div className="px-3 py-2">
                   <p className="text-sm font-medium text-foreground">{user?.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className="bg-gray-200" />
                 <DropdownMenuItem
                   onClick={() => navigate("/profile")}
                   className="cursor-pointer"
