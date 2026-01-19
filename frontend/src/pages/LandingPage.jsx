@@ -65,8 +65,8 @@ export default function LandingPage() {
       <div className="noise-overlay fixed inset-0 pointer-events-none" />
       
       {/* Floating Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse-slow" />
-      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl animate-pulse-slow" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl animate-pulse-slow" />
+      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse-slow" />
 
       {/* Header */}
       <header className="relative z-10 px-6 py-6">
@@ -80,7 +80,7 @@ export default function LandingPage() {
           <Button
             data-testid="header-signin-btn"
             onClick={handleGoogleLogin}
-            className="bg-white/10 hover:bg-white/20 text-white border border-white/10"
+            className="bg-indigo-500 hover:bg-indigo-600 text-white"
           >
             Sign In
           </Button>
@@ -94,8 +94,8 @@ export default function LandingPage() {
             {/* Left Column - Text */}
             <div className="space-y-8 animate-fade-in">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span className="text-sm text-indigo-300 font-medium">AI-Powered Job Search</span>
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <span className="text-sm text-indigo-600 font-medium">AI-Powered Job Search</span>
               </div>
               
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
