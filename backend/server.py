@@ -728,7 +728,17 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         score += int(skill_ratio * 20)
         
         if matched_skills:
-            strengths.append(f"Skills match: {', '.join(matched_skills[:5])}")
+            # Create detailed skill match explanation
+            if len(matched_skills) >= 3:
+                strengths.append(f"Strong technical alignment: Your expertise in {', '.join(matched_skills[:3])} directly matches key requirements in this job description")
+            elif len(matched_skills) >= 1:
+                strengths.append(f"Your {', '.join(matched_skills)} skills are specifically mentioned in the job requirements")
+            
+            # Add context about how skills apply to the role
+            if any(s.lower() in ['python', 'javascript', 'java', 'sql', 'react', 'node'] for s in matched_skills):
+                tech_matches = [s for s in matched_skills if s.lower() in ['python', 'javascript', 'java', 'sql', 'react', 'node', 'aws', 'docker', 'kubernetes']]
+                if tech_matches:
+                    strengths.append(f"Your technical stack ({', '.join(tech_matches[:4])}) is well-suited for the technology requirements at {company_name}")
         
         # Check for required skills in job that user doesn't have
         common_required = ["python", "javascript", "java", "sql", "react", "aws", "docker"]
