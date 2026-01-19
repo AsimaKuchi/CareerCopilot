@@ -251,20 +251,44 @@ export default function Applications({ user }) {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="bg-white/5 border border-white/10">
-            <TabsTrigger value="all" className="data-[state=active]:bg-indigo-500">
-              All ({counts.all})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="data-[state=active]:bg-amber-500">
-              Pending ({counts.pending})
-            </TabsTrigger>
-            <TabsTrigger value="applied" className="data-[state=active]:bg-emerald-500">
-              Applied ({counts.applied})
-            </TabsTrigger>
-            <TabsTrigger value="rejected" className="data-[state=active]:bg-red-500">
-              Skipped ({counts.rejected})
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <TabsList className="bg-white/5 border border-white/10">
+              <TabsTrigger value="all" className="data-[state=active]:bg-indigo-500">
+                All ({counts.all})
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="data-[state=active]:bg-amber-500">
+                Pending ({counts.pending})
+              </TabsTrigger>
+              <TabsTrigger value="applied" className="data-[state=active]:bg-emerald-500">
+                Applied ({counts.applied})
+              </TabsTrigger>
+              <TabsTrigger value="rejected" className="data-[state=active]:bg-red-500">
+                Skipped ({counts.rejected})
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Bulk Apply Button */}
+            {counts.pending > 0 && (
+              <Button
+                data-testid="bulk-approve-btn"
+                onClick={() => setShowBulkConfirm(true)}
+                disabled={bulkApproveLoading}
+                className="bg-emerald-500 hover:bg-emerald-600"
+              >
+                {bulkApproveLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Approve All Pending ({counts.pending})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </Tabs>
 
         {/* Applications List */}
