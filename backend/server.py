@@ -109,6 +109,7 @@ class ApplyRequest(BaseModel):
     company: str
     location: Optional[str] = None
     job_description: str
+    apply_link: Optional[str] = None
     optimized_resume: Optional[str] = None
     cover_letter: Optional[str] = None
 
