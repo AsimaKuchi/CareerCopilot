@@ -88,31 +88,19 @@ export default function Profile({ user }) {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${API}/profile/resume`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
+      const response = await axios.post(`${API}/profile/resume`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       
-      const text = await response.text();
-      let data;
-      
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error("Invalid JSON response:", text);
-        throw new Error("Server error - please try again");
-      }
-      
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to upload resume");
-      }
-      
-      setProfile(prev => ({ ...prev, resume_filename: data.filename, resume_text: "uploaded" }));
+      setProfile(prev => ({ ...prev, resume_filename: response.data.filename, resume_text: "uploaded" }));
       toast.success("Resume uploaded successfully!");
     } catch (error) {
       console.error("Resume upload error:", error);
-      toast.error(error.message || "Failed to upload resume");
+      const message = error.response?.data?.detail || error.message || "Failed to upload resume";
+      toast.error(message);
     } finally {
       setUploading(false);
       if (e.target) e.target.value = "";
