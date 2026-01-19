@@ -35,6 +35,7 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
