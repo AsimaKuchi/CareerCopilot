@@ -150,17 +150,17 @@ export default function LandingPage() {
                     <img
                       src="https://images.unsplash.com/photo-1750969185331-e03829f72c7d?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"
                       alt="AI Network"
-                      className="w-full h-80 object-cover opacity-80"
+                      className="w-full h-80 object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
                   </CardContent>
                 </Card>
 
                 {/* Floating Stats Cards */}
-                <div className="absolute -left-8 top-1/4 glass-heavy rounded-xl p-4 animate-fade-in-delay-3">
+                <div className="absolute -left-8 top-1/4 glass-heavy rounded-xl p-4 animate-fade-in-delay-3 shadow-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-foreground">92%</p>
@@ -169,10 +169,10 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="absolute -right-4 bottom-1/4 glass-heavy rounded-xl p-4 animate-fade-in-delay-3">
+                <div className="absolute -right-4 bottom-1/4 glass-heavy rounded-xl p-4 animate-fade-in-delay-3 shadow-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-indigo-400" />
+                      <Shield className="w-5 h-5 text-indigo-500" />
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-foreground">ATS</p>
