@@ -473,44 +473,81 @@ async def reparse_resume(request: Request):
         {"_id": 0}
     )
     
-    if not profile or not profile.get("resume_raw"):
-        raise HTTPException(status_code=400, detail="No resume found to reparse")
+    if not profile:
+        raise HTTPException(status_code=400, detail="No profile found")
+    
+    # Check for raw content in resume_raw or base64 in resume_text
+    raw_content = None
+    
+    if profile.get("resume_raw"):
+        # Normal case: raw content stored separately
+        try:
+            raw_content = base64.b64decode(profile["resume_raw"])
+        except Exception as e:
+            logger.error(f"Failed to decode resume_raw: {e}")
+    
+    if not raw_content and profile.get("resume_text"):
+        # Check if resume_text contains base64 data (starts with PK signature for DOCX/ZIP)
+        resume_text = profile.get("resume_text", "")
+        if resume_text.startswith("UEsDB"):  # Base64 of "PK" (ZIP/DOCX signature)
+            try:
+                raw_content = base64.b64decode(resume_text)
+                logger.info("Decoded base64 from resume_text field")
+            except Exception as e:
+                logger.error(f"Failed to decode resume_text as base64: {e}")
+    
+    if not raw_content:
+        raise HTTPException(status_code=400, detail="No resume raw content found to reparse")
     
     try:
-        # Decode the base64 raw content
-        raw_content = base64.b64decode(profile["resume_raw"])
-        resume_format = profile.get("resume_format", "")
         filename = profile.get("resume_filename", "").lower()
-        
         resume_text = ""
+        resume_format = ""
         
-        # Try to extract based on format or filename
-        if resume_format == "docx" or filename.endswith('.docx'):
+        # Try to extract based on filename extension
+        if filename.endswith('.docx'):
             resume_text = extract_text_from_docx(raw_content)
-        elif resume_format == "pdf" or filename.endswith('.pdf'):
+            resume_format = "docx"
+        elif filename.endswith('.pdf'):
             resume_text = extract_text_from_pdf(raw_content)
+            resume_format = "pdf"
         else:
-            # Try as text
-            try:
-                resume_text = raw_content.decode('utf-8')
-            except UnicodeDecodeError:
-                raise HTTPException(status_code=400, detail="Unable to extract text from this file format")
+            # Try DOCX first (most common), then PDF, then text
+            resume_text = extract_text_from_docx(raw_content)
+            if resume_text:
+                resume_format = "docx"
+            else:
+                resume_text = extract_text_from_pdf(raw_content)
+                if resume_text:
+                    resume_format = "pdf"
+                else:
+                    try:
+                        resume_text = raw_content.decode('utf-8')
+                        resume_format = "text"
+                    except UnicodeDecodeError:
+                        pass
         
         if not resume_text:
-            raise HTTPException(status_code=400, detail="Could not extract text from resume")
+            raise HTTPException(status_code=400, detail="Could not extract text from resume. Please re-upload.")
         
-        # Update the profile with extracted text
+        # Update the profile with extracted text and store raw content properly
+        raw_b64 = base64.b64encode(raw_content).decode('utf-8')
+        
         await db.user_profiles.update_one(
             {"user_id": user.user_id},
             {"$set": {
                 "resume_text": resume_text,
+                "resume_raw": raw_b64,
+                "resume_format": resume_format,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
         
+        logger.info(f"Resume reparsed for user {user.user_id}: {len(resume_text)} chars extracted")
         return {
             "message": "Resume text re-extracted successfully",
-            "text_length": len(resume_text)
+            "text_length": len(resume_text),
+            "format": resume_format
         }
     
     except HTTPException:
