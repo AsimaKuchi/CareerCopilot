@@ -767,19 +767,19 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     seniority_match = False
     if job_seniority == "junior" and user_years <= 3:
         seniority_match = True
-        strengths.append("Experience level matches job requirements")
+        strengths.append(f"With {user_years} years of experience, you're well-positioned for this entry-level opportunity to grow your career")
         score += 15
     elif job_seniority == "mid" and 2 <= user_years <= 7:
         seniority_match = True
-        strengths.append("Experience level matches job requirements")
+        strengths.append(f"Your {user_years} years of experience positions you as an ideal mid-level candidate for this role")
         score += 15
     elif job_seniority == "senior" and user_years >= 5:
         seniority_match = True
-        strengths.append("Experience level matches job requirements")
+        strengths.append(f"Your {user_years} years of experience demonstrates the seniority level {company_name} is seeking")
         score += 15
     elif job_seniority == "director" and user_years >= 8:
         seniority_match = True
-        strengths.append("Experience level matches job requirements")
+        strengths.append(f"With {user_years}+ years in the field, you have the leadership experience required for this {job_title_display} position")
         score += 15
     
     if not seniority_match:
