@@ -261,6 +261,7 @@ export default function JobSearch({ user }) {
           company: selectedJob.company,
           location: selectedJob.location,
           job_description: selectedJob.full_description || selectedJob.description,
+          apply_link: selectedJob.apply_link || null,
           optimized_resume: optimizedResume || null,
           cover_letter: coverLetter || null,
         }),
