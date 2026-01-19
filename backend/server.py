@@ -1126,7 +1126,7 @@ async def health():
 app.include_router(api_router)
 
 # Get frontend URL for CORS
-FRONTEND_URL = os.environ.get('CORS_ORIGINS', 'https://job-match-pilot.preview.emergentagent.com')
+FRONTEND_URL = os.environ.get('CORS_ORIGINS', 'https://smart-career-4.preview.emergentagent.com')
 origins = [origin.strip() for origin in FRONTEND_URL.split(',')]
 
 app.add_middleware(
