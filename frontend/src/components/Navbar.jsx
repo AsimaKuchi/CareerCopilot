@@ -52,7 +52,7 @@ export const Navbar = ({ user }) => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="sticky top-0 z-50 glass-heavy border-b border-white/5" data-testid="navbar">
+    <nav className="sticky top-0 z-50 glass-heavy border-b border-gray-200" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
