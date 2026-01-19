@@ -714,12 +714,17 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             if industries:
                 gaps.append("Industry may not match your selected preferences")
     
-    # 6. Work Authorization Check
+    # 6. Work Authorization Check (Canada-focused)
     work_auth = profile.get("work_authorization", "")
     if work_auth == "require_sponsorship":
-        # Check if job mentions sponsorship
-        if "no sponsorship" in job_desc or "must be authorized" in job_desc or "no visa" in job_desc:
-            skip_reasons.append("Role does not offer visa sponsorship")
+        # Check if job mentions no sponsorship available
+        sponsorship_blockers = [
+            "no sponsorship", "must be authorized", "no visa", 
+            "canadian citizen", "permanent resident only", "pr only",
+            "must have valid work permit", "no lmia"
+        ]
+        if any(blocker in job_desc for blocker in sponsorship_blockers):
+            skip_reasons.append("Role does not offer work permit sponsorship")
     
     # 7. Salary Check (max +5 points)
     job_min_salary = job.get("job_min_salary")
