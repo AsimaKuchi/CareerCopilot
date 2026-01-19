@@ -162,14 +162,6 @@ export default function JobSearch({ user }) {
 
     await searchJobsWithParams(query, location, employmentType);
   };
-        toast.info("No jobs found. Try different keywords.");
-      }
-    } catch (error) {
-      toast.error("Failed to search jobs. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getMatchScoreClass = (score) => {
     if (score >= 80) return "match-score-high";
