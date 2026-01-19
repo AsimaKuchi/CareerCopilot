@@ -202,14 +202,14 @@ export default function LandingPage() {
               <Card
                 key={i}
                 data-testid={`feature-card-${i}`}
-                className={`glass-light rounded-xl card-hover cursor-pointer ${
+                className={`glass-light rounded-xl card-hover cursor-pointer shadow-sm ${
                   hoveredFeature === i ? 'border-indigo-500/30' : ''
                 }`}
                 onMouseEnter={() => setHoveredFeature(i)}
                 onMouseLeave={() => setHoveredFeature(null)}
               >
                 <CardContent className="p-6 space-y-4">
-                  <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center ${feature.color}`}>
+                  <div className={`w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center ${feature.color}`}>
                     <feature.icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground">{feature.title}</h3>
@@ -222,8 +222,8 @@ export default function LandingPage() {
 
         {/* CTA Section */}
         <section className="max-w-4xl mx-auto py-24">
-          <Card className="glass-heavy rounded-2xl overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-emerald-500/10" />
+          <Card className="glass-heavy rounded-2xl overflow-hidden relative shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-emerald-500/5" />
             <CardContent className="relative p-12 text-center space-y-6">
               <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
                 Ready to Transform Your Job Search?
@@ -247,7 +247,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 py-8 border-t border-white/5">
+      <footer className="relative z-10 px-6 py-8 border-t border-gray-200">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
