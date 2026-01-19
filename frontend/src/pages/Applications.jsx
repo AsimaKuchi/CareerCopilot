@@ -65,6 +65,29 @@ export default function Applications({ user }) {
   const [submitApp, setSubmitApp] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
 
+  const copyToClipboard = async (text, field) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      toast.success("Copied to clipboard!");
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      toast.error("Failed to copy");
+    }
+  };
+
+  const handleOpenApplication = (app) => {
+    if (app.apply_link) {
+      window.open(app.apply_link, '_blank');
+    } else {
+      toast.error("No application link available for this job");
+    }
+  };
+
+  const handleSubmitNow = (app) => {
+    setSubmitApp(app);
+  };
+
   useEffect(() => {
     fetchApplications();
   }, []);
