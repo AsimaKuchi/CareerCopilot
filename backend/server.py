@@ -520,7 +520,7 @@ async def search_jobs(request: Request, query: JobSearchQuery):
                 "title": job.get("job_title"),
                 "company": job.get("employer_name"),
                 "company_logo": job.get("employer_logo"),
-                "location": job.get("job_city", "") + (", " + job.get("job_state", "") if job.get("job_state") else ""),
+                "location": (job.get("job_city") or "") + (", " + job.get("job_state") if job.get("job_state") else ""),
                 "employment_type": job.get("job_employment_type"),
                 "description": job.get("job_description", "")[:500] + "...",
                 "full_description": job.get("job_description"),
