@@ -574,9 +574,11 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     skip_reasons = []
     score = 40  # Base score
     
-    job_title = job.get("job_title", "").lower()
-    job_desc = job.get("job_description", "").lower()
-    job_location = (job.get("job_city", "") + " " + job.get("job_state", "")).lower()
+    job_title = (job.get("job_title") or "").lower()
+    job_desc = (job.get("job_description") or "").lower()
+    job_city = job.get("job_city") or ""
+    job_state = job.get("job_state") or ""
+    job_location = (job_city + " " + job_state).lower().strip()
     is_remote = job.get("job_is_remote", False)
     
     # 1. Role Relevance (max +25 points)
