@@ -38,6 +38,11 @@ import {
   Wand2,
   ArrowRight,
   FileCheck,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
