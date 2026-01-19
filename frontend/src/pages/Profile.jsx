@@ -154,6 +154,22 @@ export default function Profile({ user }) {
     updateProfile({ preferred_locations });
   };
 
+  const addIndustry = () => {
+    if (!newIndustry.trim()) return;
+    const industries = profile?.industries || [];
+    if (industries.length >= 3) {
+      toast.error("Maximum 3 industries allowed. Remove one to add another.");
+      return;
+    }
+    updateProfile({ industries: [...industries, newIndustry.trim()] });
+    setNewIndustry("");
+  };
+
+  const removeIndustry = (index) => {
+    const industries = (profile?.industries || []).filter((_, i) => i !== index);
+    updateProfile({ industries });
+  };
+
   const handleJobTypeToggle = (type) => {
     const current = profile?.job_type || [];
     const updated = current.includes(type)
