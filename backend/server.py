@@ -600,6 +600,18 @@ async def search_jobs(request: Request, query: JobSearchQuery):
         data = response.json()
         jobs = data.get("data", [])
         
+        # Filter out LinkedIn jobs - only keep jobs with direct company URLs
+        filtered_jobs = []
+        for job in jobs:
+            apply_link = job.get("job_apply_link", "") or ""
+            # Skip LinkedIn jobs
+            if "linkedin.com" in apply_link.lower():
+                continue
+            filtered_jobs.append(job)
+        
+        jobs = filtered_jobs
+        logger.info(f"Filtered to {len(jobs)} non-LinkedIn jobs")
+        
         # Get user profile for matching
         profile = await db.user_profiles.find_one(
             {"user_id": user.user_id},
