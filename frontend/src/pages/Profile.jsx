@@ -226,17 +226,24 @@ export default function Profile({ user }) {
                       <p className="text-sm text-muted-foreground">Resume uploaded</p>
                     </div>
                   </div>
-                  <label className="cursor-pointer">
+                  <div>
                     <input
                       type="file"
+                      id="resume-replace-input"
                       accept=".pdf,.doc,.docx,.txt"
                       onChange={handleResumeUpload}
                       className="hidden"
                     />
-                    <Button variant="outline" size="sm" className="border-white/10" disabled={uploading}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-white/10" 
+                      disabled={uploading}
+                      onClick={() => document.getElementById('resume-replace-input').click()}
+                    >
                       {uploading ? "Uploading..." : "Replace"}
                     </Button>
-                  </label>
+                  </div>
                 </div>
               ) : (
                 <label className="cursor-pointer">
