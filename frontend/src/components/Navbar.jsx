@@ -48,6 +48,7 @@ export const Navbar = ({ user }) => {
     { icon: FileText, label: "Applications", path: "/applications" },
     { icon: MessageSquare, label: "Interview Prep", path: "/interview-prep" },
     { icon: User, label: "Profile", path: "/profile" },
+    { icon: Home, label: "Back to Home", path: "/" },
   ];
 
   const isActive = (path) => location.pathname === path;
