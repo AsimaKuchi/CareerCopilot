@@ -35,6 +35,8 @@ import {
   Briefcase,
   Globe,
   Wand2,
+  ArrowRight,
+  FileCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
