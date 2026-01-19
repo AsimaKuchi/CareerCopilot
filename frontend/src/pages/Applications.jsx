@@ -851,8 +851,8 @@ export default function Applications({ user }) {
       </Dialog>
 
       {/* Submit Now Dialog - Assisted Apply */}
-      <Dialog open={!!submitApp} onOpenChange={() => setSubmitApp(null)}>
-        <DialogContent className="bg-background border-white/10 max-w-2xl">
+      <Dialog open={!!submitApp} onOpenChange={() => { setSubmitApp(null); setAutoFillScript(null); }}>
+        <DialogContent className="bg-background border-white/10 max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Rocket className="w-5 h-5 text-indigo-400" />
@@ -863,60 +863,101 @@ export default function Applications({ user }) {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-              <h4 className="text-sm font-medium text-indigo-400 mb-2">Assisted Apply</h4>
-              <p className="text-sm text-muted-foreground">
-                We&apos;ll open the application page. Your tailored documents are ready to copy or download.
-                If the form has standard fields, paste your information directly.
-              </p>
-            </div>
-
-            {/* Quick Copy Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              {submitApp?.optimized_resume && (
-                <Button
-                  variant="outline"
-                  onClick={() => copyToClipboard(submitApp.optimized_resume, 'submit-resume')}
-                  className="h-auto py-3 flex-col items-center gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                >
-                  {copiedField === 'submit-resume' ? <CheckCheck className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
-                  <span className="text-xs">{copiedField === 'submit-resume' ? 'Resume Copied!' : 'Copy Resume'}</span>
-                </Button>
-              )}
-              {submitApp?.cover_letter && (
-                <Button
-                  variant="outline"
-                  onClick={() => copyToClipboard(submitApp.cover_letter, 'submit-cover')}
-                  className="h-auto py-3 flex-col items-center gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
-                >
-                  {copiedField === 'submit-cover' ? <CheckCheck className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
-                  <span className="text-xs">{copiedField === 'submit-cover' ? 'Cover Letter Copied!' : 'Copy Cover Letter'}</span>
-                </Button>
-              )}
-            </div>
-
-            {/* Instructions */}
-            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-              <h4 className="text-sm font-medium text-foreground mb-2">Steps to Submit:</h4>
-              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Click &quot;Open Application Page&quot; below</li>
-                <li>Fill in your contact details on the job site</li>
-                <li>Paste your tailored resume (or upload the .docx)</li>
-                <li>Paste your cover letter if there&apos;s a field for it</li>
-                <li>Review and submit on the company&apos;s site</li>
-              </ol>
-            </div>
-
-            {!submitApp?.optimized_resume && !submitApp?.cover_letter && (
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <p className="text-sm text-amber-400 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  No tailored documents. You can still apply with your original resume.
+          <ScrollArea className="max-h-[65vh]">
+            <div className="space-y-4 pr-4">
+              {/* Auto-Fill Script Section */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30">
+                <h4 className="text-sm font-medium text-indigo-400 mb-2 flex items-center gap-2">
+                  <Rocket className="w-4 h-4" />
+                  Auto-Fill (Recommended)
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Copy our auto-fill script and paste it in the browser console on the application page. 
+                  It will automatically fill in your name, email, resume, and cover letter.
                 </p>
+                {loadingScript ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Generating auto-fill script...</span>
+                  </div>
+                ) : autoFillScript ? (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => copyToClipboard(autoFillScript, 'autofill-script')}
+                      className={`w-full ${copiedField === 'autofill-script' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-indigo-500 hover:bg-indigo-600'}`}
+                    >
+                      {copiedField === 'autofill-script' ? (
+                        <>
+                          <CheckCheck className="w-4 h-4 mr-2" />
+                          Script Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Auto-Fill Script
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      After copying: Open app page → Press F12 → Go to Console tab → Paste → Press Enter
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-400">Could not generate auto-fill script</p>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Manual Option */}
+              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                <h4 className="text-sm font-medium text-foreground mb-3">Or Copy Manually:</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {submitApp?.optimized_resume && (
+                    <Button
+                      variant="outline"
+                      onClick={() => copyToClipboard(submitApp.optimized_resume, 'submit-resume')}
+                      className="h-auto py-3 flex-col items-center gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                    >
+                      {copiedField === 'submit-resume' ? <CheckCheck className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                      <span className="text-xs">{copiedField === 'submit-resume' ? 'Resume Copied!' : 'Copy Resume'}</span>
+                    </Button>
+                  )}
+                  {submitApp?.cover_letter && (
+                    <Button
+                      variant="outline"
+                      onClick={() => copyToClipboard(submitApp.cover_letter, 'submit-cover')}
+                      className="h-auto py-3 flex-col items-center gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                    >
+                      {copiedField === 'submit-cover' ? <CheckCheck className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
+                      <span className="text-xs">{copiedField === 'submit-cover' ? 'Cover Letter Copied!' : 'Copy Cover Letter'}</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                <h4 className="text-sm font-medium text-foreground mb-2">How to Use Auto-Fill:</h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Click &quot;Copy Auto-Fill Script&quot; above</li>
+                  <li>Click &quot;Open Application Page&quot; below</li>
+                  <li>On the job site, press <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">F12</kbd> to open Developer Tools</li>
+                  <li>Click the &quot;Console&quot; tab</li>
+                  <li>Paste the script (Ctrl+V) and press Enter</li>
+                  <li>Review the filled fields, upload resume if needed</li>
+                  <li>Complete any CAPTCHA and submit</li>
+                </ol>
+              </div>
+
+              {!submitApp?.optimized_resume && !submitApp?.cover_letter && (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <p className="text-sm text-amber-400 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    No tailored documents. You can still apply with your original resume.
+                  </p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
             <Button variant="outline" onClick={() => setSubmitApp(null)} className="border-white/10">
