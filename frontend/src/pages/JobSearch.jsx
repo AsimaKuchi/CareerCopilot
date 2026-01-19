@@ -183,25 +183,17 @@ export default function JobSearch({ user }) {
     if (!selectedJob) return;
     setGeneratingResume(true);
     try {
-      const response = await fetch(`${API}/ai/optimize-resume`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          job_description: selectedJob.full_description || selectedJob.description,
-        }),
+      const response = await axios.post(`${API}/ai/optimize-resume`, {
+        job_description: selectedJob.full_description || selectedJob.description,
+      }, {
+        withCredentials: true,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || "Failed to optimize resume");
-      }
-
-      const data = await response.json();
-      setOptimizedResume(data.optimized_resume);
+      setOptimizedResume(response.data.optimized_resume);
       toast.success("Resume optimized for ATS!");
     } catch (error) {
-      toast.error(error.message || "Failed to optimize resume");
+      const message = error.response?.data?.detail || error.message || "Failed to optimize resume";
+      toast.error(message);
     } finally {
       setGeneratingResume(false);
     }
@@ -211,27 +203,19 @@ export default function JobSearch({ user }) {
     if (!selectedJob) return;
     setGeneratingCover(true);
     try {
-      const response = await fetch(`${API}/ai/cover-letter`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          job_title: selectedJob.title,
-          company: selectedJob.company,
-          job_description: selectedJob.full_description || selectedJob.description,
-        }),
+      const response = await axios.post(`${API}/ai/cover-letter`, {
+        job_title: selectedJob.title,
+        company: selectedJob.company,
+        job_description: selectedJob.full_description || selectedJob.description,
+      }, {
+        withCredentials: true,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || "Failed to generate cover letter");
-      }
-
-      const data = await response.json();
-      setCoverLetter(data.cover_letter);
+      setCoverLetter(response.data.cover_letter);
       toast.success("Cover letter generated!");
     } catch (error) {
-      toast.error(error.message || "Failed to generate cover letter");
+      const message = error.response?.data?.detail || error.message || "Failed to generate cover letter";
+      toast.error(message);
     } finally {
       setGeneratingCover(false);
     }
