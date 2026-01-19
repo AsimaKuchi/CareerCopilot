@@ -279,7 +279,71 @@ export default function Applications({ user }) {
                             <span>Applied: {new Date(app.applied_at).toLocaleDateString()}</span>
                           </>
                         )}
+                        {/* Document indicators */}
+                        {(app.optimized_resume || app.cover_letter) && (
+                          <>
+                            <span>•</span>
+                            <div className="flex items-center gap-2">
+                              {app.optimized_resume && (
+                                <span className="flex items-center gap-1 text-emerald-400">
+                                  <FileText className="w-3 h-3" />
+                                  Resume
+                                </span>
+                              )}
+                              {app.cover_letter && (
+                                <span className="flex items-center gap-1 text-indigo-400">
+                                  <MessageSquare className="w-3 h-3" />
+                                  Cover Letter
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
+
+                      {/* Expandable Documents Section */}
+                      {(app.optimized_resume || app.cover_letter) && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => setExpandedApp(expandedApp === app.application_id ? null : app.application_id)}
+                            className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                          >
+                            {expandedApp === app.application_id ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                            {expandedApp === app.application_id ? "Hide" : "View"} saved documents
+                          </button>
+                          
+                          {expandedApp === app.application_id && (
+                            <div className="mt-4 space-y-4">
+                              {app.optimized_resume && (
+                                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                  <h5 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    Optimized Resume
+                                  </h5>
+                                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
+                                    {app.optimized_resume}
+                                  </pre>
+                                </div>
+                              )}
+                              {app.cover_letter && (
+                                <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                                  <h5 className="text-sm font-medium text-indigo-400 mb-2 flex items-center gap-2">
+                                    <MessageSquare className="w-4 h-4" />
+                                    Cover Letter
+                                  </h5>
+                                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
+                                    {app.cover_letter}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
