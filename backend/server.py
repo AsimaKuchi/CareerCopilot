@@ -569,33 +569,49 @@ async def generate_cover_letter(request: Request, req: GenerateCoverLetterReques
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"cover_{user.user_id}_{uuid.uuid4().hex[:8]}",
-        system_message="""You are an expert cover letter writer. Create compelling, 
-personalized cover letters that highlight the candidate's relevant experience 
-and enthusiasm for the role. Keep it professional yet engaging, and under 400 words."""
+        system_message="""You are an expert ATS-optimized cover letter writer. Write concise, professional cover letters that directly align candidate experience to job requirements.
+
+STRICT RULES:
+- 1 page max (300-450 words)
+- Simple formatting (no tables, no columns, no emojis)
+- No fluff or generic enthusiasm
+- Use keywords directly from the job description
+- Align experience clearly to role requirements
+- Professional, confident tone (not desperate or salesy)
+- No company clichés or buzzwords
+- AVOID phrases like "I am passionate", "I am excited", "I would love to", "I am thrilled"
+
+REQUIRED STRUCTURE:
+1. Opening paragraph: State the role title and company. Briefly summarize why the candidate's background fits the role.
+2. Middle paragraphs (1-2): Match experience directly to key job requirements. Use metrics or outcomes where possible. Mirror terminology used in the job description.
+3. Closing paragraph: Reiterate fit. Express interest in discussing the role. Thank the reader.
+
+Output only the cover letter text, no additional commentary."""
     ).with_model("openai", "gpt-5.2")
     
     skills = ", ".join(profile.get("skills", [])) if profile else "Not specified"
     experience = profile.get("experience_years", 0) if profile else 0
     resume = profile.get("resume_text", "") if profile else ""
+    job_titles = ", ".join(profile.get("job_titles", [])) if profile else "Not specified"
     
-    prompt = f"""Write a compelling cover letter for:
+    prompt = f"""Write an ATS-friendly cover letter using these inputs:
 
-POSITION: {req.job_title} at {req.company}
+JOB TITLE: {req.job_title}
+COMPANY: {req.company}
 
 JOB DESCRIPTION:
 {req.job_description}
 
-CANDIDATE INFO:
-Name: {user_doc['name']}
-Skills: {skills}
-Experience: {experience} years
-Resume excerpt: {resume[:1000] if resume else 'Not provided'}
+CANDIDATE INFORMATION:
+- Name: {user_doc['name']}
+- Years of Experience: {experience}
+- Key Skills: {skills}
+- Target Roles: {job_titles}
 
-Create a professional, personalized cover letter that:
-1. Shows enthusiasm for the role
-2. Highlights relevant experience
-3. Demonstrates knowledge of the company
-4. Includes a strong call to action"""
+RESUME CONTENT:
+{resume[:2000] if resume else 'Not provided'}
+
+Generate a professional, ATS-optimized cover letter following the strict rules and structure provided. Use keywords from the job description and align the candidate's experience directly to the role requirements."""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
