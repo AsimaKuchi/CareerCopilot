@@ -647,9 +647,33 @@ export default function JobSearch({ user }) {
                         )}
                       </div>
                       <div className="p-4 rounded-b-lg bg-gray-50 border border-gray-200 h-[300px] overflow-auto">
-                        <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans leading-relaxed">
-                          {profile?.resume_text || "No resume content available. Please upload your resume in your Profile."}
-                        </pre>
+                        {/* Check if resume_text looks like base64 binary data */}
+                        {profile?.resume_text && profile.resume_text.startsWith('UEsDB') ? (
+                          <div className="h-full flex flex-col items-center justify-center text-center">
+                            <FileText className="w-10 h-10 text-amber-400 mb-3" />
+                            <p className="text-amber-700 font-medium mb-2">Resume needs re-processing</p>
+                            <p className="text-gray-500 text-sm mb-4">The resume file was stored but text wasn&apos;t extracted properly.</p>
+                            <Button
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await axios.post(`${API}/profile/resume/reparse`, {}, { withCredentials: true });
+                                  toast.success("Resume text extracted! Refreshing...");
+                                  window.location.reload();
+                                } catch (err) {
+                                  toast.error("Failed to re-extract text. Please re-upload your resume.");
+                                }
+                              }}
+                              className="bg-amber-500 hover:bg-amber-600"
+                            >
+                              Re-extract Text
+                            </Button>
+                          </div>
+                        ) : (
+                          <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans leading-relaxed">
+                            {profile?.resume_text || "No resume content available. Please upload your resume in your Profile."}
+                          </pre>
+                        )}
                       </div>
                     </div>
 
