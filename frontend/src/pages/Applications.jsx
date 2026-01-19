@@ -64,6 +64,8 @@ export default function Applications({ user }) {
   const [reviewApp, setReviewApp] = useState(null);
   const [submitApp, setSubmitApp] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [autoFillScript, setAutoFillScript] = useState(null);
+  const [loadingScript, setLoadingScript] = useState(false);
 
   const copyToClipboard = async (text, field) => {
     try {
@@ -84,8 +86,25 @@ export default function Applications({ user }) {
     }
   };
 
-  const handleSubmitNow = (app) => {
+  const handleSubmitNow = async (app) => {
     setSubmitApp(app);
+    setAutoFillScript(null);
+    
+    // Fetch the auto-fill script
+    setLoadingScript(true);
+    try {
+      const response = await fetch(`${API}/applications/${app.application_id}/autofill-script`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAutoFillScript(data.script);
+      }
+    } catch (err) {
+      console.error('Failed to load auto-fill script:', err);
+    } finally {
+      setLoadingScript(false);
+    }
   };
 
   useEffect(() => {
