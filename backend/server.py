@@ -12,6 +12,11 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 import base64
+import io
+
+# Document parsing imports
+from docx import Document
+from PyPDF2 import PdfReader
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
