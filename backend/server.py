@@ -794,17 +794,21 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     # 4. Location Match (max +15 points)
     location_match = False
     preferred_locations = [loc.lower() for loc in profile.get("preferred_locations", [])]
+    job_city_display = job.get("job_city") or ""
+    job_state_display = job.get("job_state") or ""
+    location_display = f"{job_city_display}, {job_state_display}".strip(", ")
     
     if is_remote and "remote" in preferred_locations:
-        strengths.append("Remote position matches your preference")
+        strengths.append(f"This is a remote position, perfectly matching your work location preference")
         score += 15
         location_match = True
     elif any(loc in job_location for loc in preferred_locations):
-        strengths.append(f"Location matches your preference")
+        matched_loc = next((loc for loc in preferred_locations if loc in job_location), "")
+        strengths.append(f"Job located in {location_display or matched_loc.title()} aligns with your preferred work locations")
         score += 15
         location_match = True
     elif is_remote:
-        strengths.append("Remote work available")
+        strengths.append(f"Remote work option available, offering flexibility regardless of your location")
         score += 10
         location_match = True
     
