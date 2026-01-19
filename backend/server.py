@@ -548,45 +548,215 @@ async def search_jobs(request: Request, query: JobSearchQuery):
         logger.error(f"Job search error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-def calculate_match_score(job: Dict, profile: Optional[Dict]) -> int:
-    """Calculate job match score based on user profile."""
+def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
+    """
+    Intelligently evaluate job match with detailed reasoning.
+    Returns match score, strengths, gaps, recommendation, and skip reason if applicable.
+    """
     if not profile:
-        return 50  # Default score
+        return {
+            "score": 50,
+            "recommendation": "review",
+            "strengths": [],
+            "gaps": ["Complete your profile for better matching"],
+            "match_reasoning": "Profile incomplete - unable to provide detailed analysis",
+            "skip_reason": None
+        }
     
-    score = 50  # Base score
+    strengths = []
+    gaps = []
+    skip_reasons = []
+    score = 40  # Base score
     
     job_title = job.get("job_title", "").lower()
     job_desc = job.get("job_description", "").lower()
+    job_location = (job.get("job_city", "") + " " + job.get("job_state", "")).lower()
+    is_remote = job.get("job_is_remote", False)
     
-    # Match job titles
+    # 1. Role Relevance (max +25 points)
+    role_match = False
     for title in profile.get("job_titles", []):
-        if title.lower() in job_title:
-            score += 20
+        if title.lower() in job_title or any(word in job_title for word in title.lower().split()):
+            strengths.append(f"Role aligns with your target: {title}")
+            score += 25
+            role_match = True
             break
     
-    # Match skills
+    if not role_match:
+        gaps.append("Role title doesn't match your target positions")
+        # Check if it's completely misaligned
+        if profile.get("job_titles"):
+            target_keywords = set()
+            for t in profile.get("job_titles", []):
+                target_keywords.update(t.lower().split())
+            job_keywords = set(job_title.split())
+            if not target_keywords.intersection(job_keywords):
+                skip_reasons.append("Role is misaligned with your target positions")
+    
+    # 2. Skills Match (max +20 points)
     skills = profile.get("skills", [])
-    matched_skills = 0
+    matched_skills = []
+    missing_skills = []
+    
     for skill in skills:
         if skill.lower() in job_desc:
-            matched_skills += 1
+            matched_skills.append(skill)
     
     if skills:
-        skill_match_ratio = matched_skills / len(skills)
-        score += int(skill_match_ratio * 20)
+        skill_ratio = len(matched_skills) / len(skills)
+        score += int(skill_ratio * 20)
+        
+        if matched_skills:
+            strengths.append(f"Skills match: {', '.join(matched_skills[:5])}")
+        
+        # Check for required skills in job that user doesn't have
+        common_required = ["python", "javascript", "java", "sql", "react", "aws", "docker"]
+        for req_skill in common_required:
+            if req_skill in job_desc and req_skill.lower() not in [s.lower() for s in skills]:
+                if "required" in job_desc[max(0, job_desc.find(req_skill)-50):job_desc.find(req_skill)+50]:
+                    missing_skills.append(req_skill)
+        
+        if missing_skills:
+            gaps.append(f"May need: {', '.join(missing_skills[:3])}")
     
-    # Match location
-    job_location = (job.get("job_city", "") + " " + job.get("job_state", "")).lower()
-    for loc in profile.get("preferred_locations", []):
-        if loc.lower() in job_location:
-            score += 10
-            break
+    # 3. Experience Level (max +15 points)
+    user_years = profile.get("experience_years", 0)
+    user_seniority = profile.get("seniority_level", "").lower()
     
-    # Remote preference
-    if job.get("job_is_remote") and "remote" in profile.get("job_type", []):
+    # Detect job seniority from title/description
+    job_seniority = "mid"
+    if any(word in job_title for word in ["senior", "sr.", "lead", "principal"]):
+        job_seniority = "senior"
+    elif any(word in job_title for word in ["junior", "jr.", "entry", "associate", "graduate"]):
+        job_seniority = "junior"
+    elif any(word in job_title for word in ["director", "head", "vp", "chief", "manager"]):
+        job_seniority = "director"
+    
+    # Check experience alignment
+    seniority_match = False
+    if job_seniority == "junior" and user_years <= 3:
+        seniority_match = True
+        strengths.append("Experience level matches job requirements")
+        score += 15
+    elif job_seniority == "mid" and 2 <= user_years <= 7:
+        seniority_match = True
+        strengths.append("Experience level matches job requirements")
+        score += 15
+    elif job_seniority == "senior" and user_years >= 5:
+        seniority_match = True
+        strengths.append("Experience level matches job requirements")
+        score += 15
+    elif job_seniority == "director" and user_years >= 8:
+        seniority_match = True
+        strengths.append("Experience level matches job requirements")
+        score += 15
+    
+    if not seniority_match:
+        if job_seniority == "senior" and user_years < 5:
+            gaps.append(f"Role requires more experience ({job_seniority} level)")
+            if user_years < 3:
+                skip_reasons.append("Role is significantly above your experience level")
+        elif job_seniority == "director" and user_years < 8:
+            gaps.append("This is a leadership role requiring extensive experience")
+            skip_reasons.append("Role requires leadership experience you may not have")
+    
+    # 4. Location Match (max +15 points)
+    location_match = False
+    preferred_locations = [loc.lower() for loc in profile.get("preferred_locations", [])]
+    
+    if is_remote and "remote" in preferred_locations:
+        strengths.append("Remote position matches your preference")
+        score += 15
+        location_match = True
+    elif any(loc in job_location for loc in preferred_locations):
+        strengths.append(f"Location matches your preference")
+        score += 15
+        location_match = True
+    elif is_remote:
+        strengths.append("Remote work available")
         score += 10
+        location_match = True
     
-    return min(score, 100)
+    if not location_match and preferred_locations:
+        gaps.append("Location may not match your preferences")
+    
+    # 5. Industry Match (max +10 points)
+    industries = [ind.lower() for ind in profile.get("industries", [])]
+    open_to_any = profile.get("open_to_any_industry", False)
+    
+    if open_to_any:
+        score += 10
+    elif industries:
+        industry_keywords = {
+            "technology": ["tech", "software", "saas", "startup", "digital"],
+            "finance": ["bank", "financial", "fintech", "investment", "insurance"],
+            "healthcare": ["health", "medical", "pharma", "biotech", "hospital"],
+            "retail": ["retail", "ecommerce", "consumer", "shopping"],
+            "manufacturing": ["manufacturing", "industrial", "production"],
+            "consulting": ["consulting", "advisory", "professional services"],
+        }
+        
+        for ind in industries:
+            keywords = industry_keywords.get(ind, [ind])
+            if any(kw in job_desc for kw in keywords):
+                strengths.append(f"Industry aligns with your preference: {ind}")
+                score += 10
+                break
+        else:
+            if industries:
+                gaps.append("Industry may not match your selected preferences")
+    
+    # 6. Work Authorization Check
+    work_auth = profile.get("work_authorization", "")
+    if work_auth == "require_sponsorship":
+        # Check if job mentions sponsorship
+        if "no sponsorship" in job_desc or "must be authorized" in job_desc or "no visa" in job_desc:
+            skip_reasons.append("Role does not offer visa sponsorship")
+    
+    # 7. Salary Check (max +5 points)
+    job_min_salary = job.get("job_min_salary")
+    job_max_salary = job.get("job_max_salary")
+    user_min_salary = profile.get("salary_min")
+    
+    if job_min_salary and user_min_salary:
+        if job_min_salary >= user_min_salary:
+            strengths.append("Salary range meets your minimum")
+            score += 5
+        else:
+            gaps.append("Salary may be below your minimum requirement")
+    
+    # Determine recommendation
+    score = min(score, 100)
+    
+    if skip_reasons:
+        recommendation = "skip"
+        match_reasoning = f"Not recommended: {skip_reasons[0]}"
+    elif score >= 75:
+        recommendation = "strong_match"
+        match_reasoning = "Strong match - aligns well with your profile"
+    elif score >= 60:
+        recommendation = "good_match"
+        match_reasoning = "Good match - worth reviewing"
+    elif score >= 45:
+        recommendation = "review"
+        match_reasoning = "Potential match - review carefully for fit"
+    else:
+        recommendation = "weak_match"
+        match_reasoning = "Weak match - may not align with your goals"
+    
+    return {
+        "score": score,
+        "recommendation": recommendation,
+        "strengths": strengths[:4],  # Limit to top 4
+        "gaps": gaps[:3],  # Limit to top 3
+        "match_reasoning": match_reasoning,
+        "skip_reason": skip_reasons[0] if skip_reasons else None
+    }
+
+def calculate_match_score(job: Dict, profile: Optional[Dict]) -> int:
+    """Legacy function - returns just the score for backward compatibility."""
+    result = evaluate_job_match(job, profile)
+    return result["score"]
 
 # ========================
 # AI ROUTES
