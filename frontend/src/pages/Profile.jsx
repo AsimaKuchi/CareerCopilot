@@ -91,7 +91,18 @@ export default function Profile({ user }) {
         body: formData,
       });
       
-      const data = await response.json();
+      // Clone response before reading to avoid "body stream already read" error
+      const responseClone = response.clone();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // If JSON parsing fails, try to get text
+        const text = await responseClone.text();
+        console.error("Response was not JSON:", text);
+        throw new Error("Server returned invalid response");
+      }
       
       if (!response.ok) {
         throw new Error(data.detail || "Failed to upload resume");
@@ -105,7 +116,7 @@ export default function Profile({ user }) {
     } finally {
       setUploading(false);
       // Reset input so same file can be selected again
-      e.target.value = "";
+      if (e.target) e.target.value = "";
     }
   };
 
