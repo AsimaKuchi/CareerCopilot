@@ -511,10 +511,10 @@ async def search_jobs(request: Request, query: JobSearchQuery):
             {"_id": 0}
         )
         
-        # Calculate match scores
+        # Calculate match scores with detailed evaluation
         enriched_jobs = []
         for job in jobs:
-            match_score = calculate_match_score(job, profile)
+            match_eval = evaluate_job_match(job, profile)
             enriched_jobs.append({
                 "job_id": job.get("job_id"),
                 "title": job.get("job_title"),
@@ -530,12 +530,18 @@ async def search_jobs(request: Request, query: JobSearchQuery):
                 "salary_max": job.get("job_max_salary"),
                 "salary_currency": job.get("job_salary_currency"),
                 "is_remote": job.get("job_is_remote"),
-                "match_score": match_score,
-                "highlights": job.get("job_highlights", {})
+                "match_score": match_eval["score"],
+                "match_recommendation": match_eval["recommendation"],
+                "match_strengths": match_eval["strengths"],
+                "match_gaps": match_eval["gaps"],
+                "match_reasoning": match_eval["match_reasoning"],
+                "skip_reason": match_eval["skip_reason"],
+                "highlights": job.get("job_highlights", {}),
+                "source": "jsearch"
             })
         
-        # Sort by match score
-        enriched_jobs.sort(key=lambda x: x["match_score"], reverse=True)
+        # Sort by match score, but put "skip" recommendations at the end
+        enriched_jobs.sort(key=lambda x: (0 if x["match_recommendation"] == "skip" else 1, x["match_score"]), reverse=True)
         
         return {
             "jobs": enriched_jobs,

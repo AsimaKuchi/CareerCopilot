@@ -19,7 +19,17 @@ import {
   Briefcase,
   Save,
   CheckCircle,
+  Shield,
+  Building2,
+  TrendingUp,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 export default function Profile({ user }) {
@@ -31,6 +41,7 @@ export default function Profile({ user }) {
   const [newSkill, setNewSkill] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
+  const [newIndustry, setNewIndustry] = useState("");
 
   useEffect(() => {
     fetchProfile();
