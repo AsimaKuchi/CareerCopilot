@@ -692,12 +692,16 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     
     # 1. Role Relevance (max +25 points)
     role_match = False
+    matched_title = None
     for title in profile.get("job_titles", []):
         if title.lower() in job_title or any(word in job_title for word in title.lower().split()):
-            strengths.append(f"Role aligns with your target: {title}")
+            matched_title = title
             score += 25
             role_match = True
             break
+    
+    if role_match and matched_title:
+        strengths.append(f"Your target role '{matched_title}' directly aligns with this {job_title_display} position at {company_name}")
     
     if not role_match:
         gaps.append("Role title doesn't match your target positions")
