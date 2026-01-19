@@ -109,6 +109,8 @@ class ApplyRequest(BaseModel):
     company: str
     location: Optional[str] = None
     job_description: str
+    optimized_resume: Optional[str] = None
+    cover_letter: Optional[str] = None
 
 class GenerateCoverLetterRequest(BaseModel):
     job_title: str
