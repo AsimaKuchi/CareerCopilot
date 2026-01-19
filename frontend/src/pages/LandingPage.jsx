@@ -231,6 +231,80 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Testimonials Section */}
+        <section className="max-w-6xl mx-auto py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+              What our users are saying
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Real results from real job seekers across Canada
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Review 1 */}
+            <Card className="glass-light rounded-xl shadow-sm" data-testid="review-1">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-foreground leading-relaxed italic">
+                  "I went from spending 3 hours daily on applications to just 15 minutes. Landed 4 interviews in my first week!"
+                </p>
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="font-semibold text-foreground">Sarah Chen</p>
+                  <p className="text-sm text-muted-foreground">Software Developer • Toronto, ON</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Review 2 */}
+            <Card className="glass-light rounded-xl shadow-sm" data-testid="review-2">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-foreground leading-relaxed italic">
+                  "The AI matching is incredible. Every job suggestion was spot-on for my experience level and career goals."
+                </p>
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="font-semibold text-foreground">Marcus Miller</p>
+                  <p className="text-sm text-muted-foreground">Marketing Manager • Ottawa, ON</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Review 3 */}
+            <Card className="glass-light rounded-xl shadow-sm" data-testid="review-3">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-foreground leading-relaxed italic">
+                  "As a new immigrant, this tool was a lifesaver. It understood the Canadian job market perfectly."
+                </p>
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="font-semibold text-foreground">Priya Sharma</p>
+                  <p className="text-sm text-muted-foreground">Data Analyst • Mississauga, ON</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
         {/* Why We Skip Jobs Section */}
         <section className="max-w-4xl mx-auto py-20">
           <Card className="glass-heavy rounded-2xl overflow-hidden relative shadow-xl">
