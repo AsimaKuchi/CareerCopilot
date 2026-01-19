@@ -567,7 +567,7 @@ export default function JobSearch({ user }) {
             <Wand2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Find Your Dream Job?</h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Click "Find Jobs For Me" to automatically discover opportunities matched to your profile, 
+              Click &quot;Find Jobs For Me&quot; to automatically discover opportunities matched to your profile, 
               or search manually using the fields above.
             </p>
             <Button
