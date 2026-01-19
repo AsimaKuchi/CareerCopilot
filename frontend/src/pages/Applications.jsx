@@ -389,10 +389,23 @@ export default function Applications({ user }) {
                             <div className="mt-4 space-y-4">
                               {app.optimized_resume && (
                                 <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                  <h5 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-2">
-                                    <FileText className="w-4 h-4" />
-                                    Optimized Resume
-                                  </h5>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h5 className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                                      <FileText className="w-4 h-4" />
+                                      Optimized Resume
+                                    </h5>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        window.open(`${API}/applications/${app.application_id}/download/resume`, '_blank');
+                                      }}
+                                      className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                    >
+                                      <Download className="w-3 h-3 mr-1" />
+                                      Download .docx
+                                    </Button>
+                                  </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.optimized_resume}
                                   </pre>
@@ -400,10 +413,23 @@ export default function Applications({ user }) {
                               )}
                               {app.cover_letter && (
                                 <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                                  <h5 className="text-sm font-medium text-indigo-400 mb-2 flex items-center gap-2">
-                                    <MessageSquare className="w-4 h-4" />
-                                    Cover Letter
-                                  </h5>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h5 className="text-sm font-medium text-indigo-400 flex items-center gap-2">
+                                      <MessageSquare className="w-4 h-4" />
+                                      Cover Letter
+                                    </h5>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        window.open(`${API}/applications/${app.application_id}/download/cover-letter`, '_blank');
+                                      }}
+                                      className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                                    >
+                                      <Download className="w-3 h-3 mr-1" />
+                                      Download .docx
+                                    </Button>
+                                  </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.cover_letter}
                                   </pre>
