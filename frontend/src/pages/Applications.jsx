@@ -14,11 +14,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Navbar from "@/components/Navbar";
 import {
   Briefcase,
@@ -36,6 +44,11 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  ExternalLink,
+  Eye,
+  Copy,
+  CheckCheck,
+  Rocket,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,6 +61,9 @@ export default function Applications({ user }) {
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [expandedApp, setExpandedApp] = useState(null);
+  const [reviewApp, setReviewApp] = useState(null);
+  const [submitApp, setSubmitApp] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
 
   useEffect(() => {
     fetchApplications();
