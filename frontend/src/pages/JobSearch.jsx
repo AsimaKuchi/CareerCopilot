@@ -737,7 +737,7 @@ export default function JobSearch({ user }) {
                 ) : (
                   <div className="p-6 rounded-lg bg-gray-50 border border-gray-200 text-center">
                     <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">Click "Generate Cover Letter" to create a personalized cover letter for this position.</p>
+                    <p className="text-gray-500 text-sm">Click &quot;Generate Cover Letter&quot; to create a personalized cover letter for this position.</p>
                   </div>
                 )}
               </div>
