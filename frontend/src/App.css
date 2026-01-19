@@ -1,34 +1,167 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* App.css - Additional component styles */
+
+/* Ensure dark background everywhere */
+.App {
+  min-height: 100vh;
+  background: hsl(222, 47%, 3%);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
 }
 
-.App-link {
-    color: #61dafb;
+.page-exit {
+  opacity: 1;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.page-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Prose overrides for dark mode */
+.prose-invert {
+  --tw-prose-body: hsl(215, 20%, 65%);
+  --tw-prose-headings: hsl(210, 40%, 98%);
+  --tw-prose-links: hsl(239, 84%, 67%);
+  --tw-prose-bold: hsl(210, 40%, 98%);
+  --tw-prose-code: hsl(210, 40%, 98%);
+}
+
+/* Custom focus states */
+.custom-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(222, 47%, 3%), 0 0 0 4px hsl(239, 84%, 67%);
+}
+
+/* Gradient borders */
+.gradient-border {
+  position: relative;
+  background: hsl(222, 47%, 7%);
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Shimmer effect for loading states */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Floating animation for decorative elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Button press effect */
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Card shine effect on hover */
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(45deg);
+  transition: transform 0.5s ease;
+  pointer-events: none;
+}
+
+.card-shine:hover::after {
+  transform: rotate(45deg) translate(50%, 50%);
+}
+
+/* Tooltip arrow fix */
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}
+
+/* Dialog backdrop blur */
+[data-radix-dialog-overlay] {
+  backdrop-filter: blur(4px);
+}
+
+/* ScrollArea custom styling */
+[data-radix-scroll-area-viewport] {
+  scrollbar-width: thin;
+}
+
+/* Select content positioning */
+[data-radix-select-content] {
+  z-index: 100;
 }
