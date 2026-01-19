@@ -158,7 +158,7 @@ export const Navbar = ({ user }) => {
                   }}
                   className={`justify-start ${
                     isActive(item.path)
-                      ? "bg-white/10 text-foreground"
+                      ? "bg-indigo-50 text-indigo-600"
                       : "text-muted-foreground"
                   }`}
                 >
