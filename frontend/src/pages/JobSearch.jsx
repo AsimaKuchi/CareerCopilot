@@ -61,6 +61,7 @@ export default function JobSearch({ user }) {
   const [generatingCover, setGeneratingCover] = useState(false);
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
+  const [expandedJobId, setExpandedJobId] = useState(null);
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
