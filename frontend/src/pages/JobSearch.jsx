@@ -380,11 +380,16 @@ export default function JobSearch({ user }) {
         {!initialLoading && jobs.length > 0 && (
           <div className="space-y-4" data-testid="job-results">
             <p className="text-muted-foreground">Found {jobs.length} jobs matched to your profile</p>
-            {jobs.map((job, i) => (
+            {jobs.map((job, i) => {
+              const recBadge = getRecommendationBadge(job.match_recommendation, job.skip_reason);
+              const RecIcon = recBadge.icon;
+              const isExpanded = expandedJobId === job.job_id;
+              
+              return (
               <Card
                 key={job.job_id || i}
                 data-testid={`job-card-${i}`}
-                className="glass-light card-hover"
+                className={`glass-light card-hover ${job.match_recommendation === "skip" ? "opacity-60" : ""}`}
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
@@ -417,9 +422,15 @@ export default function JobSearch({ user }) {
                             <span>{job.company}</span>
                           </div>
                         </div>
-                        <Badge className={`${getMatchScoreClass(job.match_score)} px-3 py-1`}>
-                          {job.match_score}% Match
-                        </Badge>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge className={`${getMatchScoreClass(job.match_score)} px-3 py-1`}>
+                            {job.match_score}% Match
+                          </Badge>
+                          <Badge className={`${recBadge.color} border px-2 py-0.5 text-xs flex items-center gap-1`}>
+                            <RecIcon className="w-3 h-3" />
+                            {recBadge.label}
+                          </Badge>
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
@@ -459,6 +470,63 @@ export default function JobSearch({ user }) {
                         )}
                       </div>
 
+                      {/* Match Reasoning - Always visible */}
+                      <p className="text-sm font-medium text-indigo-400 mb-2">
+                        {job.match_reasoning}
+                      </p>
+
+                      {/* Expandable Match Details */}
+                      <button 
+                        onClick={() => toggleJobExpand(job.job_id)}
+                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors"
+                        data-testid={`expand-match-details-${i}`}
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {isExpanded ? "Hide" : "Show"} match analysis
+                      </button>
+
+                      {isExpanded && (
+                        <div className="mb-4 p-4 rounded-lg bg-white/5 border border-white/10 space-y-3">
+                          {/* Strengths */}
+                          {job.match_strengths?.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium text-emerald-400 mb-1 flex items-center gap-1">
+                                <CheckCircle className="w-4 h-4" /> Strengths
+                              </h5>
+                              <ul className="space-y-1">
+                                {job.match_strengths.map((s, idx) => (
+                                  <li key={idx} className="text-sm text-muted-foreground pl-5">• {s}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {/* Gaps */}
+                          {job.match_gaps?.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium text-amber-400 mb-1 flex items-center gap-1">
+                                <AlertCircle className="w-4 h-4" /> Potential Gaps
+                              </h5>
+                              <ul className="space-y-1">
+                                {job.match_gaps.map((g, idx) => (
+                                  <li key={idx} className="text-sm text-muted-foreground pl-5">• {g}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Skip Reason */}
+                          {job.skip_reason && (
+                            <div className="p-3 rounded bg-red-500/10 border border-red-500/20">
+                              <p className="text-sm text-red-400 flex items-center gap-2">
+                                <XCircle className="w-4 h-4 flex-shrink-0" />
+                                <strong>Not recommended:</strong> {job.skip_reason}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                         {job.description}
                       </p>
@@ -468,6 +536,7 @@ export default function JobSearch({ user }) {
                           data-testid={`apply-btn-${i}`}
                           onClick={() => handleApplyClick(job)}
                           className="bg-indigo-500 hover:bg-indigo-600"
+                          disabled={job.match_recommendation === "skip"}
                         >
                           <Sparkles className="w-4 h-4 mr-2" />
                           Quick Apply
