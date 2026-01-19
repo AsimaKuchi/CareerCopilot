@@ -463,6 +463,62 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         logger.error(f"Resume upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to upload resume: {str(e)}")
 
+@api_router.post("/profile/resume/reparse")
+async def reparse_resume(request: Request):
+    """Re-extract text from stored resume raw content."""
+    user = await get_current_user(request)
+    
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not profile or not profile.get("resume_raw"):
+        raise HTTPException(status_code=400, detail="No resume found to reparse")
+    
+    try:
+        # Decode the base64 raw content
+        raw_content = base64.b64decode(profile["resume_raw"])
+        resume_format = profile.get("resume_format", "")
+        filename = profile.get("resume_filename", "").lower()
+        
+        resume_text = ""
+        
+        # Try to extract based on format or filename
+        if resume_format == "docx" or filename.endswith('.docx'):
+            resume_text = extract_text_from_docx(raw_content)
+        elif resume_format == "pdf" or filename.endswith('.pdf'):
+            resume_text = extract_text_from_pdf(raw_content)
+        else:
+            # Try as text
+            try:
+                resume_text = raw_content.decode('utf-8')
+            except UnicodeDecodeError:
+                raise HTTPException(status_code=400, detail="Unable to extract text from this file format")
+        
+        if not resume_text:
+            raise HTTPException(status_code=400, detail="Could not extract text from resume")
+        
+        # Update the profile with extracted text
+        await db.user_profiles.update_one(
+            {"user_id": user.user_id},
+            {"$set": {
+                "resume_text": resume_text,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {
+            "message": "Resume text re-extracted successfully",
+            "text_length": len(resume_text)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume reparse error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to reparse resume: {str(e)}")
+
 # ========================
 # JOB SEARCH ROUTES
 # ========================
