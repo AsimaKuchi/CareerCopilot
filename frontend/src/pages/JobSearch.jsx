@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +34,7 @@ import {
   Loader2,
   Briefcase,
   Globe,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,6 +44,8 @@ export default function JobSearch({ user }) {
   const [employmentType, setEmploymentType] = useState("");
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
@@ -51,9 +54,41 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
 
-  const searchJobs = async () => {
-    if (!query.trim()) {
-      toast.error("Please enter a search query");
+  // Fetch profile and auto-search on page load
+  useEffect(() => {
+    fetchProfileAndSearch();
+  }, []);
+
+  const fetchProfileAndSearch = async () => {
+    try {
+      const response = await fetch(`${API}/profile`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const profileData = await response.json();
+        setProfile(profileData);
+        
+        // Auto-search based on profile if user has job titles or skills
+        if (profileData.job_titles?.length > 0 || profileData.skills?.length > 0) {
+          const autoQuery = profileData.job_titles?.[0] || profileData.skills?.slice(0, 3).join(" ");
+          const autoLocation = profileData.preferred_locations?.[0] || "";
+          
+          setQuery(autoQuery);
+          setLocation(autoLocation);
+          
+          // Auto search with profile data
+          await searchJobsWithParams(autoQuery, autoLocation, "");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
+  const searchJobsWithParams = async (searchQuery, searchLocation, searchEmploymentType) => {
+    if (!searchQuery?.trim()) {
       return;
     }
 
@@ -64,9 +99,9 @@ export default function JobSearch({ user }) {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          query: query.trim(),
-          location: location.trim() || null,
-          employment_types: employmentType || null,
+          query: searchQuery.trim(),
+          location: searchLocation?.trim() || null,
+          employment_types: searchEmploymentType || null,
           page: 1,
           num_pages: 1,
         }),
@@ -78,6 +113,55 @@ export default function JobSearch({ user }) {
       setJobs(data.jobs || []);
       
       if (data.jobs?.length === 0) {
+        toast.info("No jobs found. Try different keywords.");
+      } else {
+        toast.success(`Found ${data.jobs.length} jobs matched to your profile!`);
+      }
+    } catch (error) {
+      toast.error("Failed to search jobs. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const findJobsForMe = async () => {
+    if (!profile) {
+      toast.error("Please complete your profile first");
+      return;
+    }
+
+    if (!profile.job_titles?.length && !profile.skills?.length) {
+      toast.error("Please add job titles or skills to your profile");
+      return;
+    }
+
+    // Build smart query from profile
+    const jobTitle = profile.job_titles?.[0] || "";
+    const skills = profile.skills?.slice(0, 3).join(" ") || "";
+    const smartQuery = jobTitle || skills;
+    const smartLocation = profile.preferred_locations?.[0] || "";
+    
+    // Map job_type to employment type
+    let empType = "";
+    if (profile.job_type?.includes("full-time")) empType = "FULLTIME";
+    else if (profile.job_type?.includes("part-time")) empType = "PARTTIME";
+    else if (profile.job_type?.includes("contract")) empType = "CONTRACTOR";
+
+    setQuery(smartQuery);
+    setLocation(smartLocation);
+    setEmploymentType(empType);
+
+    await searchJobsWithParams(smartQuery, smartLocation, empType);
+  };
+
+  const searchJobs = async () => {
+    if (!query.trim()) {
+      toast.error("Please enter a search query");
+      return;
+    }
+
+    await searchJobsWithParams(query, location, employmentType);
+  };
         toast.info("No jobs found. Try different keywords.");
       }
     } catch (error) {
