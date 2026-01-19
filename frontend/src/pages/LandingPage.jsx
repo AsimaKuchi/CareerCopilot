@@ -151,7 +151,7 @@ export default function LandingPage() {
                 variant="link"
                 size="lg"
                 className="text-indigo-600 hover:text-indigo-700 h-14 px-4 text-base"
-                onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => navigate('/how-it-works')}
               >
                 See how it works →
               </Button>
