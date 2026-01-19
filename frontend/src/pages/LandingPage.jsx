@@ -141,7 +141,7 @@ export default function LandingPage() {
 
             {/* Anti-spam message */}
             <p className="text-base text-foreground font-medium">
-              No résumé spam. No blind auto-apply. No burned opportunities.
+              No resume spam. No blind auto-apply. No burned opportunities.
             </p>
 
             {/* CTAs */}
