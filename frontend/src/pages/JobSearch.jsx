@@ -503,7 +503,7 @@ export default function JobSearch({ user }) {
 
       {/* Apply Dialog */}
       <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-background border-white/10">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden bg-background border-gray-200">
           <DialogHeader>
             <DialogTitle className="text-xl">
               Apply to {selectedJob?.title}
@@ -513,34 +513,102 @@ export default function JobSearch({ user }) {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <ScrollArea className="max-h-[65vh] pr-4">
             <div className="space-y-6 py-4">
-              {/* Optimize Resume Section */}
+              {/* Resume Comparison Section */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-foreground flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-emerald-400" />
-                    ATS-Optimized Resume
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-foreground flex items-center gap-2 text-lg">
+                    <FileText className="w-5 h-5 text-emerald-500" />
+                    Resume Comparison
                   </h4>
                   <Button
                     data-testid="generate-resume-btn"
                     size="sm"
                     onClick={generateOptimizedResume}
-                    disabled={generatingResume}
+                    disabled={generatingResume || !profile?.resume_text}
                     className="bg-emerald-500 hover:bg-emerald-600"
                   >
                     {generatingResume ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Optimizing...
+                      </>
                     ) : (
-                      "Generate"
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Optimized Version
+                      </>
                     )}
                   </Button>
                 </div>
+
+                {!profile?.resume_text ? (
+                  <div className="p-6 rounded-lg bg-amber-50 border border-amber-200 text-center">
+                    <FileText className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+                    <p className="text-amber-800 font-medium">No resume uploaded yet</p>
+                    <p className="text-amber-600 text-sm mt-1">Please upload your resume in your Profile to use this feature.</p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Original Resume */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-t-lg border border-gray-200 border-b-0">
+                        <FileText className="w-4 h-4 text-gray-500" />
+                        <span className="font-medium text-gray-700 text-sm">Original Resume</span>
+                      </div>
+                      <div className="p-4 rounded-b-lg bg-gray-50 border border-gray-200 h-[300px] overflow-auto">
+                        <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans">
+                          {profile?.resume_text?.substring(0, 2000) || "No resume content available"}
+                          {profile?.resume_text?.length > 2000 && "..."}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {/* Arrow indicator */}
+                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+                        <ArrowRight className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+
+                    {/* Optimized Resume */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-100 rounded-t-lg border border-emerald-200 border-b-0">
+                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                        <span className="font-medium text-emerald-700 text-sm">ATS-Optimized Resume</span>
+                        {optimizedResume && (
+                          <span className="ml-auto text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                            Optimized
+                          </span>
+                        )}
+                      </div>
+                      <div className={`p-4 rounded-b-lg border h-[300px] overflow-auto ${
+                        optimizedResume 
+                          ? "bg-emerald-50 border-emerald-200" 
+                          : "bg-gray-50 border-gray-200"
+                      }`}>
+                        {optimizedResume ? (
+                          <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                            {optimizedResume}
+                          </pre>
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-center">
+                            <Sparkles className="w-10 h-10 text-gray-300 mb-3" />
+                            <p className="text-gray-500 text-sm">Click "Generate Optimized Version" to create an ATS-friendly resume tailored to this job.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {optimizedResume && (
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                    <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans">
-                      {optimizedResume}
-                    </pre>
+                  <div className="mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+                    <p className="text-sm text-emerald-800">
+                      <strong>What changed:</strong> Your resume has been optimized with relevant keywords from the job description, 
+                      reformatted for ATS parsing, and tailored to highlight matching skills and experience.
+                    </p>
                   </div>
                 )}
               </div>
@@ -548,8 +616,8 @@ export default function JobSearch({ user }) {
               {/* Cover Letter Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-foreground flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-indigo-400" />
+                  <h4 className="font-semibold text-foreground flex items-center gap-2 text-lg">
+                    <MessageSquare className="w-5 h-5 text-indigo-500" />
                     Cover Letter
                   </h4>
                   <Button
@@ -560,28 +628,39 @@ export default function JobSearch({ user }) {
                     className="bg-indigo-500 hover:bg-indigo-600"
                   >
                     {generatingCover ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Generating...
+                      </>
                     ) : (
-                      "Generate"
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Cover Letter
+                      </>
                     )}
                   </Button>
                 </div>
-                {coverLetter && (
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                    <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans">
+                {coverLetter ? (
+                  <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
                       {coverLetter}
                     </pre>
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-lg bg-gray-50 border border-gray-200 text-center">
+                    <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">Click "Generate Cover Letter" to create a personalized cover letter for this position.</p>
                   </div>
                 )}
               </div>
             </div>
           </ScrollArea>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-gray-200 pt-4">
             <Button
               variant="outline"
               onClick={() => setShowApplyDialog(false)}
-              className="border-white/10"
+              className="border-gray-300"
             >
               Cancel
             </Button>
