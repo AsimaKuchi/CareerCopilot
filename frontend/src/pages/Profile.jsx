@@ -74,6 +74,12 @@ export default function Profile({ user }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large. Maximum size is 5MB");
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
@@ -84,14 +90,22 @@ export default function Profile({ user }) {
         credentials: "include",
         body: formData,
       });
-      if (!response.ok) throw new Error("Failed to upload resume");
+      
       const data = await response.json();
-      setProfile({ ...profile, resume_filename: data.filename });
+      
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to upload resume");
+      }
+      
+      setProfile({ ...profile, resume_filename: data.filename, resume_text: "uploaded" });
       toast.success("Resume uploaded successfully");
     } catch (error) {
-      toast.error("Failed to upload resume");
+      console.error("Resume upload error:", error);
+      toast.error(error.message || "Failed to upload resume");
     } finally {
       setUploading(false);
+      // Reset input so same file can be selected again
+      e.target.value = "";
     }
   };
 
