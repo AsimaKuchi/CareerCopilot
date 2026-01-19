@@ -64,24 +64,23 @@ export default function JobSearch({ user }) {
 
   const fetchProfileAndSearch = async () => {
     try {
-      const response = await fetch(`${API}/profile`, {
-        credentials: "include",
+      const response = await axios.get(`${API}/profile`, {
+        withCredentials: true,
       });
-      if (response.ok) {
-        const profileData = await response.json();
-        setProfile(profileData);
+      
+      const profileData = response.data;
+      setProfile(profileData);
+      
+      // Auto-search based on profile if user has job titles or skills
+      if (profileData.job_titles?.length > 0 || profileData.skills?.length > 0) {
+        const autoQuery = profileData.job_titles?.[0] || profileData.skills?.slice(0, 3).join(" ");
+        const autoLocation = profileData.preferred_locations?.[0] || "";
         
-        // Auto-search based on profile if user has job titles or skills
-        if (profileData.job_titles?.length > 0 || profileData.skills?.length > 0) {
-          const autoQuery = profileData.job_titles?.[0] || profileData.skills?.slice(0, 3).join(" ");
-          const autoLocation = profileData.preferred_locations?.[0] || "";
-          
-          setQuery(autoQuery);
-          setLocation(autoLocation);
-          
-          // Auto search with profile data
-          await searchJobsWithParams(autoQuery, autoLocation, "");
-        }
+        setQuery(autoQuery);
+        setLocation(autoLocation);
+        
+        // Auto search with profile data
+        await searchJobsWithParams(autoQuery, autoLocation, "");
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
