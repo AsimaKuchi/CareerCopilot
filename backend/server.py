@@ -821,6 +821,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     
     if open_to_any:
         score += 10
+        strengths.append(f"Your openness to various industries makes {company_name} a viable opportunity")
     elif industries:
         industry_keywords = {
             "technology": ["tech", "software", "saas", "startup", "digital"],
@@ -831,10 +832,20 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             "consulting": ["consulting", "advisory", "professional services"],
         }
         
+        industry_display_names = {
+            "technology": "Technology/Software",
+            "finance": "Finance/Banking", 
+            "healthcare": "Healthcare/Medical",
+            "retail": "Retail/E-commerce",
+            "manufacturing": "Manufacturing",
+            "consulting": "Consulting/Professional Services",
+        }
+        
         for ind in industries:
             keywords = industry_keywords.get(ind, [ind])
             if any(kw in job_desc for kw in keywords):
-                strengths.append(f"Industry aligns with your preference: {ind}")
+                display_name = industry_display_names.get(ind, ind.title())
+                strengths.append(f"{company_name} operates in the {display_name} sector, matching your target industry preference")
                 score += 10
                 break
         else:
