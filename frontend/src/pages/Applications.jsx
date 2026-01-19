@@ -31,6 +31,10 @@ import {
   MapPin,
   Loader2,
   AlertCircle,
+  FileText,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
