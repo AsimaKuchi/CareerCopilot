@@ -46,6 +46,7 @@ export default function Applications({ user }) {
   const [actionLoading, setActionLoading] = useState(null);
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [expandedApp, setExpandedApp] = useState(null);
 
   useEffect(() => {
     fetchApplications();
