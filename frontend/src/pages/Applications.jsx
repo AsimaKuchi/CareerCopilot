@@ -44,6 +44,7 @@ export default function Applications({ user }) {
   const [activeTab, setActiveTab] = useState("all");
   const [deleteId, setDeleteId] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  const [expandedApp, setExpandedApp] = useState(null);
 
   useEffect(() => {
     fetchApplications();
