@@ -279,6 +279,29 @@ export default function JobSearch({ user }) {
         {/* Search Form */}
         <Card className="glass-light mb-8 animate-fade-in" data-testid="search-form">
           <CardContent className="p-6">
+            {/* AI Find Jobs Button */}
+            <div className="flex justify-center mb-6">
+              <Button
+                data-testid="find-jobs-for-me-btn"
+                onClick={findJobsForMe}
+                disabled={loading || initialLoading}
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 h-12 px-8 text-white font-medium"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <Wand2 className="w-5 h-5 mr-2" />
+                )}
+                Find Jobs For Me (AI-Powered)
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-sm text-muted-foreground">or search manually</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -332,10 +355,18 @@ export default function JobSearch({ user }) {
           </CardContent>
         </Card>
 
+        {/* Loading State */}
+        {initialLoading && (
+          <div className="text-center py-16">
+            <Loader2 className="w-12 h-12 text-indigo-400 mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Finding jobs matched to your profile...</p>
+          </div>
+        )}
+
         {/* Results */}
-        {jobs.length > 0 && (
+        {!initialLoading && jobs.length > 0 && (
           <div className="space-y-4" data-testid="job-results">
-            <p className="text-muted-foreground">Found {jobs.length} jobs</p>
+            <p className="text-muted-foreground">Found {jobs.length} jobs matched to your profile</p>
             {jobs.map((job, i) => (
               <Card
                 key={job.job_id || i}
