@@ -130,11 +130,11 @@ export const Navbar = ({ user }) => {
                   <User className="w-4 h-4 mr-2" />
                   Profile Settings
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className="bg-gray-200" />
                 <DropdownMenuItem
                   data-testid="logout-btn"
                   onClick={handleLogout}
-                  className="cursor-pointer text-red-400 focus:text-red-400"
+                  className="cursor-pointer text-red-500 focus:text-red-500"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Log out
@@ -146,7 +146,7 @@ export const Navbar = ({ user }) => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/5">
+          <div className="md:hidden py-4 border-t border-gray-200">
             <div className="flex flex-col gap-1">
               {navItems.map((item) => (
                 <Button
