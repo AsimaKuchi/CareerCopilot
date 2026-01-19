@@ -479,13 +479,22 @@ export default function JobSearch({ user }) {
         )}
 
         {/* Empty State */}
-        {!loading && jobs.length === 0 && (
+        {!loading && !initialLoading && jobs.length === 0 && (
           <div className="text-center py-16" data-testid="empty-state">
-            <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">Search for Jobs</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Enter a job title, keywords, or company name to find opportunities matched to your profile.
+            <Wand2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Find Your Dream Job?</h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Click "Find Jobs For Me" to automatically discover opportunities matched to your profile, 
+              or search manually using the fields above.
             </p>
+            <Button
+              onClick={findJobsForMe}
+              disabled={loading}
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Find Jobs For Me
+            </Button>
           </div>
         )}
       </main>
