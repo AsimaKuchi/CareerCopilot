@@ -501,7 +501,7 @@ export default function Profile({ user }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-cyan-400" />
-                Work Authorization
+                Work Authorization (Canada)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -516,10 +516,10 @@ export default function Profile({ user }) {
                   <SelectValue placeholder="Select your work authorization status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="citizen">US Citizen</SelectItem>
-                  <SelectItem value="permanent_resident">Permanent Resident (Green Card)</SelectItem>
-                  <SelectItem value="work_permit">Work Permit / Visa (e.g., H-1B, L-1)</SelectItem>
-                  <SelectItem value="require_sponsorship">Require Visa Sponsorship</SelectItem>
+                  <SelectItem value="canadian_citizen">Canadian Citizen</SelectItem>
+                  <SelectItem value="permanent_resident">Permanent Resident (PR)</SelectItem>
+                  <SelectItem value="work_permit">Work Permit (PGWP, LMIA, etc.)</SelectItem>
+                  <SelectItem value="require_sponsorship">Require Employer Sponsorship</SelectItem>
                 </SelectContent>
               </Select>
             </CardContent>

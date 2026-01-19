@@ -69,7 +69,7 @@ class UserProfile(BaseModel):
     salary_max: Optional[int] = None
     job_type: List[str] = []  # full-time, part-time, contract, remote
     # New fields for quality-first matching
-    work_authorization: Optional[str] = None  # citizen, permanent_resident, work_permit, require_sponsorship
+    work_authorization: Optional[str] = None  # canadian_citizen, permanent_resident, work_permit, require_sponsorship
     industries: List[str] = []  # max 3 industries
     open_to_any_industry: bool = False
     seniority_level: Optional[str] = None  # entry, junior, mid, senior, lead, manager, director, executive
