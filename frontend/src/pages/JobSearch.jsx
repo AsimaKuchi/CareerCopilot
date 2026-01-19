@@ -597,8 +597,8 @@ export default function JobSearch({ user }) {
                 {optimizedResume && (
                   <div className="mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
                     <p className="text-sm text-emerald-800">
-                      <strong>What changed:</strong> Your resume has been optimized with relevant keywords from the job description, 
-                      reformatted for ATS parsing, and tailored to highlight matching skills and experience.
+                      <strong>What changed:</strong> Your resume has been optimized with relevant keywords from the job description 
+                      while preserving your original format and structure. The same sections, layout, and formatting style have been maintained.
                     </p>
                   </div>
                 )}
