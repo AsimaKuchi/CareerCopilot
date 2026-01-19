@@ -150,13 +150,14 @@ export default function HowItWorks() {
             </div>
             <span className="text-xl font-bold text-foreground">JobMatch AI</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => navigate("/")}
-              className="text-muted-foreground hover:text-foreground"
+              className="border-gray-300 hover:bg-gray-50"
+              data-testid="home-btn"
             >
-              Home
+              ← Back to Home
             </Button>
             <Button
               data-testid="header-signin-btn"
