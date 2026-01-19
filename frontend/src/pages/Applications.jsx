@@ -513,46 +513,84 @@ export default function Applications({ user }) {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      {app.status === "pending" && (
-                        <>
+                    <div className="flex flex-col gap-2">
+                      {/* Primary Actions Row */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          data-testid={`review-btn-${i}`}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setReviewApp(app)}
+                          className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Review
+                        </Button>
+                        <Button
+                          data-testid={`open-app-btn-${i}`}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenApplication(app)}
+                          className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          Open Application
+                        </Button>
+                      </div>
+                      
+                      {/* Status-based Actions Row */}
+                      <div className="flex items-center gap-2">
+                        {app.status === "pending" && (
+                          <>
+                            <Button
+                              data-testid={`approve-btn-${i}`}
+                              size="sm"
+                              onClick={() => handleApprove(app.application_id)}
+                              disabled={actionLoading === app.application_id}
+                              className="bg-emerald-500 hover:bg-emerald-600"
+                            >
+                              {actionLoading === app.application_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Approve
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              data-testid={`reject-btn-${i}`}
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReject(app.application_id)}
+                              disabled={actionLoading === app.application_id}
+                              className="border-white/10"
+                            >
+                              Skip
+                            </Button>
+                          </>
+                        )}
+                        {app.status === "applied" && (
                           <Button
-                            data-testid={`approve-btn-${i}`}
+                            data-testid={`submit-now-btn-${i}`}
                             size="sm"
-                            onClick={() => handleApprove(app.application_id)}
-                            disabled={actionLoading === app.application_id}
-                            className="bg-emerald-500 hover:bg-emerald-600"
+                            onClick={() => handleSubmitNow(app)}
+                            className="bg-indigo-500 hover:bg-indigo-600"
                           >
-                            {actionLoading === app.application_id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Send className="w-4 h-4 mr-1" />
-                                Approve
-                              </>
-                            )}
+                            <Rocket className="w-4 h-4 mr-1" />
+                            Submit Now
                           </Button>
-                          <Button
-                            data-testid={`reject-btn-${i}`}
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(app.application_id)}
-                            disabled={actionLoading === app.application_id}
-                            className="border-white/10"
-                          >
-                            Skip
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        data-testid={`delete-btn-${i}`}
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleteId(app.application_id)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        )}
+                        <Button
+                          data-testid={`delete-btn-${i}`}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeleteId(app.application_id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
