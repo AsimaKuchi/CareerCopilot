@@ -609,7 +609,7 @@ export default function Profile({ user }) {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                We'll prioritize roles that match your career level.
+                We&apos;ll prioritize roles that match your career level.
               </p>
               <Select
                 value={profile?.seniority_level || ""}
