@@ -1149,6 +1149,7 @@ async def create_application(request: Request, req: ApplyRequest):
         "company": req.company,
         "location": req.location,
         "job_description": req.job_description,
+        "apply_link": req.apply_link,
         "optimized_resume": req.optimized_resume,
         "cover_letter": req.cover_letter,
         "status": "pending",
