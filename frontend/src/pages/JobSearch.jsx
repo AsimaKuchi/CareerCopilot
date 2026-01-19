@@ -683,7 +683,7 @@ export default function JobSearch({ user }) {
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-center">
                             <Sparkles className="w-10 h-10 text-gray-300 mb-3" />
-                            <p className="text-gray-500 text-sm">Click "Generate Optimized Version" to create an ATS-friendly resume tailored to this job.</p>
+                            <p className="text-gray-500 text-sm">Click &quot;Generate Optimized Version&quot; to create an ATS-friendly resume tailored to this job.</p>
                           </div>
                         )}
                       </div>
