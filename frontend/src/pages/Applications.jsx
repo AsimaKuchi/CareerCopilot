@@ -437,8 +437,24 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => {
-                                        window.open(`${API}/applications/${app.application_id}/download/cover-letter`, '_blank');
+                                      onClick={async () => {
+                                        try {
+                                          const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
+                                            credentials: 'include'
+                                          });
+                                          if (!response.ok) throw new Error('Download failed');
+                                          const blob = await response.blob();
+                                          const url = window.URL.createObjectURL(blob);
+                                          const a = document.createElement('a');
+                                          a.href = url;
+                                          a.download = `Cover_Letter_${app.company.replace(/\s+/g, '_')}_${app.job_title.replace(/\s+/g, '_')}.docx`;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          window.URL.revokeObjectURL(url);
+                                          a.remove();
+                                        } catch (err) {
+                                          toast.error('Failed to download cover letter');
+                                        }
                                       }}
                                       className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                                     >
