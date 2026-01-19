@@ -683,6 +683,8 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     
     job_title = (job.get("job_title") or "").lower()
     job_desc = (job.get("job_description") or "").lower()
+    job_title_display = job.get("job_title") or "this role"
+    company_name = job.get("employer_name") or "this company"
     job_city = job.get("job_city") or ""
     job_state = job.get("job_state") or ""
     job_location = (job_city + " " + job_state).lower().strip()
