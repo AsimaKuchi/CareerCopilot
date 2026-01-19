@@ -655,6 +655,267 @@ export default function Applications({ user }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Review Application Dialog */}
+      <Dialog open={!!reviewApp} onOpenChange={() => setReviewApp(null)}>
+        <DialogContent className="bg-background border-white/10 max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-indigo-400" />
+              Review Application
+            </DialogTitle>
+            <DialogDescription>
+              {reviewApp?.job_title} at {reviewApp?.company}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="space-y-6">
+              {/* Match Info */}
+              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-indigo-400" />
+                  Job Details
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Company:</span>
+                    <span className="ml-2 text-foreground">{reviewApp?.company}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Location:</span>
+                    <span className="ml-2 text-foreground">{reviewApp?.location || "Not specified"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Match Score:</span>
+                    <span className="ml-2 text-foreground">{reviewApp?.match_score}%</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <Badge className="ml-2 capitalize">{reviewApp?.status}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Optimized Resume */}
+              {reviewApp?.optimized_resume && (
+                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Tailored Resume
+                    </h4>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(reviewApp.optimized_resume, 'resume')}
+                        className="h-7 text-xs text-emerald-400 hover:bg-emerald-500/20"
+                      >
+                        {copiedField === 'resume' ? <CheckCheck className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+                        {copiedField === 'resume' ? 'Copied!' : 'Copy'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`${API}/applications/${reviewApp.application_id}/download/resume`, {
+                              credentials: 'include'
+                            });
+                            if (!response.ok) throw new Error('Download failed');
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `Resume_${reviewApp.company.replace(/\s+/g, '_')}.docx`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            a.remove();
+                          } catch (err) {
+                            toast.error('Failed to download');
+                          }
+                        }}
+                        className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        .docx
+                      </Button>
+                    </div>
+                  </div>
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-48 overflow-auto bg-black/20 p-3 rounded">
+                    {reviewApp.optimized_resume}
+                  </pre>
+                </div>
+              )}
+
+              {/* Cover Letter */}
+              {reviewApp?.cover_letter && (
+                <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-indigo-400 flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Cover Letter
+                    </h4>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(reviewApp.cover_letter, 'cover')}
+                        className="h-7 text-xs text-indigo-400 hover:bg-indigo-500/20"
+                      >
+                        {copiedField === 'cover' ? <CheckCheck className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+                        {copiedField === 'cover' ? 'Copied!' : 'Copy'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`${API}/applications/${reviewApp.application_id}/download/cover-letter`, {
+                              credentials: 'include'
+                            });
+                            if (!response.ok) throw new Error('Download failed');
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `Cover_Letter_${reviewApp.company.replace(/\s+/g, '_')}.docx`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            a.remove();
+                          } catch (err) {
+                            toast.error('Failed to download');
+                          }
+                        }}
+                        className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        .docx
+                      </Button>
+                    </div>
+                  </div>
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-48 overflow-auto bg-black/20 p-3 rounded">
+                    {reviewApp.cover_letter}
+                  </pre>
+                </div>
+              )}
+
+              {/* No documents warning */}
+              {!reviewApp?.optimized_resume && !reviewApp?.cover_letter && (
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+                  <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+                  <p className="text-sm text-amber-400">No tailored documents generated yet.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Go to Job Search to generate an optimized resume and cover letter for this position.
+                  </p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <Button variant="outline" onClick={() => setReviewApp(null)} className="border-white/10">
+              Close
+            </Button>
+            <Button 
+              onClick={() => handleOpenApplication(reviewApp)}
+              className="bg-cyan-500 hover:bg-cyan-600"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Open Application
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submit Now Dialog - Assisted Apply */}
+      <Dialog open={!!submitApp} onOpenChange={() => setSubmitApp(null)}>
+        <DialogContent className="bg-background border-white/10 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-indigo-400" />
+              Submit Application
+            </DialogTitle>
+            <DialogDescription>
+              {submitApp?.job_title} at {submitApp?.company}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <h4 className="text-sm font-medium text-indigo-400 mb-2">Assisted Apply</h4>
+              <p className="text-sm text-muted-foreground">
+                We&apos;ll open the application page. Your tailored documents are ready to copy or download.
+                If the form has standard fields, paste your information directly.
+              </p>
+            </div>
+
+            {/* Quick Copy Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              {submitApp?.optimized_resume && (
+                <Button
+                  variant="outline"
+                  onClick={() => copyToClipboard(submitApp.optimized_resume, 'submit-resume')}
+                  className="h-auto py-3 flex-col items-center gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                >
+                  {copiedField === 'submit-resume' ? <CheckCheck className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                  <span className="text-xs">{copiedField === 'submit-resume' ? 'Resume Copied!' : 'Copy Resume'}</span>
+                </Button>
+              )}
+              {submitApp?.cover_letter && (
+                <Button
+                  variant="outline"
+                  onClick={() => copyToClipboard(submitApp.cover_letter, 'submit-cover')}
+                  className="h-auto py-3 flex-col items-center gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                >
+                  {copiedField === 'submit-cover' ? <CheckCheck className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
+                  <span className="text-xs">{copiedField === 'submit-cover' ? 'Cover Letter Copied!' : 'Copy Cover Letter'}</span>
+                </Button>
+              )}
+            </div>
+
+            {/* Instructions */}
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+              <h4 className="text-sm font-medium text-foreground mb-2">Steps to Submit:</h4>
+              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Click &quot;Open Application Page&quot; below</li>
+                <li>Fill in your contact details on the job site</li>
+                <li>Paste your tailored resume (or upload the .docx)</li>
+                <li>Paste your cover letter if there&apos;s a field for it</li>
+                <li>Review and submit on the company&apos;s site</li>
+              </ol>
+            </div>
+
+            {!submitApp?.optimized_resume && !submitApp?.cover_letter && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="text-sm text-amber-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  No tailored documents. You can still apply with your original resume.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <Button variant="outline" onClick={() => setSubmitApp(null)} className="border-white/10">
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                handleOpenApplication(submitApp);
+                toast.success("Application page opened. Good luck!");
+              }}
+              className="bg-indigo-500 hover:bg-indigo-600"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Open Application Page
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
