@@ -29,25 +29,25 @@ export default function LandingPage() {
       icon: Target,
       title: "AI Job Matching",
       description: "Smart algorithms analyze your profile to find jobs that match your skills and preferences.",
-      color: "text-indigo-400",
+      color: "text-indigo-500",
     },
     {
       icon: FileText,
       title: "ATS Resume Optimizer",
       description: "Automatically optimize your resume for each job to pass ATS screening systems.",
-      color: "text-emerald-400",
+      color: "text-emerald-500",
     },
     {
       icon: MessageSquare,
       title: "Cover Letter Generator",
       description: "AI-crafted personalized cover letters tailored to each position you apply for.",
-      color: "text-amber-400",
+      color: "text-amber-500",
     },
     {
       icon: Zap,
       title: "One-Click Apply",
       description: "Review and approve applications with optimized materials in a single click.",
-      color: "text-rose-400",
+      color: "text-rose-500",
     },
   ];
 
