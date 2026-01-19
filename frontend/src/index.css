@@ -6,24 +6,24 @@
 
 @layer base {
   :root {
-    --background: 222 47% 3%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 5%;
-    --popover-foreground: 210 40% 98%;
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 12%;
-    --muted-foreground: 215 20% 65%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
     --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
     --ring: 239 84% 67%;
     --radius: 0.75rem;
     --chart-1: 239 84% 67%;
@@ -67,53 +67,54 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: hsl(var(--muted-foreground) / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 /* Selection */
 ::selection {
-  background: hsl(var(--primary) / 0.3);
+  background: hsl(var(--primary) / 0.2);
   color: hsl(var(--foreground));
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism Utilities - Light Theme */
 .glass-heavy {
-  background: rgba(17, 24, 39, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .glass-light {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Glow Effects */
 .glow-primary {
-  box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.4);
 }
 
 .glow-accent {
-  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.4);
 }
 
 /* Text Gradient */
 .text-gradient {
-  background: linear-gradient(to right, #ffffff, #a5b4fc);
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Hero Glow */
+/* Hero Glow - Light Theme */
 .hero-glow {
   position: absolute;
   top: 0;
@@ -121,7 +122,7 @@
   transform: translateX(-50%);
   width: 100%;
   height: 60%;
-  background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+  background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -132,7 +133,7 @@
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
   border-color: rgba(99, 102, 241, 0.3);
 }
 
@@ -144,29 +145,29 @@
 /* Match Score Badge Variants */
 .match-score-high {
   background: rgba(16, 185, 129, 0.1);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .match-score-medium {
   background: rgba(251, 191, 36, 0.1);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #d97706;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 .match-score-low {
   background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* Noise Texture Overlay */
+/* Noise Texture Overlay - Lighter */
 .noise-overlay::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.02;
+  opacity: 0.01;
   pointer-events: none;
   z-index: 0;
 }
@@ -226,10 +227,6 @@
 /* Input Focus States */
 input:focus, textarea:focus, select:focus {
   outline: none;
-  ring: 2px;
-  ring-color: hsl(var(--primary));
-  ring-offset: 2px;
-  ring-offset-color: hsl(var(--background));
 }
 
 /* Loading Skeleton */
