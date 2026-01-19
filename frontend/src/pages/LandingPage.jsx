@@ -123,7 +123,7 @@ export default function LandingPage() {
                   data-testid="learn-more-btn"
                   variant="outline"
                   size="lg"
-                  className="border-white/10 hover:bg-white/5 h-12 px-8"
+                  className="border-gray-300 hover:bg-gray-50 h-12 px-8"
                   onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
                 >
                   Learn More
@@ -134,7 +134,7 @@ export default function LandingPage() {
               <div className="grid grid-cols-2 gap-3 pt-4">
                 {benefits.map((benefit, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                     <span>{benefit}</span>
                   </div>
                 ))}
@@ -145,7 +145,7 @@ export default function LandingPage() {
             <div className="relative animate-fade-in-delay-2 hidden lg:block">
               <div className="relative">
                 {/* Main Card */}
-                <Card className="glass-heavy rounded-2xl overflow-hidden">
+                <Card className="glass-heavy rounded-2xl overflow-hidden shadow-xl">
                   <CardContent className="p-0">
                     <img
                       src="https://images.unsplash.com/photo-1750969185331-e03829f72c7d?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"
