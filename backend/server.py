@@ -1485,6 +1485,85 @@ async def get_autofill_script(request: Request, application_id: str):
         }
     }
 
+@api_router.get("/autofill/data")
+async def get_autofill_data(request: Request, url: str = None):
+    """Get user data for bookmarklet auto-fill. Matches by job URL or returns latest approved application."""
+    user = await get_current_user(request)
+    
+    # Get user info
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Get profile
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Parse name
+    full_name = user_doc.get("name", "") if user_doc else ""
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    email = user_doc.get("email", "") if user_doc else ""
+    phone = profile.get("phone", "") if profile else ""
+    linkedin = profile.get("linkedin", "") if profile else ""
+    
+    # Try to find matching application by URL
+    app_doc = None
+    if url:
+        # Try to match by apply_link
+        app_doc = await db.applications.find_one(
+            {"user_id": user.user_id, "apply_link": {"$regex": url.split("?")[0], "$options": "i"}},
+            {"_id": 0}
+        )
+    
+    # If no match, get most recent approved application
+    if not app_doc:
+        app_doc = await db.applications.find_one(
+            {"user_id": user.user_id, "status": "applied"},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+    
+    # If still no match, get most recent pending application
+    if not app_doc:
+        app_doc = await db.applications.find_one(
+            {"user_id": user.user_id, "status": "pending"},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+    
+    resume_text = ""
+    cover_letter = ""
+    job_title = ""
+    company = ""
+    
+    if app_doc:
+        resume_text = app_doc.get("optimized_resume") or ""
+        cover_letter = app_doc.get("cover_letter") or ""
+        job_title = app_doc.get("job_title") or ""
+        company = app_doc.get("company") or ""
+    
+    # Fallback to profile resume if no optimized version
+    if not resume_text and profile:
+        resume_text = profile.get("resume_text") or ""
+    
+    return {
+        "firstName": first_name,
+        "lastName": last_name,
+        "email": email,
+        "phone": phone,
+        "linkedin": linkedin,
+        "resume": resume_text,
+        "coverLetter": cover_letter,
+        "jobTitle": job_title,
+        "company": company,
+        "hasApplication": app_doc is not None
+    }
+
 # ========================
 # DASHBOARD STATS
 # ========================
