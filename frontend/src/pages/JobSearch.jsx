@@ -124,6 +124,7 @@ export default function JobSearch({ user }) {
             const reader = ghResponse.body.getReader();
             const decoder = new TextDecoder();
             let buffer = "";
+            let tempJobs = [];
             
             while (true) {
               const { done, value } = await reader.read();
@@ -144,16 +145,17 @@ export default function JobSearch({ user }) {
                       // Stream completed
                       console.log(`Greenhouse search completed: ${data.total} jobs found`);
                     } else {
-                      // New job received - add it to the list immediately
-                      allJobs.push(data);
+                      // New job received - add it to temp list
+                      tempJobs.push(data);
                       
-                      // Update UI with new job
-                      setJobs([...allJobs].sort((a, b) => {
+                      // Update UI with new job immediately
+                      const sortedJobs = [...tempJobs].sort((a, b) => {
                         const aSkip = a.match_recommendation === "skip" ? 0 : 1;
                         const bSkip = b.match_recommendation === "skip" ? 0 : 1;
                         if (aSkip !== bSkip) return bSkip - aSkip;
                         return (b.match_score || 0) - (a.match_score || 0);
-                      }));
+                      });
+                      setJobs(sortedJobs);
                     }
                   } catch (parseErr) {
                     console.error("Failed to parse SSE data:", parseErr);
@@ -161,6 +163,9 @@ export default function JobSearch({ user }) {
                 }
               }
             }
+            
+            // Add temp jobs to allJobs for combining with JSearch results
+            allJobs = [...allJobs, ...tempJobs];
           }
         } catch (err) {
           console.error("Greenhouse search error:", err);
