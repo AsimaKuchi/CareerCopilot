@@ -511,6 +511,11 @@ export default function JobSearch({ user }) {
                           <div className="flex items-center gap-2 text-muted-foreground mt-1">
                             <Building className="w-4 h-4" />
                             <span>{job.company}</span>
+                            {job.source === "greenhouse" && (
+                              <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0 text-[10px]">
+                                Greenhouse
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
