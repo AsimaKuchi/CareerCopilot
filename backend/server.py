@@ -480,29 +480,41 @@ async def fetch_greenhouse_job_details(company: str, job_id: int) -> Optional[Di
 async def search_greenhouse_jobs(query: str = "", location: str = "", limit: int = 50) -> List[Dict]:
     """Search for jobs across multiple Greenhouse company boards."""
     all_jobs = []
-    query_lower = query.lower() if query else ""
+    query_words = query.lower().split() if query else []
     location_lower = location.lower() if location else ""
+    
+    logger.info(f"Searching Greenhouse: query_words={query_words}, location={location_lower}")
     
     # Fetch jobs from multiple companies in parallel
     tasks = [fetch_greenhouse_company_jobs(company) for company in GREENHOUSE_COMPANIES]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
+    success_count = 0
     for result in results:
         if isinstance(result, list):
             all_jobs.extend(result)
+            success_count += 1
+        elif isinstance(result, Exception):
+            logger.debug(f"Greenhouse fetch error: {result}")
+    
+    logger.info(f"Greenhouse: fetched from {success_count} companies, total {len(all_jobs)} jobs")
     
     # Filter by query and location
     filtered_jobs = []
     for job in all_jobs:
-        # Match query against title, company, department
-        query_match = not query_lower or any([
-            query_lower in job.get("title", "").lower(),
-            query_lower in job.get("company", "").lower(),
-            query_lower in job.get("department", "").lower()
-        ])
+        job_title = job.get("title", "").lower()
+        job_company = job.get("company", "").lower()
+        job_dept = job.get("department", "").lower()
+        job_location = job.get("location", "").lower()
+        
+        # Match query - any word must match title, company, or department
+        query_match = not query_words or any(
+            word in job_title or word in job_company or word in job_dept
+            for word in query_words
+        )
         
         # Match location
-        location_match = not location_lower or location_lower in job.get("location", "").lower()
+        location_match = not location_lower or location_lower in job_location
         
         if query_match and location_match:
             filtered_jobs.append(job)
