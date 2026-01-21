@@ -62,6 +62,7 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
+  const [jobSource, setJobSource] = useState("all"); // "all", "greenhouse", "jsearch"
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
@@ -86,7 +87,7 @@ export default function JobSearch({ user }) {
         setLocation(autoLocation);
         
         // Auto search with profile data
-        await searchJobsWithParams(autoQuery, autoLocation, "");
+        await searchJobsWithParams(autoQuery, autoLocation, "", "all");
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
