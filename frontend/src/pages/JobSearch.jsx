@@ -204,10 +204,12 @@ export default function JobSearch({ user }) {
     setLocation(smartLocation);
     setEmploymentType(empType);
 
-    await searchJobsWithParams(smartQuery, smartLocation, empType);
+    await searchJobsWithParams(smartQuery, smartLocation, empType, jobSource);
   };
 
   const searchJobs = async () => {
+    await searchJobsWithParams(query, location, employmentType, jobSource);
+  };
     if (!query.trim()) {
       toast.error("Please enter a search query");
       return;
