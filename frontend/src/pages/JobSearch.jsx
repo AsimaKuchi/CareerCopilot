@@ -96,7 +96,7 @@ export default function JobSearch({ user }) {
     }
   };
 
-  const searchJobsWithParams = async (searchQuery, searchLocation, searchEmploymentType) => {
+  const searchJobsWithParams = async (searchQuery, searchLocation, searchEmploymentType, source = jobSource) => {
     if (!searchQuery?.trim()) {
       return;
     }
