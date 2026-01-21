@@ -183,10 +183,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Greenhouse Job Search with Streaming"
     - "Job Search with Streaming Support"
-  stuck_tasks:
-    - "Greenhouse Job Search with Streaming"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
