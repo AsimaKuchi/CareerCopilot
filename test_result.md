@@ -101,3 +101,92 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Quality-first job matching platform with Greenhouse job scraping, human-in-the-loop application workflow, and Chrome extension for auto-filling applications"
+
+backend:
+  - task: "Greenhouse Job Search with Streaming"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported 'failed to search jobs' due to timeout (~48 seconds for 50+ companies)"
+      - working: "NA"
+        agent: "main"
+        comment: "Refactored /api/jobs/greenhouse/search to use Server-Sent Events (SSE). Now streams jobs as they're found from each company, providing immediate feedback. Removed synchronous bulk processing that caused timeout."
+
+  - task: "Job Search API (JSearch)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Working correctly with JSearch API"
+
+  - task: "Application Save and Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Applications can be saved, optimized resume/cover letter generated"
+
+frontend:
+  - task: "Job Search with Streaming Support"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/JobSearch.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported Greenhouse search failing"
+      - working: "NA"
+        agent: "main"
+        comment: "Updated frontend to handle SSE streaming. Jobs now appear in real-time as they're found. Uses ReadableStream API to parse Server-Sent Events."
+
+  - task: "Applications Dashboard"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Applications.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Human-in-the-loop workflow working correctly"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Greenhouse Job Search with Streaming"
+    - "Job Search with Streaming Support"
+  stuck_tasks:
+    - "Greenhouse Job Search with Streaming"
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Refactored Greenhouse job search to use Server-Sent Events (SSE) streaming. Backend now processes companies sequentially and streams jobs as they're found, eliminating the 48-second timeout issue. Frontend updated to handle SSE and display jobs in real-time. Need testing agent to verify: 1) Jobs stream in real-time 2) No timeout errors 3) Match scoring works correctly 4) UI updates properly as jobs arrive. Please test with query='engineer' and empty location."
