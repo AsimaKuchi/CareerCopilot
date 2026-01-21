@@ -107,7 +107,7 @@ export default function JobSearch({ user }) {
       
       // Search based on selected source
       if (source === "all" || source === "greenhouse") {
-        // Search Greenhouse
+        // Search Greenhouse with streaming
         try {
           const ghResponse = await fetch(`${API}/jobs/greenhouse/search`, {
             method: "POST",
@@ -119,12 +119,52 @@ export default function JobSearch({ user }) {
             }),
           });
           
-          if (ghResponse.ok) {
-            const ghData = await ghResponse.json();
-            allJobs = [...allJobs, ...(ghData.jobs || [])];
+          if (ghResponse.ok && ghResponse.body) {
+            // Handle Server-Sent Events stream
+            const reader = ghResponse.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              
+              if (done) break;
+              
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || ""; // Keep incomplete line in buffer
+              
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const jsonStr = line.slice(6);
+                  try {
+                    const data = JSON.parse(jsonStr);
+                    
+                    if (data.done) {
+                      // Stream completed
+                      console.log(`Greenhouse search completed: ${data.total} jobs found`);
+                    } else {
+                      // New job received - add it to the list immediately
+                      allJobs.push(data);
+                      
+                      // Update UI with new job
+                      setJobs([...allJobs].sort((a, b) => {
+                        const aSkip = a.match_recommendation === "skip" ? 0 : 1;
+                        const bSkip = b.match_recommendation === "skip" ? 0 : 1;
+                        if (aSkip !== bSkip) return bSkip - aSkip;
+                        return (b.match_score || 0) - (a.match_score || 0);
+                      }));
+                    }
+                  } catch (parseErr) {
+                    console.error("Failed to parse SSE data:", parseErr);
+                  }
+                }
+              }
+            }
           }
         } catch (err) {
           console.error("Greenhouse search error:", err);
+          toast.error("Failed to search Greenhouse jobs");
         }
       }
       
