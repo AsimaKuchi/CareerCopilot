@@ -124,6 +124,138 @@ class JobMatchAPITester:
         
         return success, jobs
 
+    def test_greenhouse_streaming(self):
+        """Test Greenhouse SSE streaming functionality"""
+        print("\n" + "="*50)
+        print("TESTING GREENHOUSE STREAMING")
+        print("="*50)
+        
+        url = f"{self.base_url}/api/jobs/greenhouse/search"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}',
+            'Accept': 'text/event-stream'
+        }
+        
+        search_data = {
+            "query": "engineer",
+            "location": ""
+        }
+        
+        self.tests_run += 1
+        print(f"\n🔍 Testing Greenhouse SSE Streaming...")
+        print(f"   URL: {url}")
+        print(f"   Query: {search_data['query']}")
+        
+        start_time = time.time()
+        jobs_received = 0
+        completion_received = False
+        first_job_time = None
+        
+        try:
+            response = requests.post(url, json=search_data, headers=headers, stream=True, timeout=70)
+            
+            # Check response headers
+            content_type = response.headers.get('content-type', '')
+            if 'text/event-stream' not in content_type:
+                print(f"❌ FAILED - Expected text/event-stream, got {content_type}")
+                self.failed_tests.append({
+                    'name': 'Greenhouse SSE Content Type',
+                    'error': f'Wrong content type: {content_type}'
+                })
+                return False
+            
+            print(f"✅ Content-Type: {content_type}")
+            
+            # Process streaming response
+            for line in response.iter_lines(decode_unicode=True):
+                if line.startswith('data: '):
+                    data_str = line[6:]  # Remove 'data: ' prefix
+                    try:
+                        data = json.loads(data_str)
+                        
+                        if data.get('done'):
+                            completion_received = True
+                            total_jobs = data.get('total', 0)
+                            elapsed = time.time() - start_time
+                            print(f"✅ Completion message received: {total_jobs} jobs in {elapsed:.2f}s")
+                            break
+                        else:
+                            jobs_received += 1
+                            if first_job_time is None:
+                                first_job_time = time.time() - start_time
+                                print(f"✅ First job received after {first_job_time:.2f}s")
+                            
+                            # Validate job structure
+                            required_fields = ['job_id', 'title', 'company', 'match_score']
+                            missing_fields = [field for field in required_fields if field not in data]
+                            if missing_fields:
+                                print(f"⚠️  Job missing fields: {missing_fields}")
+                            
+                            if jobs_received <= 3:  # Show first few jobs
+                                print(f"   Job {jobs_received}: {data.get('title', 'N/A')} at {data.get('company', 'N/A')} (Score: {data.get('match_score', 'N/A')})")
+                    
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Invalid JSON in stream: {data_str[:100]}")
+                        continue
+            
+            elapsed_total = time.time() - start_time
+            
+            # Validate streaming performance
+            success = True
+            if not completion_received:
+                print(f"❌ FAILED - No completion message received")
+                success = False
+            
+            if elapsed_total > 60:
+                print(f"❌ FAILED - Streaming took too long: {elapsed_total:.2f}s")
+                success = False
+            else:
+                print(f"✅ Total streaming time: {elapsed_total:.2f}s")
+            
+            if first_job_time and first_job_time > 5:
+                print(f"⚠️  First job took {first_job_time:.2f}s (should be < 5s)")
+            
+            if jobs_received < 5:
+                print(f"⚠️  Only {jobs_received} jobs found (expected 10+)")
+            else:
+                print(f"✅ Received {jobs_received} jobs")
+            
+            if success:
+                self.tests_passed += 1
+                print(f"✅ PASSED - Greenhouse streaming working correctly")
+            else:
+                self.failed_tests.append({
+                    'name': 'Greenhouse SSE Streaming',
+                    'error': 'Streaming validation failed'
+                })
+            
+            return success
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 70s")
+            self.failed_tests.append({'name': 'Greenhouse SSE Streaming', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Greenhouse SSE Streaming', 'error': str(e)})
+            return False
+
+    def test_greenhouse_companies(self):
+        """Test Greenhouse companies endpoint"""
+        print("\n🔍 Testing Greenhouse Companies...")
+        success, companies = self.run_test("Get Greenhouse Companies", "GET", "jobs/greenhouse/companies", 200)
+        
+        if success and companies:
+            company_list = companies.get('companies', [])
+            print(f"   Found {len(company_list)} companies")
+            if len(company_list) >= 10:
+                print(f"✅ Good company coverage: {company_list[:5]}...")
+            else:
+                print(f"⚠️  Limited companies: {company_list}")
+        
+        return success
+
     def test_ai_endpoints(self):
         """Test AI-powered features"""
         print("\n" + "="*50)
