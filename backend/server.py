@@ -410,6 +410,243 @@ def extract_text_from_pdf(content: bytes) -> str:
         logger.error(f"Error extracting PDF text: {str(e)}")
         return ""
 
+# ========================
+# GREENHOUSE JOB SCRAPER
+# ========================
+
+async def fetch_greenhouse_company_jobs(company: str) -> List[Dict]:
+    """Fetch all jobs from a company's Greenhouse board using their API."""
+    jobs = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Greenhouse has a public API for job listings
+            api_url = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs"
+            response = await client.get(api_url)
+            
+            if response.status_code == 200:
+                data = response.json()
+                for job in data.get("jobs", []):
+                    jobs.append({
+                        "job_id": f"gh_{company}_{job.get('id')}",
+                        "greenhouse_id": job.get("id"),
+                        "title": job.get("title"),
+                        "company": company.replace("-", " ").title(),
+                        "company_slug": company,
+                        "location": job.get("location", {}).get("name", ""),
+                        "department": job.get("departments", [{}])[0].get("name", "") if job.get("departments") else "",
+                        "employment_type": job.get("employment_type", "FULLTIME"),
+                        "apply_link": job.get("absolute_url"),
+                        "posted_at": job.get("updated_at"),
+                        "source": "greenhouse"
+                    })
+            else:
+                logger.debug(f"Greenhouse API returned {response.status_code} for {company}")
+                
+    except Exception as e:
+        logger.error(f"Error fetching Greenhouse jobs for {company}: {str(e)}")
+    
+    return jobs
+
+async def fetch_greenhouse_job_details(company: str, job_id: int) -> Optional[Dict]:
+    """Fetch detailed job description from Greenhouse."""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            api_url = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs/{job_id}"
+            response = await client.get(api_url)
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Parse HTML content to plain text
+                content_html = data.get("content", "")
+                if content_html:
+                    soup = BeautifulSoup(content_html, 'html.parser')
+                    description = soup.get_text(separator='\n', strip=True)
+                else:
+                    description = ""
+                
+                return {
+                    "description": description,
+                    "full_description": description,
+                    "requirements": data.get("requirements", ""),
+                    "departments": [d.get("name") for d in data.get("departments", [])],
+                    "offices": [o.get("name") for o in data.get("offices", [])],
+                    "metadata": data.get("metadata", [])
+                }
+    except Exception as e:
+        logger.error(f"Error fetching Greenhouse job details: {str(e)}")
+    
+    return None
+
+async def search_greenhouse_jobs(query: str = "", location: str = "", limit: int = 50) -> List[Dict]:
+    """Search for jobs across multiple Greenhouse company boards."""
+    all_jobs = []
+    query_lower = query.lower() if query else ""
+    location_lower = location.lower() if location else ""
+    
+    # Fetch jobs from multiple companies in parallel
+    tasks = [fetch_greenhouse_company_jobs(company) for company in GREENHOUSE_COMPANIES]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    for result in results:
+        if isinstance(result, list):
+            all_jobs.extend(result)
+    
+    # Filter by query and location
+    filtered_jobs = []
+    for job in all_jobs:
+        # Match query against title, company, department
+        query_match = not query_lower or any([
+            query_lower in job.get("title", "").lower(),
+            query_lower in job.get("company", "").lower(),
+            query_lower in job.get("department", "").lower()
+        ])
+        
+        # Match location
+        location_match = not location_lower or location_lower in job.get("location", "").lower()
+        
+        if query_match and location_match:
+            filtered_jobs.append(job)
+    
+    # Sort by posted date (most recent first)
+    filtered_jobs.sort(key=lambda x: x.get("posted_at", ""), reverse=True)
+    
+    return filtered_jobs[:limit]
+
+async def enrich_greenhouse_job(job: Dict, profile: Optional[Dict]) -> Dict:
+    """Enrich a Greenhouse job with full description and match scoring."""
+    # Fetch full job details
+    if job.get("greenhouse_id") and job.get("company_slug"):
+        details = await fetch_greenhouse_job_details(job["company_slug"], job["greenhouse_id"])
+        if details:
+            job["description"] = details.get("description", "")[:500] + "..."
+            job["full_description"] = details.get("description", "")
+    
+    # Calculate match score
+    if profile:
+        # Create a job dict compatible with evaluate_job_match
+        job_for_match = {
+            "job_title": job.get("title"),
+            "employer_name": job.get("company"),
+            "job_description": job.get("full_description", job.get("description", "")),
+            "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
+            "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
+            "job_is_remote": "remote" in job.get("location", "").lower(),
+            "job_min_salary": None,
+            "job_max_salary": None
+        }
+        match_eval = evaluate_job_match(job_for_match, profile)
+        job.update({
+            "match_score": match_eval["score"],
+            "match_recommendation": match_eval["recommendation"],
+            "match_strengths": match_eval["strengths"],
+            "match_gaps": match_eval["gaps"],
+            "match_reasoning": match_eval["match_reasoning"],
+            "skip_reason": match_eval["skip_reason"]
+        })
+    else:
+        job.update({
+            "match_score": 50,
+            "match_recommendation": "review",
+            "match_strengths": [],
+            "match_gaps": ["Complete your profile for better matching"],
+            "match_reasoning": "Profile incomplete",
+            "skip_reason": None
+        })
+    
+    return job
+
+@api_router.post("/jobs/greenhouse/search")
+async def search_greenhouse(request: Request):
+    """Search for jobs from Greenhouse-powered career pages."""
+    user = await get_current_user(request)
+    
+    body = await request.json()
+    query = body.get("query", "")
+    location = body.get("location", "")
+    
+    logger.info(f"Greenhouse search: query='{query}', location='{location}'")
+    
+    # Search Greenhouse jobs
+    jobs = await search_greenhouse_jobs(query=query, location=location, limit=30)
+    
+    if not jobs:
+        return {
+            "jobs": [],
+            "source": "greenhouse",
+            "total": 0,
+            "message": "No Greenhouse jobs found. Try broadening your search."
+        }
+    
+    # Get user profile for matching
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Get applied job IDs to filter duplicates
+    existing_applications = await db.applications.find(
+        {"user_id": user.user_id},
+        {"job_id": 1, "_id": 0}
+    ).to_list(500)
+    applied_job_ids = set(app.get("job_id") for app in existing_applications if app.get("job_id"))
+    
+    # Filter out already applied jobs
+    jobs = [job for job in jobs if job.get("job_id") not in applied_job_ids]
+    
+    # Enrich jobs with details and match scores (limit concurrent requests)
+    enriched_jobs = []
+    for job in jobs[:20]:  # Limit to 20 to avoid rate limiting
+        enriched = await enrich_greenhouse_job(job, profile)
+        enriched_jobs.append(enriched)
+    
+    # Sort by match score
+    enriched_jobs.sort(key=lambda x: (0 if x.get("match_recommendation") == "skip" else 1, x.get("match_score", 0)), reverse=True)
+    
+    return {
+        "jobs": enriched_jobs,
+        "source": "greenhouse",
+        "total": len(enriched_jobs)
+    }
+
+@api_router.get("/jobs/greenhouse/companies")
+async def get_greenhouse_companies(request: Request):
+    """Get list of known Greenhouse company boards."""
+    await get_current_user(request)
+    return {"companies": GREENHOUSE_COMPANIES}
+
+@api_router.post("/jobs/greenhouse/add-company")
+async def add_greenhouse_company(request: Request):
+    """Add a new company to the Greenhouse search list."""
+    await get_current_user(request)
+    body = await request.json()
+    company = body.get("company", "").lower().strip()
+    
+    if not company:
+        raise HTTPException(status_code=400, detail="Company name required")
+    
+    # Validate that the company has a Greenhouse board
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            api_url = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs"
+            response = await client.get(api_url)
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail=f"No Greenhouse board found for '{company}'")
+            
+            data = response.json()
+            job_count = len(data.get("jobs", []))
+            
+            if company not in GREENHOUSE_COMPANIES:
+                GREENHOUSE_COMPANIES.append(company)
+            
+            return {
+                "message": f"Added {company} with {job_count} jobs",
+                "company": company,
+                "job_count": job_count
+            }
+        except httpx.RequestError:
+            raise HTTPException(status_code=400, detail=f"Could not verify Greenhouse board for '{company}'")
+
 @api_router.post("/profile/resume")
 async def upload_resume(request: Request, file: UploadFile = File(...)):
     """Upload and parse resume from DOCX, PDF, or TXT files."""
