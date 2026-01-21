@@ -327,6 +327,11 @@ class JobMatchAPITester:
         self.test_auth_endpoints()
         self.test_profile_endpoints()
         self.test_job_search_endpoints()
+        
+        # Test Greenhouse streaming (high priority)
+        self.test_greenhouse_companies()
+        self.test_greenhouse_streaming()
+        
         self.test_ai_endpoints()
         self.test_application_endpoints()
         self.test_dashboard_endpoints()
