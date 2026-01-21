@@ -208,14 +208,11 @@ export default function JobSearch({ user }) {
   };
 
   const searchJobs = async () => {
-    await searchJobsWithParams(query, location, employmentType, jobSource);
-  };
     if (!query.trim()) {
       toast.error("Please enter a search query");
       return;
     }
-
-    await searchJobsWithParams(query, location, employmentType);
+    await searchJobsWithParams(query, location, employmentType, jobSource);
   };
 
   const getMatchScoreClass = (score) => {
