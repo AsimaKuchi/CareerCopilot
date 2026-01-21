@@ -13,6 +13,9 @@ from datetime import datetime, timezone, timedelta
 import httpx
 import base64
 import io
+import asyncio
+import re
+from bs4 import BeautifulSoup
 
 # Document parsing imports
 from docx import Document
@@ -29,6 +32,21 @@ db = client[os.environ['DB_NAME']]
 # API Keys
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
+
+# Known Greenhouse company boards (will be expanded dynamically)
+GREENHOUSE_COMPANIES = [
+    "airbnb", "stripe", "figma", "notion", "airtable", "dropbox", "slack",
+    "twitch", "discord", "spotify", "pinterest", "lyft", "doordash",
+    "instacart", "robinhood", "coinbase", "plaid", "affirm", "chime",
+    "brex", "ramp", "rippling", "gusto", "lattice", "carta", "deel",
+    "remote", "gitlab", "datadog", "mongodb", "elastic", "snowflake",
+    "databricks", "confluent", "hashicorp", "cockroachlabs", "planetscale",
+    "vercel", "netlify", "render", "railway", "supabase", "neon",
+    "openai", "anthropic", "cohere", "huggingface", "scale", "labelbox",
+    "weights-and-biases", "mlflow", "prefect", "dagster", "airbyte",
+    "fivetran", "dbt-labs", "looker", "metabase", "preset", "hex",
+    "retool", "airplane", "appsmith", "budibase", "tooljet"
+]
 
 # Create the main app
 app = FastAPI()
