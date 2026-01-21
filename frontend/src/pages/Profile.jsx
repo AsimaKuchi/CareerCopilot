@@ -631,6 +631,50 @@ export default function Profile({ user }) {
               </Select>
             </CardContent>
           </Card>
+
+          {/* Browser Extension Card */}
+          <Card className="glass-light border-indigo-500/30" data-testid="extension-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-indigo-400" />
+                Auto-Fill Browser Extension
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Install our Chrome extension to automatically fill job application forms with your tailored resume and cover letter.
+              </p>
+              <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                <h4 className="text-sm font-medium text-indigo-400 mb-2">How it works:</h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Install the extension (one-time setup)</li>
+                  <li>Find jobs and generate tailored documents</li>
+                  <li>Go to any Greenhouse/Lever job application</li>
+                  <li>Click the floating &quot;Auto-Fill&quot; button</li>
+                  <li>Review and submit!</li>
+                </ol>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => window.open('/browser-extension.zip', '_blank')}
+                  className="bg-indigo-500 hover:bg-indigo-600"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Extension
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked', '_blank')}
+                  className="border-white/10"
+                >
+                  Installation Guide
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Supports: Greenhouse, Lever, and more coming soon
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
