@@ -569,25 +569,14 @@ async def enrich_greenhouse_job(job: Dict, profile: Optional[Dict]) -> Dict:
 
 @api_router.post("/jobs/greenhouse/search")
 async def search_greenhouse(request: Request):
-    """Search for jobs from Greenhouse-powered career pages."""
+    """Search for jobs from Greenhouse-powered career pages with streaming."""
     user = await get_current_user(request)
     
     body = await request.json()
     query = body.get("query", "")
     location = body.get("location", "")
     
-    logger.info(f"Greenhouse search: query='{query}', location='{location}'")
-    
-    # Search Greenhouse jobs
-    jobs = await search_greenhouse_jobs(query=query, location=location, limit=30)
-    
-    if not jobs:
-        return {
-            "jobs": [],
-            "source": "greenhouse",
-            "total": 0,
-            "message": "No Greenhouse jobs found. Try broadening your search."
-        }
+    logger.info(f"Greenhouse search (streaming): query='{query}', location='{location}'")
     
     # Get user profile for matching
     profile = await db.user_profiles.find_one(
@@ -602,51 +591,107 @@ async def search_greenhouse(request: Request):
     ).to_list(500)
     applied_job_ids = set(app.get("job_id") for app in existing_applications if app.get("job_id"))
     
-    # Filter out already applied jobs
-    jobs = [job for job in jobs if job.get("job_id") not in applied_job_ids]
-    
-    # Quick match scoring without fetching full details (faster)
-    enriched_jobs = []
-    for job in jobs[:20]:
-        # Calculate match score based on available info (without full description)
-        if profile:
-            job_for_match = {
-                "job_title": job.get("title"),
-                "employer_name": job.get("company"),
-                "job_description": job.get("title", "") + " " + job.get("department", ""),
-                "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
-                "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
-                "job_is_remote": "remote" in job.get("location", "").lower(),
-                "job_min_salary": None,
-                "job_max_salary": None
-            }
-            match_eval = evaluate_job_match(job_for_match, profile)
-            job.update({
-                "match_score": match_eval["score"],
-                "match_recommendation": match_eval["recommendation"],
-                "match_strengths": match_eval["strengths"],
-                "match_gaps": match_eval["gaps"],
-                "match_reasoning": match_eval["match_reasoning"],
-                "skip_reason": match_eval["skip_reason"]
-            })
-        else:
-            job.update({
-                "match_score": 50,
-                "match_recommendation": "review",
-                "match_strengths": [],
-                "match_gaps": ["Complete your profile for better matching"],
-                "match_reasoning": "Profile incomplete",
-                "skip_reason": None
-            })
+    async def stream_greenhouse_jobs():
+        """Generator function that streams jobs as they're found."""
+        import json
         
-        # Add placeholder description - will be fetched when user clicks
-        job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
-        job["full_description"] = ""
+        query_words = query.lower().split() if query else []
+        location_lower = location.lower() if location else ""
         
-        enriched_jobs.append(job)
+        jobs_found = 0
+        
+        # Process companies one by one and stream results
+        for company in GREENHOUSE_COMPANIES:
+            try:
+                # Fetch jobs from this company
+                company_jobs = await fetch_greenhouse_company_jobs(company)
+                
+                if not company_jobs:
+                    continue
+                
+                # Filter and enrich jobs from this company
+                for job in company_jobs:
+                    # Skip already applied jobs
+                    if job.get("job_id") in applied_job_ids:
+                        continue
+                    
+                    # Filter by query
+                    job_title = job.get("title", "").lower()
+                    job_company = job.get("company", "").lower()
+                    job_dept = job.get("department", "").lower()
+                    job_location = job.get("location", "").lower()
+                    
+                    query_match = not query_words or any(
+                        word in job_title or word in job_company or word in job_dept
+                        for word in query_words
+                    )
+                    
+                    location_match = not location_lower or location_lower in job_location
+                    
+                    if not (query_match and location_match):
+                        continue
+                    
+                    # Calculate match score
+                    if profile:
+                        job_for_match = {
+                            "job_title": job.get("title"),
+                            "employer_name": job.get("company"),
+                            "job_description": job.get("title", "") + " " + job.get("department", ""),
+                            "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
+                            "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
+                            "job_is_remote": "remote" in job.get("location", "").lower(),
+                            "job_min_salary": None,
+                            "job_max_salary": None
+                        }
+                        match_eval = evaluate_job_match(job_for_match, profile)
+                        job.update({
+                            "match_score": match_eval["score"],
+                            "match_recommendation": match_eval["recommendation"],
+                            "match_strengths": match_eval["strengths"],
+                            "match_gaps": match_eval["gaps"],
+                            "match_reasoning": match_eval["match_reasoning"],
+                            "skip_reason": match_eval["skip_reason"]
+                        })
+                    else:
+                        job.update({
+                            "match_score": 50,
+                            "match_recommendation": "review",
+                            "match_strengths": [],
+                            "match_gaps": ["Complete your profile for better matching"],
+                            "match_reasoning": "Profile incomplete",
+                            "skip_reason": None
+                        })
+                    
+                    # Add description
+                    job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
+                    job["full_description"] = ""
+                    
+                    # Stream this job immediately
+                    jobs_found += 1
+                    yield f"data: {json.dumps(job)}\n\n"
+                    
+                    # Limit to 30 jobs
+                    if jobs_found >= 30:
+                        break
+                
+                if jobs_found >= 30:
+                    break
+                    
+            except Exception as e:
+                logger.debug(f"Error fetching from {company}: {e}")
+                continue
+        
+        # Send completion message
+        yield f"data: {json.dumps({'done': True, 'total': jobs_found})}\n\n"
     
-    # Sort by match score
-    enriched_jobs.sort(key=lambda x: (0 if x.get("match_recommendation") == "skip" else 1, x.get("match_score", 0)), reverse=True)
+    return StreamingResponse(
+        stream_greenhouse_jobs(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
     
     return {
         "jobs": enriched_jobs,
