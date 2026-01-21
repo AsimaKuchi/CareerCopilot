@@ -103,28 +103,72 @@ export default function JobSearch({ user }) {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API}/jobs/search`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          query: searchQuery.trim(),
-          location: searchLocation?.trim() || null,
-          employment_types: searchEmploymentType || null,
-          page: 1,
-          num_pages: 1,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to search jobs");
-
-      const data = await response.json();
-      setJobs(data.jobs || []);
+      let allJobs = [];
       
-      if (data.jobs?.length === 0) {
+      // Search based on selected source
+      if (source === "all" || source === "greenhouse") {
+        // Search Greenhouse
+        try {
+          const ghResponse = await fetch(`${API}/jobs/greenhouse/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              query: searchQuery.trim(),
+              location: searchLocation?.trim() || "",
+            }),
+          });
+          
+          if (ghResponse.ok) {
+            const ghData = await ghResponse.json();
+            allJobs = [...allJobs, ...(ghData.jobs || [])];
+          }
+        } catch (err) {
+          console.error("Greenhouse search error:", err);
+        }
+      }
+      
+      if (source === "all" || source === "jsearch") {
+        // Search JSearch
+        try {
+          const jsResponse = await fetch(`${API}/jobs/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              query: searchQuery.trim(),
+              location: searchLocation?.trim() || null,
+              employment_types: searchEmploymentType || null,
+              page: 1,
+              num_pages: 1,
+            }),
+          });
+
+          if (jsResponse.ok) {
+            const jsData = await jsResponse.json();
+            allJobs = [...allJobs, ...(jsData.jobs || [])];
+          }
+        } catch (err) {
+          console.error("JSearch error:", err);
+        }
+      }
+      
+      // Sort combined results by match score
+      allJobs.sort((a, b) => {
+        const aSkip = a.match_recommendation === "skip" ? 0 : 1;
+        const bSkip = b.match_recommendation === "skip" ? 0 : 1;
+        if (aSkip !== bSkip) return bSkip - aSkip;
+        return (b.match_score || 0) - (a.match_score || 0);
+      });
+      
+      setJobs(allJobs);
+      
+      if (allJobs.length === 0) {
         toast.info("No jobs found. Try different keywords.");
       } else {
-        toast.success(`Found ${data.jobs.length} jobs matched to your profile!`);
+        const ghCount = allJobs.filter(j => j.source === "greenhouse").length;
+        const jsCount = allJobs.filter(j => j.source === "jsearch").length;
+        toast.success(`Found ${allJobs.length} jobs (${ghCount} Greenhouse, ${jsCount} other)`);
       }
     } catch (error) {
       toast.error("Failed to search jobs. Please try again.");
