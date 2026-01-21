@@ -605,11 +605,45 @@ async def search_greenhouse(request: Request):
     # Filter out already applied jobs
     jobs = [job for job in jobs if job.get("job_id") not in applied_job_ids]
     
-    # Enrich jobs with details and match scores (limit concurrent requests)
+    # Quick match scoring without fetching full details (faster)
     enriched_jobs = []
-    for job in jobs[:20]:  # Limit to 20 to avoid rate limiting
-        enriched = await enrich_greenhouse_job(job, profile)
-        enriched_jobs.append(enriched)
+    for job in jobs[:20]:
+        # Calculate match score based on available info (without full description)
+        if profile:
+            job_for_match = {
+                "job_title": job.get("title"),
+                "employer_name": job.get("company"),
+                "job_description": job.get("title", "") + " " + job.get("department", ""),
+                "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
+                "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
+                "job_is_remote": "remote" in job.get("location", "").lower(),
+                "job_min_salary": None,
+                "job_max_salary": None
+            }
+            match_eval = evaluate_job_match(job_for_match, profile)
+            job.update({
+                "match_score": match_eval["score"],
+                "match_recommendation": match_eval["recommendation"],
+                "match_strengths": match_eval["strengths"],
+                "match_gaps": match_eval["gaps"],
+                "match_reasoning": match_eval["match_reasoning"],
+                "skip_reason": match_eval["skip_reason"]
+            })
+        else:
+            job.update({
+                "match_score": 50,
+                "match_recommendation": "review",
+                "match_strengths": [],
+                "match_gaps": ["Complete your profile for better matching"],
+                "match_reasoning": "Profile incomplete",
+                "skip_reason": None
+            })
+        
+        # Add placeholder description - will be fetched when user clicks
+        job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
+        job["full_description"] = ""
+        
+        enriched_jobs.append(job)
     
     # Sort by match score
     enriched_jobs.sort(key=lambda x: (0 if x.get("match_recommendation") == "skip" else 1, x.get("match_score", 0)), reverse=True)
