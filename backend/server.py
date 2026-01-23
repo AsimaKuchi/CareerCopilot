@@ -852,9 +852,6 @@ async def search_greenhouse(request: Request):
             "Connection": "keep-alive",
         }
     )
-            "Connection": "keep-alive",
-        }
-    )
 
 @api_router.get("/jobs/greenhouse/companies")
 async def get_greenhouse_companies(request: Request):
