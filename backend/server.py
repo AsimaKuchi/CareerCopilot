@@ -139,6 +139,7 @@ class ProfileUpdate(BaseModel):
     seniority_level: Optional[str] = None
     phone_number: Optional[str] = None
     linkedin_url: Optional[str] = None
+    application_intensity: Optional[str] = None
 
 class JobApplication(BaseModel):
     model_config = ConfigDict(extra="ignore")
