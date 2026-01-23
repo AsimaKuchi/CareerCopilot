@@ -2120,9 +2120,6 @@ async def auto_submit_application(request: Request, application_id: str):
             "applications_today": daily_count + 1 if profile else 1,
             "daily_limit": daily_limit if profile else 10
         }
-            "message": result["message"],
-            "application": updated
-        }
     else:
         # Return error with fallback link
         return {
