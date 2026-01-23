@@ -518,6 +518,60 @@ export default function Profile({ user }) {
             </CardContent>
           </Card>
 
+          {/* Application Intensity Card */}
+          <Card className="glass-light" data-testid="intensity-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-purple-400" />
+                Application Intensity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Label className="text-foreground mb-2 block">How many applications would you like to submit?</Label>
+              <Select
+                value={profile?.application_intensity || "balanced"}
+                onValueChange={(value) => updateProfile({ application_intensity: value })}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conservative">
+                    <div className="flex flex-col">
+                      <span className="font-semibold">Conservative</span>
+                      <span className="text-xs text-gray-400">90+ match score • Max 5 applications/day</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="balanced">
+                    <div className="flex flex-col">
+                      <span className="font-semibold">Balanced (Recommended)</span>
+                      <span className="text-xs text-gray-400">70+ match score • Max 10 applications/day</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="ambitious">
+                    <div className="flex flex-col">
+                      <span className="font-semibold">Ambitious</span>
+                      <span className="text-xs text-gray-400">50+ match score • Max 20 applications/day</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-gray-400 mt-2">
+                This controls which jobs appear in your search results and sets your daily application limit.
+              </p>
+              {profile?.daily_applications_count > 0 && profile?.last_application_date === new Date().toISOString().split('T')[0] && (
+                <div className="mt-3 p-2 bg-indigo-500/10 rounded border border-indigo-500/20">
+                  <p className="text-sm text-indigo-300">
+                    📊 Today's progress: {profile.daily_applications_count}/{
+                      profile.application_intensity === 'conservative' ? 5 :
+                      profile.application_intensity === 'ambitious' ? 20 : 10
+                    } applications
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Job Type Card */}
           <Card className="glass-light" data-testid="job-type-card">
             <CardHeader>
