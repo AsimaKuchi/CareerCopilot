@@ -1567,6 +1567,10 @@ async def auto_submit_greenhouse(app_data: Dict, user_data: Dict, profile_data: 
     last_name = name_parts[1] if len(name_parts) > 1 else ""
     email = user_data.get("email", "")
     
+    # Get contact info from profile
+    phone = profile_data.get("phone_number", "")
+    linkedin = profile_data.get("linkedin_url", "")
+    
     # Get resume and cover letter
     resume_text = app_data.get("optimized_resume") or profile_data.get("resume_text", "")
     cover_letter = app_data.get("cover_letter", "")
