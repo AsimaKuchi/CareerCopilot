@@ -1661,6 +1661,36 @@ async def auto_submit_greenhouse(app_data: Dict, user_data: Dict, profile_data: 
                     except:
                         continue
                 
+                # Fill phone number (if provided)
+                if phone:
+                    phone_selectors = [
+                        'input[name="phone"]',
+                        'input[type="tel"]',
+                        'input[id*="phone"]',
+                        'input[autocomplete="tel"]'
+                    ]
+                    for selector in phone_selectors:
+                        try:
+                            await page.fill(selector, phone, timeout=2000)
+                            break
+                        except:
+                            continue
+                
+                # Fill LinkedIn URL (if provided)
+                if linkedin:
+                    linkedin_selectors = [
+                        'input[name="linkedin"]',
+                        'input[name="linkedin_url"]',
+                        'input[id*="linkedin"]',
+                        'input[placeholder*="linkedin" i]'
+                    ]
+                    for selector in linkedin_selectors:
+                        try:
+                            await page.fill(selector, linkedin, timeout=2000)
+                            break
+                        except:
+                            continue
+                
                 # Fill resume/cover letter if there are textareas
                 textarea_count = await page.locator('textarea').count()
                 if textarea_count > 0 and (resume_text or cover_letter):
