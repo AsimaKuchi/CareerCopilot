@@ -512,6 +512,92 @@ async def fetch_greenhouse_job_details(company: str, job_id: int) -> Optional[Di
     
     return None
 
+async def fetch_lever_company_jobs(company: str) -> List[Dict]:
+    """Fetch job listings from a Lever company board."""
+    jobs = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Lever API endpoint
+            api_url = f"https://api.lever.co/v0/postings/{company}"
+            response = await client.get(api_url)
+            
+            if response.status_code == 200:
+                data = response.json()
+                for job in data:
+                    jobs.append({
+                        "job_id": f"lv_{company}_{job.get('id')}",
+                        "lever_id": job.get("id"),
+                        "title": job.get("text"),
+                        "company": company.replace("-", " ").title(),
+                        "company_slug": company,
+                        "location": job.get("categories", {}).get("location", ""),
+                        "department": job.get("categories", {}).get("team", ""),
+                        "employment_type": job.get("categories", {}).get("commitment", "Full-time"),
+                        "apply_link": job.get("hostedUrl") or job.get("applyUrl"),
+                        "posted_at": job.get("createdAt"),
+                        "source": "lever"
+                    })
+            else:
+                logger.debug(f"Lever API returned {response.status_code} for {company}")
+                
+    except Exception as e:
+        logger.error(f"Error fetching Lever jobs for {company}: {str(e)}")
+    
+    return jobs
+
+async def fetch_ashby_company_jobs(company: str) -> List[Dict]:
+    """Fetch job listings from an Ashby company board."""
+    jobs = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Ashby uses jobs.ashbyhq.com/{company}
+            api_url = f"https://jobs.ashbyhq.com/{company}"
+            response = await client.get(api_url)
+            
+            if response.status_code == 200:
+                # Ashby embeds job data in the HTML page
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Find all job postings (Ashby uses specific class names)
+                job_elements = soup.find_all('a', class_='ashby-job-posting-brief-list__list-item')
+                
+                for job_elem in job_elements:
+                    try:
+                        title = job_elem.find('h3').get_text(strip=True) if job_elem.find('h3') else ""
+                        location_elem = job_elem.find('div', class_='ashby-job-posting-brief-list__list-item-location')
+                        location = location_elem.get_text(strip=True) if location_elem else ""
+                        job_link = job_elem.get('href', '')
+                        
+                        if not job_link.startswith('http'):
+                            job_link = f"https://jobs.ashbyhq.com{job_link}"
+                        
+                        # Extract job ID from URL
+                        job_id = job_link.split('/')[-1] if job_link else ""
+                        
+                        jobs.append({
+                            "job_id": f"ab_{company}_{job_id}",
+                            "ashby_id": job_id,
+                            "title": title,
+                            "company": company.replace("-", " ").title(),
+                            "company_slug": company,
+                            "location": location,
+                            "department": "",
+                            "employment_type": "FULLTIME",
+                            "apply_link": job_link,
+                            "posted_at": "",
+                            "source": "ashby"
+                        })
+                    except Exception as e:
+                        logger.debug(f"Error parsing Ashby job element: {e}")
+                        continue
+            else:
+                logger.debug(f"Ashby returned {response.status_code} for {company}")
+                
+    except Exception as e:
+        logger.error(f"Error fetching Ashby jobs for {company}: {str(e)}")
+    
+    return jobs
+
 async def search_greenhouse_jobs(query: str = "", location: str = "", limit: int = 50) -> List[Dict]:
     """Search for jobs across multiple Greenhouse company boards."""
     all_jobs = []
