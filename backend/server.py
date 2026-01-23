@@ -1273,17 +1273,25 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
                 # Skip if no industry match found
                 skip_reasons.append(f"Company industry doesn't align with your selected focus areas: {', '.join([industry_display_names.get(i, i.title()) for i in industries])}")
     
-    # 6. Work Authorization Check (Canada-focused)
+    # 6. Work Authorization Check (STRICT)
     work_auth = profile.get("work_authorization", "")
     if work_auth == "require_sponsorship":
         # Check if job mentions no sponsorship available
         sponsorship_blockers = [
             "no sponsorship", "must be authorized", "no visa", 
             "canadian citizen", "permanent resident only", "pr only",
-            "must have valid work permit", "no lmia"
+            "must have valid work permit", "no lmia", "no work visa",
+            "us citizen", "authorized to work", "must be eligible"
         ]
-        if any(blocker in job_desc for blocker in sponsorship_blockers):
-            skip_reasons.append("Role does not offer work permit sponsorship")
+        if any(blocker in job_desc.lower() for blocker in sponsorship_blockers):
+            skip_reasons.append("Role does not offer work permit/visa sponsorship - requires existing work authorization")
+    
+    # Check if job is in a location that doesn't match user's work authorization
+    if work_auth in ["canadian_citizen", "permanent_resident"] and job_location:
+        # If user is Canada-authorized but job is clearly US-only
+        us_only_indicators = ["us only", "united states only", "must be located in us", "no remote", "must be in usa"]
+        if any(indicator in job_desc.lower() for indicator in us_only_indicators) and "canada" not in job_location:
+            skip_reasons.append("Role requires US work authorization - not available for Canadian residents")
     
     # 7. Salary Check (max +5 points)
     job_min_salary = job.get("job_min_salary")
