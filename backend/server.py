@@ -650,6 +650,12 @@ async def search_greenhouse(request: Request):
                             "job_max_salary": None
                         }
                         match_eval = evaluate_job_match(job_for_match, profile)
+                        
+                        # Log skipped jobs with reason
+                        if match_eval.get("skip_reason"):
+                            logger.info(f"SKIPPED: {job.get('title')} at {job.get('company')} - {match_eval['skip_reason']}")
+                            continue  # Don't stream skipped jobs
+                        
                         job.update({
                             "match_score": match_eval["score"],
                             "match_recommendation": match_eval["recommendation"],
