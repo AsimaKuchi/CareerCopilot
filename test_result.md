@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Quality-first job matching platform with Greenhouse job scraping, human-in-the-loop application workflow, and Chrome extension for auto-filling applications"
+user_problem_statement: "Quality-first job matching platform with Greenhouse job scraping, human-in-the-loop application workflow, Playwright auto-submit for approved applications, and Chrome extension for auto-filling applications"
 
 backend:
   - task: "Greenhouse Job Search with Streaming"
@@ -122,6 +122,18 @@ backend:
       - working: true
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED: ✅ SSE streaming working perfectly. Tested 5 different queries ('engineer', 'software engineer', 'data scientist', 'product manager', 'designer'). All tests passed with: 1) Correct text/event-stream content-type 2) Jobs streaming in real-time (first job within 0.14-0.27s) 3) Proper completion messages with done:true 4) No timeouts (all completed under 1s vs previous 48s) 5) Match scoring working with strengths/gaps 6) 30 jobs per search from 65 companies 7) Average match scores 47-73% 8) All backend logs clean with no errors. The timeout issue is completely resolved."
+
+  - task: "Playwright Auto-Submit for Approved Applications"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented POST /api/applications/{application_id}/auto-submit endpoint. Uses Playwright to automatically submit Greenhouse applications after user approval. Features: 1) Rate limiting (1 submission per 5 min) 2) CAPTCHA detection 3) Login requirement detection 4) Auto-fills first name, last name, email, resume/cover letter 5) Clicks submit button 6) Verifies success 7) Falls back to manual link if fails. Maintains human-in-the-loop principle - user must approve before auto-submit."
 
   - task: "Job Search API (JSearch)"
     implemented: true
