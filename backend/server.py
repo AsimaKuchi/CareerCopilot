@@ -1222,7 +1222,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     if not location_match and preferred_locations:
         gaps.append("Location may not match your preferences")
     
-    # 5. Industry Match (max +10 points)
+    # 5. Industry Match (max +10 points) - STRICT FILTERING
     industries = [ind.lower() for ind in profile.get("industries", [])]
     open_to_any = profile.get("open_to_any_industry", False)
     
@@ -1231,12 +1231,16 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         strengths.append(f"Your openness to various industries makes {company_name} a viable opportunity")
     elif industries:
         industry_keywords = {
-            "technology": ["tech", "software", "saas", "startup", "digital"],
-            "finance": ["bank", "financial", "fintech", "investment", "insurance"],
-            "healthcare": ["health", "medical", "pharma", "biotech", "hospital"],
-            "retail": ["retail", "ecommerce", "consumer", "shopping"],
-            "manufacturing": ["manufacturing", "industrial", "production"],
+            "technology": ["tech", "software", "saas", "startup", "digital", "app", "platform", "cloud"],
+            "finance": ["bank", "financial", "fintech", "investment", "insurance", "trading", "asset management"],
+            "healthcare": ["health", "medical", "pharma", "biotech", "hospital", "clinical", "diagnostic"],
+            "retail": ["retail", "ecommerce", "consumer", "shopping", "marketplace"],
+            "manufacturing": ["manufacturing", "industrial", "production", "supply chain"],
             "consulting": ["consulting", "advisory", "professional services"],
+            "education": ["education", "edtech", "learning", "university", "school"],
+            "media": ["media", "entertainment", "content", "streaming", "publishing"],
+            "energy": ["energy", "oil", "gas", "renewable", "utilities"],
+            "real estate": ["real estate", "property", "housing", "construction"],
         }
         
         industry_display_names = {
@@ -1246,18 +1250,28 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             "retail": "Retail/E-commerce",
             "manufacturing": "Manufacturing",
             "consulting": "Consulting/Professional Services",
+            "education": "Education/EdTech",
+            "media": "Media/Entertainment",
+            "energy": "Energy/Utilities",
+            "real estate": "Real Estate/Construction",
         }
         
+        industry_matched = False
         for ind in industries:
             keywords = industry_keywords.get(ind, [ind])
-            if any(kw in job_desc for kw in keywords):
+            if any(kw in job_desc or kw in company_name.lower() for kw in keywords):
                 display_name = industry_display_names.get(ind, ind.title())
                 strengths.append(f"{company_name} operates in the {display_name} sector, matching your target industry preference")
                 score += 10
+                industry_matched = True
                 break
-        else:
-            if industries:
-                gaps.append("Industry may not match your selected preferences")
+        
+        # STRICT RULE: Skip if industry doesn't match (unless user has <3 industries selected)
+        if not industry_matched:
+            if len(industries) >= 1:  # If user has selected specific industries
+                gaps.append("Industry does not match your selected preferences")
+                # Skip if no industry match found
+                skip_reasons.append(f"Company industry doesn't align with your selected focus areas: {', '.join([industry_display_names.get(i, i.title()) for i in industries])}")
     
     # 6. Work Authorization Check (Canada-focused)
     work_auth = profile.get("work_authorization", "")
