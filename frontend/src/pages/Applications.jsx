@@ -629,6 +629,23 @@ export default function Applications({ user }) {
                               )}
                             </Button>
                             <Button
+                              data-testid={`auto-submit-btn-${i}`}
+                              size="sm"
+                              onClick={() => handleAutoSubmit(app.application_id, app.job_title, app.company)}
+                              disabled={actionLoading === app.application_id || !app.apply_link?.includes('greenhouse')}
+                              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50"
+                              title={!app.apply_link?.includes('greenhouse') ? 'Auto-submit only available for Greenhouse jobs' : 'Approve & Auto-Submit'}
+                            >
+                              {actionLoading === app.application_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Rocket className="w-4 h-4 mr-1" />
+                                  Auto-Submit
+                                </>
+                              )}
+                            </Button>
+                            <Button
                               data-testid={`reject-btn-${i}`}
                               size="sm"
                               variant="outline"
