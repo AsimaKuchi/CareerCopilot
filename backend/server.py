@@ -690,6 +690,168 @@ async def enrich_greenhouse_job(job: Dict, profile: Optional[Dict]) -> Dict:
 
 @api_router.post("/jobs/greenhouse/search")
 async def search_greenhouse(request: Request):
+    """Search for jobs from Greenhouse, Lever, and Ashby-powered career pages with streaming."""
+    user = await get_current_user(request)
+    
+    body = await request.json()
+    query = body.get("query", "")
+    location = body.get("location", "")
+    
+    logger.info(f"Multi-platform job search (streaming): query='{query}', location='{location}'")
+    
+    # Get user profile for matching and intensity filtering
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Get application intensity setting (default: balanced)
+    intensity = profile.get("application_intensity", "balanced") if profile else "balanced"
+    
+    # Define minimum match score based on intensity
+    min_match_score = {
+        "conservative": 90,
+        "balanced": 70,
+        "ambitious": 50
+    }.get(intensity, 70)
+    
+    logger.info(f"Application intensity: {intensity}, min match score: {min_match_score}")
+    
+    # Get applied job IDs to filter duplicates
+    existing_applications = await db.applications.find(
+        {"user_id": user.user_id},
+        {"job_id": 1, "_id": 0}
+    ).to_list(500)
+    applied_job_ids = set(app.get("job_id") for app in existing_applications if app.get("job_id"))
+    
+    async def stream_multi_platform_jobs():
+        """Generator function that streams jobs from all platforms as they're found."""
+        import json
+        
+        query_words = query.lower().split() if query else []
+        location_lower = location.lower() if location else ""
+        
+        jobs_found = 0
+        
+        # Combine all company lists
+        all_companies = [
+            ("greenhouse", company) for company in GREENHOUSE_COMPANIES
+        ] + [
+            ("lever", company) for company in LEVER_COMPANIES
+        ] + [
+            ("ashby", company) for company in ASHBY_COMPANIES
+        ]
+        
+        # Process companies from all platforms
+        for platform, company in all_companies:
+            try:
+                # Fetch jobs based on platform
+                if platform == "greenhouse":
+                    company_jobs = await fetch_greenhouse_company_jobs(company)
+                elif platform == "lever":
+                    company_jobs = await fetch_lever_company_jobs(company)
+                elif platform == "ashby":
+                    company_jobs = await fetch_ashby_company_jobs(company)
+                else:
+                    continue
+                
+                if not company_jobs:
+                    continue
+                
+                # Filter and enrich jobs from this company
+                for job in company_jobs:
+                    # Skip already applied jobs
+                    if job.get("job_id") in applied_job_ids:
+                        continue
+                    
+                    # Filter by query
+                    job_title = job.get("title", "").lower()
+                    job_company = job.get("company", "").lower()
+                    job_dept = job.get("department", "").lower()
+                    job_location = job.get("location", "").lower()
+                    
+                    query_match = not query_words or any(
+                        word in job_title or word in job_company or word in job_dept
+                        for word in query_words
+                    )
+                    
+                    location_match = not location_lower or location_lower in job_location
+                    
+                    if not (query_match and location_match):
+                        continue
+                    
+                    # Calculate match score
+                    if profile:
+                        job_for_match = {
+                            "job_title": job.get("title"),
+                            "employer_name": job.get("company"),
+                            "job_description": job.get("title", "") + " " + job.get("department", ""),
+                            "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
+                            "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
+                            "job_is_remote": "remote" in job.get("location", "").lower(),
+                            "job_min_salary": None,
+                            "job_max_salary": None
+                        }
+                        match_eval = evaluate_job_match(job_for_match, profile)
+                        
+                        # Log skipped jobs with reason
+                        if match_eval.get("skip_reason"):
+                            logger.info(f"SKIPPED ({platform}): {job.get('title')} at {job.get('company')} - {match_eval['skip_reason']}")
+                            continue  # Don't stream skipped jobs
+                        
+                        # INTENSITY FILTERING: Skip jobs below minimum match score
+                        if match_eval["score"] < min_match_score:
+                            logger.info(f"FILTERED ({platform}): {job.get('title')} at {job.get('company')} - Score {match_eval['score']} below {min_match_score} threshold ({intensity} intensity)")
+                            continue
+                        
+                        job.update({
+                            "match_score": match_eval["score"],
+                            "match_recommendation": match_eval["recommendation"],
+                            "match_strengths": match_eval["strengths"],
+                            "match_gaps": match_eval["gaps"],
+                            "match_reasoning": match_eval["match_reasoning"],
+                            "skip_reason": match_eval["skip_reason"]
+                        })
+                    else:
+                        job.update({
+                            "match_score": 50,
+                            "match_recommendation": "review",
+                            "match_strengths": [],
+                            "match_gaps": ["Complete your profile for better matching"],
+                            "match_reasoning": "Profile incomplete",
+                            "skip_reason": None
+                        })
+                    
+                    # Add description
+                    job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
+                    job["full_description"] = ""
+                    
+                    # Stream this job immediately
+                    jobs_found += 1
+                    yield f"data: {json.dumps(job)}\n\n"
+                    
+                    # Limit to 30 jobs
+                    if jobs_found >= 30:
+                        break
+                
+                if jobs_found >= 30:
+                    break
+                    
+            except Exception as e:
+                logger.debug(f"Error fetching from {platform}/{company}: {e}")
+                continue
+        
+        # Send completion message
+        yield f"data: {json.dumps({'done': True, 'total': jobs_found})}\n\n"
+    
+    return StreamingResponse(
+        stream_multi_platform_jobs(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
     """Search for jobs from Greenhouse-powered career pages with streaming."""
     user = await get_current_user(request)
     
