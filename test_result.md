@@ -209,7 +209,9 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Playwright Auto-Submit for Approved Applications"
+    - "Auto-Submit Button in Applications Dashboard"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
