@@ -2057,6 +2057,32 @@ async def auto_submit_application(request: Request, application_id: str):
         {"_id": 0}
     )
     
+    # Check daily application limit based on intensity
+    if profile:
+        intensity = profile.get("application_intensity", "balanced")
+        last_app_date = profile.get("last_application_date", "")
+        daily_count = profile.get("daily_applications_count", 0)
+        today_date = datetime.now(timezone.utc).date().isoformat()
+        
+        # Reset counter if it's a new day
+        if last_app_date != today_date:
+            daily_count = 0
+        
+        # Define daily limits
+        daily_limits = {
+            "conservative": 5,
+            "balanced": 10,
+            "ambitious": 20
+        }
+        daily_limit = daily_limits.get(intensity, 10)
+        
+        # Check if limit reached
+        if daily_count >= daily_limit:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Daily application limit reached ({daily_limit} applications per day for {intensity} intensity). Try again tomorrow or change your intensity setting in Profile."
+            )
+    
     # Attempt auto-submission
     result = await auto_submit_greenhouse(app_doc, user_doc, profile or {})
     
@@ -2071,6 +2097,17 @@ async def auto_submit_application(request: Request, application_id: str):
             }}
         )
         
+        # Update daily application count
+        if profile:
+            today_date = datetime.now(timezone.utc).date().isoformat()
+            await db.user_profiles.update_one(
+                {"user_id": user.user_id},
+                {"$set": {
+                    "daily_applications_count": daily_count + 1,
+                    "last_application_date": today_date
+                }}
+            )
+        
         updated = await db.applications.find_one(
             {"application_id": application_id},
             {"_id": 0}
@@ -2078,6 +2115,11 @@ async def auto_submit_application(request: Request, application_id: str):
         
         return {
             "success": True,
+            "message": result["message"],
+            "application": updated,
+            "applications_today": daily_count + 1 if profile else 1,
+            "daily_limit": daily_limit if profile else 10
+        }
             "message": result["message"],
             "application": updated
         }
