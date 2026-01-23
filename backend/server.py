@@ -1108,18 +1108,60 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         if missing_skills:
             gaps.append(f"May need: {', '.join(missing_skills[:3])}")
     
-    # 3. Experience Level (max +15 points)
+    # 3. Experience Level & Seniority (max +15 points)
     user_years = profile.get("experience_years", 0)
     user_seniority = profile.get("seniority_level", "").lower()
     
+    # Define seniority hierarchy
+    seniority_levels = {
+        "entry": 0,
+        "junior": 1,
+        "mid": 2,
+        "senior": 3,
+        "lead": 4,
+        "manager": 4,
+        "director": 5,
+        "executive": 6
+    }
+    
     # Detect job seniority from title/description
     job_seniority = "mid"
-    if any(word in job_title for word in ["senior", "sr.", "lead", "principal"]):
+    job_seniority_level = 2
+    
+    if any(word in job_title for word in ["ceo", "cto", "cfo", "vp", "vice president", "chief"]):
+        job_seniority = "executive"
+        job_seniority_level = 6
+    elif any(word in job_title for word in ["director", "head of"]):
+        job_seniority = "director"
+        job_seniority_level = 5
+    elif any(word in job_title for word in ["senior", "sr.", "lead", "principal", "staff"]):
         job_seniority = "senior"
+        job_seniority_level = 3
     elif any(word in job_title for word in ["junior", "jr.", "entry", "associate", "graduate"]):
         job_seniority = "junior"
-    elif any(word in job_title for word in ["director", "head", "vp", "chief", "manager"]):
-        job_seniority = "director"
+        job_seniority_level = 1
+    elif any(word in job_title for word in ["manager", "engineering manager"]):
+        job_seniority = "manager"
+        job_seniority_level = 4
+    
+    # Get user's seniority level (default to mid if not set)
+    user_seniority_level = seniority_levels.get(user_seniority, None)
+    if user_seniority_level is None:
+        # Infer from years of experience if seniority not set
+        if user_years <= 2:
+            user_seniority_level = 1  # junior
+        elif user_years <= 5:
+            user_seniority_level = 2  # mid
+        elif user_years <= 8:
+            user_seniority_level = 3  # senior
+        else:
+            user_seniority_level = 4  # lead/manager
+    
+    # STRICT RULE: Skip if job is >1 level above user's seniority
+    level_gap = job_seniority_level - user_seniority_level
+    
+    if level_gap > 1:
+        skip_reasons.append(f"Role is {job_seniority} level - significantly above your current {user_seniority or 'mid'}-level position ({level_gap} levels above)")
     
     # Check experience alignment
     seniority_match = False
@@ -1135,19 +1177,26 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         seniority_match = True
         strengths.append(f"Your {user_years} years of experience demonstrates the seniority level {company_name} is seeking")
         score += 15
+    elif job_seniority == "manager" and user_years >= 6:
+        seniority_match = True
+        strengths.append(f"Your {user_years}+ years provide the team management experience required for this role")
+        score += 15
     elif job_seniority == "director" and user_years >= 8:
         seniority_match = True
         strengths.append(f"With {user_years}+ years in the field, you have the leadership experience required for this {job_title_display} position")
         score += 15
+    elif job_seniority == "executive" and user_years >= 12:
+        seniority_match = True
+        strengths.append(f"Your extensive {user_years}+ years positions you for this executive-level opportunity")
+        score += 15
     
     if not seniority_match:
-        if job_seniority == "senior" and user_years < 5:
-            gaps.append(f"Role requires more experience ({job_seniority} level)")
-            if user_years < 3:
-                skip_reasons.append("Role is significantly above your experience level")
-        elif job_seniority == "director" and user_years < 8:
-            gaps.append("This is a leadership role requiring extensive experience")
-            skip_reasons.append("Role requires leadership experience you may not have")
+        if level_gap == 1:
+            gaps.append(f"Role is one level above your current position ({job_seniority} vs {user_seniority or 'mid'}) - stretch opportunity")
+        elif job_seniority == "senior" and user_years < 5:
+            gaps.append(f"Role requires more experience ({job_seniority} level, typically 5+ years)")
+        elif job_seniority in ["director", "manager"] and user_years < 8:
+            gaps.append("This leadership role requires extensive experience and team management background")
     
     # 4. Location Match (max +15 points)
     location_match = False
