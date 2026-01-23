@@ -471,6 +471,53 @@ export default function Profile({ user }) {
             </CardContent>
           </Card>
 
+          {/* Contact Information Card */}
+          <Card className="glass-light" data-testid="contact-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="w-5 h-5 text-emerald-400" />
+                Contact Information (For Auto-Fill)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-foreground mb-2 block">
+                  Phone Number
+                  <span className="text-red-400 ml-1">*</span>
+                </Label>
+                <Input
+                  data-testid="phone-input"
+                  type="tel"
+                  placeholder="e.g., +1 (555) 123-4567"
+                  value={profile?.phone_number || ""}
+                  onChange={(e) => updateProfile({ phone_number: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+                <p className="text-sm text-gray-400 mt-1">
+                  Required for most job applications. Used to auto-fill application forms.
+                </p>
+              </div>
+              <div>
+                <Label className="text-foreground mb-2 flex items-center gap-2">
+                  <Linkedin className="w-4 h-4 text-blue-400" />
+                  LinkedIn Profile URL
+                  <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                </Label>
+                <Input
+                  data-testid="linkedin-input"
+                  type="url"
+                  placeholder="e.g., https://linkedin.com/in/yourprofile"
+                  value={profile?.linkedin_url || ""}
+                  onChange={(e) => updateProfile({ linkedin_url: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+                <p className="text-sm text-gray-400 mt-1">
+                  Optional but recommended. Many employers request your LinkedIn profile.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Job Type Card */}
           <Card className="glass-light" data-testid="job-type-card">
             <CardHeader>
