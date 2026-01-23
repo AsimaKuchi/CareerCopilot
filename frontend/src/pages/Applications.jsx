@@ -140,9 +140,60 @@ export default function Applications({ user }) {
           ? { ...app, status: "applied", applied_at: new Date().toISOString() }
           : app
       ));
-      toast.success("Application approved and submitted!");
+      toast.success("Application approved! You can now submit it manually.");
     } catch (error) {
       toast.error("Failed to approve application");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAutoSubmit = async (applicationId, jobTitle, company) => {
+    setActionLoading(applicationId);
+    try {
+      const response = await fetch(`${API}/applications/${applicationId}/auto-submit`, {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update application status to applied
+        setApplications(apps => apps.map(app =>
+          app.application_id === applicationId
+            ? { ...app, status: "applied", applied_at: new Date().toISOString(), auto_submitted: true }
+            : app
+        ));
+        toast.success(`✅ Auto-submitted to ${company}!`);
+      } else {
+        // Automation failed, show error with fallback
+        toast.error(
+          <div>
+            <div className="font-semibold">{data.message}</div>
+            {data.fallback_link && (
+              <div className="mt-2">
+                <a 
+                  href={data.fallback_link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-indigo-400 underline"
+                >
+                  Click here to apply manually
+                </a>
+              </div>
+            )}
+          </div>,
+          { duration: 8000 }
+        );
+        
+        // If rate limited, show special message
+        if (response.status === 429) {
+          toast.warning("Rate limit: Please wait 5 minutes between auto-submissions");
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to auto-submit application");
     } finally {
       setActionLoading(null);
     }
