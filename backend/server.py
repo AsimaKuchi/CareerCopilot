@@ -92,6 +92,9 @@ class UserProfile(BaseModel):
     industries: List[str] = []  # max 3 industries
     open_to_any_industry: bool = False
     seniority_level: Optional[str] = None  # entry, junior, mid, senior, lead, manager, director, executive
+    # Contact information for auto-fill
+    phone_number: Optional[str] = None
+    linkedin_url: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProfileUpdate(BaseModel):
