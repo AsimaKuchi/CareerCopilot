@@ -1545,6 +1545,287 @@ async def approve_application(request: Request, application_id: str):
     
     return updated
 
+async def auto_submit_greenhouse(app_data: Dict, user_data: Dict, profile_data: Dict) -> Dict:
+    """
+    Use Playwright to auto-submit a Greenhouse application.
+    Returns dict with 'success', 'message', and optional 'error' keys.
+    """
+    apply_link = app_data.get("apply_link", "")
+    
+    if not apply_link or "greenhouse.io" not in apply_link.lower():
+        return {"success": False, "message": "Not a Greenhouse application link"}
+    
+    # Parse user data
+    full_name = user_data.get("name", "")
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    email = user_data.get("email", "")
+    
+    # Get resume and cover letter
+    resume_text = app_data.get("optimized_resume") or profile_data.get("resume_text", "")
+    cover_letter = app_data.get("cover_letter", "")
+    
+    try:
+        async with async_playwright() as p:
+            # Launch browser in headless mode
+            browser = await p.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox']
+            )
+            
+            context = await browser.new_context(
+                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                viewport={'width': 1920, 'height': 1080}
+            )
+            
+            page = await context.new_page()
+            
+            try:
+                # Navigate to application page
+                await page.goto(apply_link, wait_until="networkidle", timeout=30000)
+                await asyncio.sleep(2)  # Wait for form to load
+                
+                # Check for CAPTCHA or login requirement
+                page_content = await page.content()
+                if "captcha" in page_content.lower() or "recaptcha" in page_content.lower():
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "message": "CAPTCHA detected - please apply manually",
+                        "error": "CAPTCHA_REQUIRED"
+                    }
+                
+                if "sign in" in page_content.lower() or "log in" in page_content.lower():
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "message": "Login required - please apply manually",
+                        "error": "LOGIN_REQUIRED"
+                    }
+                
+                # Fill first name
+                first_name_selectors = [
+                    'input[name="first_name"]',
+                    'input[name="firstName"]',
+                    'input[id*="first_name"]',
+                    'input[autocomplete="given-name"]'
+                ]
+                filled_first_name = False
+                for selector in first_name_selectors:
+                    try:
+                        await page.fill(selector, first_name, timeout=2000)
+                        filled_first_name = True
+                        break
+                    except:
+                        continue
+                
+                # Fill last name
+                last_name_selectors = [
+                    'input[name="last_name"]',
+                    'input[name="lastName"]',
+                    'input[id*="last_name"]',
+                    'input[autocomplete="family-name"]'
+                ]
+                filled_last_name = False
+                for selector in last_name_selectors:
+                    try:
+                        await page.fill(selector, last_name, timeout=2000)
+                        filled_last_name = True
+                        break
+                    except:
+                        continue
+                
+                # Fill email
+                email_selectors = [
+                    'input[name="email"]',
+                    'input[type="email"]',
+                    'input[id*="email"]',
+                    'input[autocomplete="email"]'
+                ]
+                filled_email = False
+                for selector in email_selectors:
+                    try:
+                        await page.fill(selector, email, timeout=2000)
+                        filled_email = True
+                        break
+                    except:
+                        continue
+                
+                # Fill resume/cover letter if there are textareas
+                textarea_count = await page.locator('textarea').count()
+                if textarea_count > 0 and (resume_text or cover_letter):
+                    # Try to fill the first textarea with cover letter or resume
+                    try:
+                        content_to_fill = cover_letter if cover_letter else resume_text[:2000]
+                        await page.locator('textarea').first.fill(content_to_fill, timeout=2000)
+                    except:
+                        pass
+                
+                # Check if basic fields were filled
+                if not (filled_first_name and filled_last_name and filled_email):
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "message": "Could not find required form fields - form structure may have changed",
+                        "error": "FORM_NOT_FOUND"
+                    }
+                
+                # Take screenshot before submission for debugging
+                await page.screenshot(path="/tmp/before_submit.png")
+                
+                # Look for submit button
+                submit_selectors = [
+                    'button[type="submit"]',
+                    'input[type="submit"]',
+                    'button:has-text("Submit Application")',
+                    'button:has-text("Submit")',
+                    'button:has-text("Apply")',
+                    '#submit_app'
+                ]
+                
+                clicked_submit = False
+                for selector in submit_selectors:
+                    try:
+                        await page.click(selector, timeout=2000)
+                        clicked_submit = True
+                        break
+                    except:
+                        continue
+                
+                if not clicked_submit:
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "message": "Could not find submit button - please complete manually",
+                        "error": "SUBMIT_BUTTON_NOT_FOUND"
+                    }
+                
+                # Wait for navigation or success message
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=10000)
+                    await asyncio.sleep(2)
+                    
+                    # Check for success indicators
+                    page_content = await page.content()
+                    success_keywords = ["thank you", "success", "submitted", "received your application"]
+                    
+                    is_success = any(keyword in page_content.lower() for keyword in success_keywords)
+                    
+                    if is_success:
+                        await browser.close()
+                        return {
+                            "success": True,
+                            "message": "Application submitted successfully via automation"
+                        }
+                    else:
+                        await browser.close()
+                        return {
+                            "success": False,
+                            "message": "Submission may have failed - please verify manually",
+                            "error": "UNCERTAIN_STATUS"
+                        }
+                
+                except PlaywrightTimeout:
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "message": "Submission timed out - please verify manually",
+                        "error": "TIMEOUT"
+                    }
+            
+            finally:
+                await browser.close()
+    
+    except Exception as e:
+        logger.error(f"Playwright automation error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Automation error: {str(e)}",
+            "error": "PLAYWRIGHT_ERROR"
+        }
+
+@api_router.post("/applications/{application_id}/auto-submit")
+async def auto_submit_application(request: Request, application_id: str):
+    """
+    Automatically submit an approved application using Playwright.
+    Only works for Greenhouse applications.
+    """
+    user = await get_current_user(request)
+    
+    # Get application
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Check if already submitted
+    if app_doc.get("status") == "applied":
+        return {
+            "success": False,
+            "message": "Application already submitted"
+        }
+    
+    # Check rate limiting (1 submission per 5 minutes per user)
+    recent_submissions = await db.applications.count_documents({
+        "user_id": user.user_id,
+        "status": "applied",
+        "applied_at": {"$gte": (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()}
+    })
+    
+    if recent_submissions >= 1:
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit: Please wait 5 minutes between automated submissions"
+        )
+    
+    # Get user profile and data
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Attempt auto-submission
+    result = await auto_submit_greenhouse(app_doc, user_doc, profile or {})
+    
+    if result["success"]:
+        # Update status to applied
+        await db.applications.update_one(
+            {"application_id": application_id},
+            {"$set": {
+                "status": "applied",
+                "applied_at": datetime.now(timezone.utc).isoformat(),
+                "auto_submitted": True
+            }}
+        )
+        
+        updated = await db.applications.find_one(
+            {"application_id": application_id},
+            {"_id": 0}
+        )
+        
+        return {
+            "success": True,
+            "message": result["message"],
+            "application": updated
+        }
+    else:
+        # Return error with fallback link
+        return {
+            "success": False,
+            "message": result["message"],
+            "error": result.get("error"),
+            "fallback_link": app_doc.get("apply_link")
+        }
+
 @api_router.put("/applications/{application_id}/reject")
 async def reject_application(request: Request, application_id: str):
     """Reject/skip an application."""
