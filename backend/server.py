@@ -49,6 +49,30 @@ GREENHOUSE_COMPANIES = [
     "retool", "airplane", "appsmith", "budibase", "tooljet"
 ]
 
+# Known Lever company boards
+LEVER_COMPANIES = [
+    "netflix", "github", "robinhood", "grubhub", "strava", "canva",
+    "attentive", "nextdoor", "thumbtack", "classpass", "benchling",
+    "splice", "unity", "calm", "crossover", "greenhouse",
+    "lever", "greenhouse", "cockroachdb", "mux", "moveworks",
+    "postscript", "sourcegraph", "cameo", "hopin", "clubhouse",
+    "superhuman", "airtable", "cloudflare", "segment", "twilio",
+    "docker", "elastic", "hashicorp", "kong", "ngrok",
+    "snyk", "temporal", "retool", "webflow", "zapier",
+    "figma", "invision", "miro", "notion", "airtable",
+    "coda", "linear", "asana", "monday", "clickup"
+]
+
+# Known Ashby company boards  
+ASHBY_COMPANIES = [
+    "linear", "vercel", "replicate", "anthropic", "perplexity",
+    "together", "modal", "watershed", "vanta", "merge",
+    "census", "hightouch", "dbtlabs", "hex", "omni",
+    "preset", "metabase", "lightdash", "superset", "mode",
+    "looker", "sigma", "thoughtspot", "holistics", "periscope",
+    "chartio", "redash", "dash", "tableau", "qlik"
+]
+
 # Create the main app
 app = FastAPI()
 
