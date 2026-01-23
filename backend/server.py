@@ -119,6 +119,10 @@ class UserProfile(BaseModel):
     # Contact information for auto-fill
     phone_number: Optional[str] = None
     linkedin_url: Optional[str] = None
+    # Application intensity and tracking
+    application_intensity: str = "balanced"  # conservative, balanced, ambitious
+    daily_applications_count: int = 0
+    last_application_date: Optional[str] = None  # ISO date string
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProfileUpdate(BaseModel):
