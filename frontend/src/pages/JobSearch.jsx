@@ -422,14 +422,59 @@ export default function JobSearch({ user }) {
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
-            {/* Search Description */}
-            <div className="flex justify-center mb-4">
-              <p className="text-sm text-gray-400">
+            {/* Source Selector */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-foreground">Job Sources</h2>
+              <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white/5 border border-white/10">
+                <button
+                  onClick={() => setJobSource("all")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    jobSource === "all" 
+                      ? "bg-purple-500 text-white" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  All Sources
+                </button>
+                <button
+                  onClick={() => setJobSource("quality")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    jobSource === "quality" 
+                      ? "bg-emerald-500 text-white" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  Quality Boards
+                </button>
+                <button
+                  onClick={() => setJobSource("aggregator")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    jobSource === "aggregator" 
+                      ? "bg-indigo-500 text-white" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  LinkedIn & More
+                </button>
+              </div>
+            </div>
+            {jobSource === "quality" && (
+              <p className="text-xs text-gray-400 mb-4">
                 Searching 145 companies on Greenhouse, Lever & Ashby
               </p>
-            </div>
+            )}
+            {jobSource === "aggregator" && (
+              <p className="text-xs text-gray-400 mb-4">
+                Searching LinkedIn, Indeed, Glassdoor, and other job boards
+              </p>
+            )}
+            {jobSource === "all" && (
+              <p className="text-xs text-gray-400 mb-4">
+                Searching all sources for maximum results
+              </p>
+            )}
 
-            <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Inputs */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
