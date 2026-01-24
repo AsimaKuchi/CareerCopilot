@@ -390,50 +390,11 @@ export default function JobSearch({ user }) {
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
-            {/* Job Source Selector */}
+            {/* Search Description */}
             <div className="flex justify-center mb-4">
-              <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white/5 border border-white/10">
-                <button
-                  onClick={() => setJobSource("greenhouse")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    jobSource === "greenhouse" 
-                      ? "bg-emerald-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  Quality Sources ✨
-                </button>
-                <button
-                  onClick={() => setJobSource("jsearch")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    jobSource === "jsearch" 
-                      ? "bg-cyan-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  Job Aggregators
-                </button>
-                <button
-                  onClick={() => setJobSource("all")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    jobSource === "all" 
-                      ? "bg-indigo-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  All Sources
-                </button>
-              </div>
-              {jobSource === "greenhouse" && (
-                <p className="text-xs text-gray-400 mt-2">
-                  Searching 145 companies on Greenhouse, Lever & Ashby platforms
-                </p>
-              )}
-              {jobSource === "jsearch" && (
-                <p className="text-xs text-gray-400 mt-2">
-                  Searching job aggregators (may include Bebee, LinkedIn, Indeed, etc.)
-                </p>
-              )}
+              <p className="text-sm text-gray-400">
+                Searching 145 companies on Greenhouse, Lever & Ashby
+              </p>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
