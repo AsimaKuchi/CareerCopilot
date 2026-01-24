@@ -793,11 +793,20 @@ async def search_greenhouse(request: Request):
                     job_dept = job.get("department", "").lower()
                     job_location = job.get("location", "").lower()
                     
-                    # Query match: search term appears in title, company, or department
-                    query_match = not query_words or any(
-                        word in job_title or word in job_company or word in job_dept
-                        for word in query_words
-                    )
+                    # Query match: Smart multi-word search
+                    # For multi-word queries like "business analyst", we want flexible matching:
+                    # - "Data Analyst" should match "analyst" search
+                    # - "Business Analyst" should match "business analyst" search
+                    # - "Software Engineer" should match "software" or "engineer"
+                    
+                    query_match = True
+                    if query_words:
+                        # Check if ANY query word appears in title/company/dept
+                        # This allows "business analyst" to match "Data Analyst", "Business Systems Analyst", etc.
+                        query_match = any(
+                            word in job_title or word in job_company or word in job_dept
+                            for word in query_words
+                        )
                     
                     # Location match: Smart matching for location searches
                     # Break down location search into individual words/cities
