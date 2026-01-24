@@ -637,9 +637,10 @@ class JobMatchAPITester:
         
         self.test_profile_endpoints()
         
-        # Test Greenhouse streaming (also mentioned in review)
+        # Test Greenhouse streaming (PRIORITY - mentioned in review request)
+        print("\n🌿 Testing Greenhouse Streaming with Simplified Filtering")
         self.test_greenhouse_companies()
-        self.test_greenhouse_streaming()
+        self.test_greenhouse_streaming_scenarios()
         
         self.test_application_endpoints()
         self.test_dashboard_endpoints()
