@@ -117,12 +117,22 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section with Professional Background */}
       <main className="relative z-10 px-6">
-        <div className="max-w-5xl mx-auto pt-16 pb-20 text-center">
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop')`,
+          }}
+        />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/98 to-background" />
+        
+        <div className="max-w-5xl mx-auto pt-16 pb-20 text-center relative z-10">
           <div className="space-y-8 animate-fade-in">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-sm">
               <Target className="w-4 h-4 text-indigo-500" />
               <span className="text-sm text-indigo-600 font-medium">Quality-First Job Applications</span>
             </div>
@@ -150,16 +160,16 @@ export default function LandingPage() {
                 data-testid="get-started-btn"
                 onClick={handleGoogleLogin}
                 size="lg"
-                className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-14 px-8 text-base"
+                className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-14 px-8 text-base shadow-xl"
               >
                 Find jobs that actually fit me
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
                 data-testid="learn-more-btn"
-                variant="link"
+                variant="outline"
                 size="lg"
-                className="text-indigo-600 hover:text-indigo-700 h-14 px-4 text-base"
+                className="h-14 px-8 text-base border-2 border-white/10 hover:border-white/20 backdrop-blur-sm"
                 onClick={() => navigate('/how-it-works')}
               >
                 See how it works →
