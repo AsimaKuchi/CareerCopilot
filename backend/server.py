@@ -810,7 +810,7 @@ async def search_greenhouse(request: Request):
                     
                     # Location match: Smart matching for location searches
                     # Break down location search into individual words/cities
-                    # e.g., "greater toronto area, ontario" → check for "toronto" OR "ontario"
+                    # e.g., "greater toronto area, ontario" → check for "toronto" OR "ontario" OR "canada"
                     location_match = True
                     if location_lower:
                         # Extract key location terms from user's search
@@ -818,10 +818,19 @@ async def search_greenhouse(request: Request):
                         location_words = location_lower.replace(",", " ").split()
                         location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
                         
+                        # For Canadian city searches, also include "canada" and "remote" as valid matches
+                        # This helps match jobs that say "Remote" or "Canada" without specifying the city
+                        canadian_cities = ["toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton"]
+                        if any(city in location_keywords for city in canadian_cities) and "canada" not in location_keywords:
+                            location_keywords.append("canada")
+                        
                         # Match if ANY location keyword appears in job location
-                        # This allows "greater toronto area" to match jobs in "Toronto" or "Toronto, Ontario"
+                        # This allows "greater toronto area" to match jobs in "Toronto", "Ontario", "Canada", or "Remote"
                         if location_keywords:
                             location_match = any(keyword in job_location for keyword in location_keywords)
+                            # Also accept jobs that are explicitly "Remote" (no location specified)
+                            if not location_match and job_location in ["remote", ""]:
+                                location_match = True
                         else:
                             # If no keywords after filtering, treat as no location filter
                             location_match = True
