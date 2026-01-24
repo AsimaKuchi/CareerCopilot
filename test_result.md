@@ -122,6 +122,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED: ✅ SSE streaming working perfectly. Tested 5 different queries ('engineer', 'software engineer', 'data scientist', 'product manager', 'designer'). All tests passed with: 1) Correct text/event-stream content-type 2) Jobs streaming in real-time (first job within 0.14-0.27s) 3) Proper completion messages with done:true 4) No timeouts (all completed under 1s vs previous 48s) 5) Match scoring working with strengths/gaps 6) 30 jobs per search from 65 companies 7) Average match scores 47-73% 8) All backend logs clean with no errors. The timeout issue is completely resolved."
+      - working: true
+        agent: "testing"
+        comment: "✅ SIMPLIFIED FILTERING UPDATE VERIFIED: Comprehensive testing of updated Greenhouse streaming endpoint confirms simplified filtering is working correctly. Tested 3 specific scenarios from review request: 1) ✅ query='engineer', location='' returns 100 jobs (vs expected ≥20) - MANY jobs now returned with simplified filtering 2) ✅ query='software', location='san francisco' returns 100 SF-based jobs (vs expected ≥5) 3) ✅ query='', location='' returns 100 jobs even with empty query (vs expected ≥10) 4) ✅ All jobs have match_score, match_strengths, match_gaps for ranking/display 5) ✅ Jobs streaming from quality sources (Greenhouse primarily) 6) ✅ Backend logs show 'Show ALL jobs matching query/location' message confirming profile-based filtering removed 7) ✅ Response times excellent (0.16-5.06s) 8) ✅ First job received within 0.16-0.34s. The simplified filtering successfully returns significantly MORE jobs (100 vs previous ~30) as intended, with 5,335+ jobs available from Greenhouse companies."
 
   - task: "Playwright Auto-Submit for Approved Applications"
     implemented: true
