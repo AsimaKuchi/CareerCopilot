@@ -1167,6 +1167,8 @@ async def search_jobs(request: Request):
                     "apply_link": job.get("job_apply_link"),
                     "posted_at": job.get("job_posted_at_datetime_utc"),
                     "source": "aggregator",
+                    "is_linkedin": "linkedin.com" in job.get("job_apply_link", "").lower(),
+                    "requires_login": "linkedin.com" in job.get("job_apply_link", "").lower(),
                     "match_score": job.get("match_score"),
                     "match_recommendation": job.get("match_recommendation"),
                     "match_strengths": job.get("match_strengths"),
