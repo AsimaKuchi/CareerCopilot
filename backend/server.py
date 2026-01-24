@@ -1305,31 +1305,66 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             if not target_keywords.intersection(job_keywords):
                 skip_reasons.append("Role is misaligned with your target positions")
     
-    # 2. Skills Match (max +20 points)
+    # 2. Skills Match (max +20 points) - Enhanced with resume analysis
     skills = profile.get("skills", [])
     matched_skills = []
     missing_skills = []
+    resume_matched_skills = []
     
+    # First check profile skills against job description
     for skill in skills:
         if skill.lower() in job_desc:
             matched_skills.append(skill)
     
-    if skills:
-        skill_ratio = len(matched_skills) / len(skills)
-        score += int(skill_ratio * 20)
+    # Enhanced: Also check resume text for additional skill matches
+    if has_resume:
+        # Common skills to check in resume
+        common_skills = [
+            "python", "javascript", "java", "sql", "excel", "tableau", "power bi",
+            "aws", "azure", "docker", "kubernetes", "react", "node", "angular",
+            "machine learning", "data analysis", "project management", "agile",
+            "salesforce", "sap", "oracle", "mongodb", "postgresql", "git",
+            "c++", "c#", "ruby", "php", "html", "css", "typescript",
+            "jira", "confluence", "slack", "ms office", "google analytics",
+            "financial modeling", "budgeting", "forecasting", "reporting",
+            "leadership", "team management", "stakeholder management"
+        ]
         
-        if matched_skills:
+        for skill in common_skills:
+            # Check if skill is in job description and in resume (but not already in profile skills)
+            if skill in job_desc and skill in resume_text:
+                if skill not in [s.lower() for s in matched_skills]:
+                    resume_matched_skills.append(skill)
+    
+    # Combine both sources
+    all_matched_skills = matched_skills + resume_matched_skills
+    
+    if skills or has_resume:
+        # Calculate score based on matches
+        if skills:
+            skill_ratio = len(matched_skills) / len(skills)
+            score += int(skill_ratio * 15)  # Up to 15 points from profile skills
+        
+        # Bonus points for resume-detected skills
+        if resume_matched_skills:
+            score += min(len(resume_matched_skills), 5)  # Up to 5 bonus points
+        
+        if all_matched_skills:
             # Create detailed skill match explanation
-            if len(matched_skills) >= 3:
-                strengths.append(f"Strong technical alignment: Your expertise in {', '.join(matched_skills[:3])} directly matches key requirements in this job description")
-            elif len(matched_skills) >= 1:
-                strengths.append(f"Your {', '.join(matched_skills)} skills are specifically mentioned in the job requirements")
+            if len(all_matched_skills) >= 3:
+                top_skills = all_matched_skills[:3]
+                strengths.append(f"Strong technical alignment: Your expertise in {', '.join(top_skills)} directly matches key requirements")
+                
+                # Add context from resume if available
+                if resume_matched_skills:
+                    strengths.append(f"Your resume demonstrates hands-on experience with {', '.join(resume_matched_skills[:2])}, giving you an edge for this role")
+            elif len(all_matched_skills) >= 1:
+                strengths.append(f"Your {', '.join(all_matched_skills)} skills are specifically mentioned in the job requirements")
             
             # Add context about how skills apply to the role
-            if any(s.lower() in ['python', 'javascript', 'java', 'sql', 'react', 'node'] for s in matched_skills):
-                tech_matches = [s for s in matched_skills if s.lower() in ['python', 'javascript', 'java', 'sql', 'react', 'node', 'aws', 'docker', 'kubernetes']]
-                if tech_matches:
-                    strengths.append(f"Your technical stack ({', '.join(tech_matches[:4])}) is well-suited for the technology requirements at {company_name}")
+            tech_matches = [s for s in all_matched_skills if s.lower() in ['python', 'javascript', 'java', 'sql', 'react', 'node', 'aws', 'docker', 'kubernetes', 'tableau', 'power bi']]
+            if tech_matches:
+                strengths.append(f"Your technical stack ({', '.join(tech_matches[:4])}) is well-suited for the technology requirements at {company_name}")
         
         # Check for required skills in job that user doesn't have
         common_required = ["python", "javascript", "java", "sql", "react", "aws", "docker"]
