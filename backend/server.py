@@ -1157,6 +1157,17 @@ async def search_jobs(request: Request):
                     })
                 
                 # Transform to match our format
+                job_posted_date = job.get("job_posted_at_datetime_utc")
+                is_new = False
+                if job_posted_date:
+                    try:
+                        from datetime import datetime, timezone
+                        posted_dt = datetime.fromisoformat(job_posted_date.replace('Z', '+00:00'))
+                        hours_ago = (datetime.now(timezone.utc) - posted_dt).total_seconds() / 3600
+                        is_new = hours_ago <= 24  # New if posted in last 24 hours
+                    except:
+                        is_new = False
+                
                 enriched_jobs.append({
                     "job_id": job.get("job_id"),
                     "title": job.get("job_title"),
@@ -1165,7 +1176,8 @@ async def search_jobs(request: Request):
                     "employment_type": job.get("job_employment_type"),
                     "description": job.get("job_description", "")[:500] + "..." if job.get("job_description") else "",
                     "apply_link": job.get("job_apply_link"),
-                    "posted_at": job.get("job_posted_at_datetime_utc"),
+                    "posted_at": job_posted_date,
+                    "is_new": is_new,
                     "source": "aggregator",
                     "is_linkedin": "linkedin.com" in job.get("job_apply_link", "").lower(),
                     "requires_login": "linkedin.com" in job.get("job_apply_link", "").lower(),
