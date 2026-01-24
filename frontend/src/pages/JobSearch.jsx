@@ -575,14 +575,15 @@ export default function JobSearch({ user }) {
                     {/* Job Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-foreground">{job.title}</h3>
-                          {job.is_new && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-medium">
-                              ⭐ NEW
-                            </span>
-                          )}
-                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold text-foreground">{job.title}</h3>
+                            {job.is_new && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-medium">
+                                ⭐ NEW
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-muted-foreground mt-1">
                             <Building className="w-4 h-4" />
                             <span>{job.company}</span>
