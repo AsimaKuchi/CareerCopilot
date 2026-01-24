@@ -799,8 +799,23 @@ async def search_greenhouse(request: Request):
                         for word in query_words
                     )
                     
-                    # Location match: location search term appears in job location
-                    location_match = not location_lower or location_lower in job_location
+                    # Location match: Smart matching for location searches
+                    # Break down location search into individual words/cities
+                    # e.g., "greater toronto area, ontario" → check for "toronto" OR "ontario"
+                    location_match = True
+                    if location_lower:
+                        # Extract key location terms from user's search
+                        # Remove common filler words
+                        location_words = location_lower.replace(",", " ").split()
+                        location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
+                        
+                        # Match if ANY location keyword appears in job location
+                        # This allows "greater toronto area" to match jobs in "Toronto" or "Toronto, Ontario"
+                        if location_keywords:
+                            location_match = any(keyword in job_location for keyword in location_keywords)
+                        else:
+                            # If no keywords after filtering, treat as no location filter
+                            location_match = True
                     
                     # Skip ONLY if title/location don't match search - NO OTHER FILTERING
                     if not (query_match and location_match):
