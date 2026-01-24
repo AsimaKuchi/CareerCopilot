@@ -1250,24 +1250,26 @@ async def search_jobs(request: Request):
 
 def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     """
-    Intelligently evaluate job match with detailed reasoning using BOTH profile fields AND resume text.
-    Returns match score, strengths, gaps, recommendation, and skip reason if applicable.
+    Evaluate job match to help user decide whether to apply.
+    Returns match score, decision summary, strengths, risks, confidence, and recommendation.
+    Focus: Guide decision-making with honesty and clarity, not hype.
     """
     if not profile:
         return {
             "score": 50,
             "recommendation": "review",
+            "confidence": "low",
+            "risk": "high",
+            "decision_summary": "Complete your profile for personalized match analysis",
             "strengths": [],
-            "gaps": ["Complete your profile for better matching"],
+            "gaps": ["Complete your profile and upload resume for accurate matching"],
             "match_reasoning": "Profile incomplete - unable to provide detailed analysis",
-            "skip_reason": None
+            "skip_reason": None,
+            "auto_apply_blocked": True,
+            "auto_apply_reason": "Insufficient profile data"
         }
     
-    strengths = []
-    gaps = []
-    skip_reasons = []
-    score = 40  # Base score
-    
+    # Extract job details
     job_title = (job.get("job_title") or "").lower()
     job_desc = (job.get("job_description") or "").lower()
     job_title_display = job.get("job_title") or "this role"
@@ -1277,33 +1279,69 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     job_location = (job_city + " " + job_state).lower().strip()
     is_remote = job.get("job_is_remote", False)
     
-    # Get resume text for deeper analysis
+    # Extract profile details
     resume_text = (profile.get("resume_text") or "").lower()
-    has_resume = len(resume_text) > 100  # Has meaningful resume content
+    has_resume = len(resume_text) > 100
+    target_roles = [r.lower() for r in profile.get("job_titles", [])]
+    profile_skills = [s.lower() for s in profile.get("skills", [])]
+    user_years = profile.get("experience_years", 0)
+    user_seniority = profile.get("seniority_level", "").lower()
     
-    # 1. Role Relevance (max +25 points)
-    role_match = False
-    matched_title = None
-    for title in profile.get("job_titles", []):
-        if title.lower() in job_title or any(word in job_title for word in title.lower().split()):
-            matched_title = title
-            score += 25
-            role_match = True
+    # Initialize scoring
+    score = 0
+    strengths = []
+    risks = []
+    gaps = []
+    auto_apply_blocked = False
+    auto_apply_reason = None
+    
+    # ============================================================================
+    # CATEGORY 1: CORE FIT (60 points) - Should I apply?
+    # ============================================================================
+    
+    # 1.1 ROLE ALIGNMENT (20 points) - Title synonym mapping
+    role_score = 0
+    role_matched = False
+    
+    # Define title synonyms and related roles
+    title_synonyms = {
+        "business analyst": ["systems analyst", "data analyst", "business systems analyst", "process analyst", 
+                            "functional analyst", "requirements analyst", "workday analyst", "analyst"],
+        "data analyst": ["business intelligence analyst", "analytics analyst", "reporting analyst", 
+                        "business analyst", "data specialist"],
+        "software engineer": ["software developer", "engineer", "developer", "programmer", "sde"],
+        "product manager": ["product owner", "pm", "product lead", "product specialist"],
+        "project manager": ["program manager", "project lead", "delivery manager", "scrum master"],
+        "accountant": ["accounting analyst", "financial analyst", "accounting specialist"],
+        "marketing": ["marketing specialist", "marketing coordinator", "digital marketing", "marketing analyst"]
+    }
+    
+    # Check target roles against job title
+    for target_role in target_roles:
+        # Direct match
+        if target_role in job_title or any(word in job_title for word in target_role.split()):
+            role_score = 20
+            role_matched = True
+            strengths.append(f"Strong role alignment: Your target role '{target_role.title()}' directly matches this position")
+            break
+        
+        # Synonym match
+        for category, synonyms in title_synonyms.items():
+            if target_role in synonyms or category == target_role:
+                if any(syn in job_title for syn in synonyms):
+                    role_score = 18
+                    role_matched = True
+                    strengths.append(f"Related role match: This position aligns with your '{target_role.title()}' career path")
+                    break
+        
+        if role_matched:
             break
     
-    if role_match and matched_title:
-        strengths.append(f"Your target role '{matched_title}' directly aligns with this {job_title_display} position at {company_name}")
+    if not role_matched and target_roles:
+        role_score = 5  # Minimal points for no match
+        risks.append("Role title doesn't align with your target positions - may require explanation in cover letter")
     
-    if not role_match:
-        gaps.append("Role title doesn't match your target positions")
-        # Check if it's completely misaligned
-        if profile.get("job_titles"):
-            target_keywords = set()
-            for t in profile.get("job_titles", []):
-                target_keywords.update(t.lower().split())
-            job_keywords = set(job_title.split())
-            if not target_keywords.intersection(job_keywords):
-                skip_reasons.append("Role is misaligned with your target positions")
+    score += role_score
     
     # 2. Skills Match (max +20 points) - Enhanced with resume analysis
     skills = profile.get("skills", [])
