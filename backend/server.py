@@ -789,24 +789,26 @@ async def search_greenhouse(request: Request):
                         logger.debug(f"  Skipping already applied: {job.get('title')}")
                         continue
                     
-                    # Filter by query
+                    # ONLY filter by query and location - NO profile-based filtering
                     job_title = job.get("title", "").lower()
                     job_company = job.get("company", "").lower()
                     job_dept = job.get("department", "").lower()
                     job_location = job.get("location", "").lower()
                     
+                    # Query match: search term appears in title, company, or department
                     query_match = not query_words or any(
                         word in job_title or word in job_company or word in job_dept
                         for word in query_words
                     )
                     
+                    # Location match: location search term appears in job location
                     location_match = not location_lower or location_lower in job_location
                     
+                    # Skip ONLY if title/location don't match search - NO OTHER FILTERING
                     if not (query_match and location_match):
-                        logger.debug(f"  Filtered by query/location: {job.get('title')} (query_match={query_match}, location_match={location_match})")
                         continue
                     
-                    # Calculate match score
+                    # Calculate match score for ranking/display (but don't filter based on it)
                     if profile:
                         job_for_match = {
                             "job_title": job.get("title"),
@@ -819,10 +821,6 @@ async def search_greenhouse(request: Request):
                             "job_max_salary": None
                         }
                         match_eval = evaluate_job_match(job_for_match, profile)
-                        
-                        # FILTERING COMPLETELY DISABLED - Show ALL jobs regardless of skip_reason
-                        # When min_match_score=0, we show all jobs to help user get results
-                        # The skip_reason and match_score are still calculated for display purposes
                         
                         job.update({
                             "match_score": match_eval["score"],
