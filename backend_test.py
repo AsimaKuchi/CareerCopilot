@@ -270,13 +270,120 @@ class JobMatchAPITester:
         }
         self.run_test("Generate Cover Letter", "POST", "ai/cover-letter", 200, cover_data, timeout=60)
         
-        # Test interview prep
+        # Test interview prep with detailed validation
+        self.test_interview_prep_detailed()
+
+    def test_interview_prep_detailed(self):
+        """Test Interview Prep generation endpoint with detailed validation"""
+        print("\n🔍 Testing Interview Prep Generation (Detailed)...")
+        
         prep_data = {
             "job_title": "Software Engineer",
-            "company": "Test Company", 
-            "job_description": "We are looking for a skilled software engineer to join our team."
+            "company": "Google",
+            "job_description": "We are looking for a skilled software engineer to join our team. You will work on large-scale distributed systems, write clean code, and collaborate with cross-functional teams."
         }
-        self.run_test("Generate Interview Prep", "POST", "ai/interview-prep", 200, prep_data, timeout=60)
+        
+        url = f"{self.base_url}/api/ai/interview-prep"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, json=prep_data, headers=headers, timeout=60)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Interview Prep Generation',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            data = response.json()
+            prep_materials = data.get('prep_materials', '')
+            
+            if not prep_materials:
+                print(f"❌ FAILED - No prep_materials in response")
+                self.failed_tests.append({
+                    'name': 'Interview Prep Generation',
+                    'error': 'No prep_materials field'
+                })
+                return False
+            
+            # Validate required formatting
+            validation_errors = []
+            
+            # Check for ALL-CAPS section headers
+            required_sections = [
+                "1. COMMON INTERVIEW QUESTIONS",
+                "2. BEHAVIORAL QUESTIONS", 
+                "3. TECHNICAL QUESTIONS",
+                "4. INTERVIEW TIPS",
+                "5. QUESTIONS TO ASK THE INTERVIEWER"
+            ]
+            
+            for section in required_sections:
+                if section not in prep_materials:
+                    validation_errors.append(f"Missing section: {section}")
+            
+            # Check for level-4 headers (####)
+            if "####" not in prep_materials:
+                validation_errors.append("Missing level-4 headers (####) for questions")
+            
+            # Check for blockquotes (>)
+            if ">" not in prep_materials:
+                validation_errors.append("Missing blockquotes (>) for sample answers")
+            
+            # Check that NO italics or asterisks are used
+            if "*" in prep_materials:
+                validation_errors.append("Contains asterisks (*) - should not use italics")
+            
+            # Validate structure
+            if len(prep_materials) < 1000:
+                validation_errors.append("Content too short - should be comprehensive")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Formatting validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Interview Prep Formatting',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Interview Prep Generation")
+            print(f"   Content length: {len(prep_materials)} characters")
+            print(f"   All required sections present: ✅")
+            print(f"   Proper formatting (####, >, no asterisks): ✅")
+            
+            # Show sample content
+            lines = prep_materials.split('\n')[:10]
+            print(f"   Sample content preview:")
+            for i, line in enumerate(lines):
+                if line.strip():
+                    print(f"     {line[:80]}...")
+                    if i >= 3:
+                        break
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 60s")
+            self.failed_tests.append({'name': 'Interview Prep Generation', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Interview Prep Generation', 'error': str(e)})
+            return False
 
     def test_application_endpoints(self):
         """Test application management"""
