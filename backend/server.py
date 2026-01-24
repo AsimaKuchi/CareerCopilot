@@ -1714,7 +1714,7 @@ STAR method examples, company research tips, and confidence-building advice."""
     
     skills = ", ".join(profile.get("skills", [])) if profile else "Not specified"
     
-    prompt = f"""You are an expert interview coach creating a polished, professional interview preparation document suitable for a FAANG / enterprise role.
+    prompt = f"""You are an expert interview coach creating a professional interview preparation document for a FAANG / enterprise role.
 
 POSITION: {req.job_title} at {req.company}
 JOB DESCRIPTION:
@@ -1723,61 +1723,56 @@ CANDIDATE SKILLS: {skills}
 
 FORMATTING RULES (must follow exactly):
 
-1. Use clean, professional Markdown optimized for Google Docs / Notion / PDF export
-2. Use numbered, ALL-CAPS section headers (e.g., 1. COMPANY OVERVIEW)
+1. Use clean, professional Markdown
+2. Use numbered, ALL-CAPS section headers (e.g., 1. COMMON INTERVIEW QUESTIONS)
 3. Separate major sections with a horizontal rule (---)
-4. Format each interview question using this exact structure and order:
+4. Format each interview question using this exact structure:
    - Question as a level-4 header (####)
-   - Suggested structure in italics on one line
+   - Suggested approach on one line (NO asterisks, NO italics)
    - Sample answer as a blockquote (>)
-5. Keep sample answers concise: 4–6 sentences max, professional tone, no filler
-6. Use clear whitespace between questions; avoid dense paragraphs
-7. Do NOT nest bullet points more than one level
-8. Do NOT use emojis, casual language, or sales language
-9. Optimize for skimmability, clarity, and interview readiness
-10. Maintain consistent formatting throughout the document
+5. Keep sample answers concise: 4–6 sentences max
+6. Use clear whitespace between questions
+7. Do NOT use asterisks or italics
+8. Do NOT use emojis or casual language
+9. Make everything bold and easy to read
 
-CONTENT REQUIREMENTS:
+REQUIRED SECTIONS (in this exact order):
 
-Include the following sections in this exact order:
-
-1. COMPANY OVERVIEW
-- 4-5 bullet points about {req.company}
-- Focus on: mission, recent initiatives, culture, market position
+1. COMMON INTERVIEW QUESTIONS
+- 5 common questions every interviewer asks
+- Each with: #### Question, Suggested approach, > Sample answer
 
 ---
 
-2. ROLE-SPECIFIC QUESTIONS
-- 5 questions specific to {req.job_title} role
-- Each with: #### Question, *Suggested structure*, > Sample answer
-- Focus on technical depth and role expectations
+2. BEHAVIORAL QUESTIONS
+- 5 behavioral questions using STAR method
+- Each with: #### Question, STAR framework guidance, > Sample answer
 
 ---
 
-3. BEHAVIORAL QUESTIONS (STAR FORMAT)
-- 5 behavioral questions
-- Each with STAR method guidance
-- Focus on: leadership, collaboration, problem-solving, impact
+3. TECHNICAL QUESTIONS
+- 5 technical questions specific to {req.job_title}
+- Each with: #### Question, Approach guidance, > Sample answer
 
 ---
 
-4. QUESTIONS TO ASK THE INTERVIEWER
-- 5 intelligent questions (numbered list only)
+4. INTERVIEW TIPS
+- 5-7 tactical tips (numbered list)
+- Focus on: preparation, body language, follow-up, negotiation
+
+---
+
+5. QUESTIONS TO ASK THE INTERVIEWER
+- 5 intelligent questions (numbered list)
 - Categories: role scope, team dynamics, growth, company direction
 
----
-
-5. PREPARATION CHECKLIST
-- Final preparation steps (numbered list, 5-7 items max)
-- Tactical and actionable
-
 ANSWER STYLE:
-- Reflect structured thinking and data-driven decision making
-- Emphasize collaboration and measurable impact
-- Use consulting-style language (clear, direct, professional)
-- Avoid generic AI phrases
+- Professional, direct, data-driven
+- Emphasize measurable impact and collaboration
+- Use concrete examples
+- Avoid generic phrases
 
-GOAL: Produce an interview prep document that looks like an internal consulting-style prep guide, not generic AI output."""
+Generate interview prep for {req.job_title} at {req.company} following this structure exactly."""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))

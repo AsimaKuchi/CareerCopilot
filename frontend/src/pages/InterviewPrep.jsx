@@ -215,53 +215,53 @@ export default function InterviewPrep({ user }) {
                             .map(line => {
                               // Horizontal rule
                               if (line.trim() === '---' || line.trim() === '___') {
-                                return `<hr class="my-8 border-white/10" />`;
+                                return `<hr class="my-10 border-white/20" />`;
                               }
-                              // ALL-CAPS numbered headers (1. COMPANY OVERVIEW)
+                              // ALL-CAPS numbered headers (1. COMMON INTERVIEW QUESTIONS)
                               else if (line.trim().match(/^\d+\.\s+[A-Z\s]+$/)) {
-                                return `<h2 class="font-bold text-2xl text-indigo-400 mt-12 mb-6 uppercase tracking-wide">${line}</h2>`;
+                                return `<h2 class="font-extrabold text-2xl text-indigo-400 mt-12 mb-6 uppercase tracking-wide">${line}</h2>`;
                               }
                               // Level-4 headers (#### Question)
                               else if (line.trim().startsWith('####')) {
                                 const text = line.replace(/^####\s*/, '');
-                                return `<h4 class="font-bold text-lg text-foreground mt-8 mb-3 leading-tight">${text}</h4>`;
+                                return `<h4 class="font-bold text-xl text-foreground mt-8 mb-3 leading-tight">${text}</h4>`;
                               }
-                              // Level-3 headers (### Sub-section)
+                              // Level-3 headers
                               else if (line.trim().startsWith('###')) {
                                 return `<h3 class="font-bold text-xl text-emerald-400 mt-8 mb-4">${line.replace(/^###\s*/, '')}</h3>`;
                               }
-                              // Level-2 headers (## Section)
+                              // Level-2 headers
                               else if (line.trim().startsWith('##')) {
                                 return `<h2 class="font-bold text-2xl text-indigo-400 mt-10 mb-5">${line.replace(/^##\s*/, '')}</h2>`;
                               }
-                              // Blockquotes (> Sample answer)
+                              // Blockquotes (> Sample answer) - make text bolder
                               else if (line.trim().startsWith('>')) {
                                 const content = line.trim().substring(1).trim();
-                                return `<blockquote class="border-l-4 border-indigo-500 pl-4 py-2 my-3 text-muted-foreground italic bg-white/5 rounded-r">${content}</blockquote>`;
+                                return `<blockquote class="border-l-4 border-indigo-500 pl-5 py-3 my-4 text-gray-300 font-medium bg-white/5 rounded-r leading-relaxed">${content}</blockquote>`;
                               }
-                              // Italics for suggested structure (*text*)
-                              else if (line.trim().match(/^\*[^*]+\*$/)) {
+                              // Remove italics - just make it bold regular text
+                              else if (line.trim().match(/^\*[^*]+\*$/) || line.trim().startsWith('Suggested') || line.trim().startsWith('STAR') || line.trim().startsWith('Approach')) {
                                 const content = line.trim().replace(/^\*/, '').replace(/\*$/, '');
-                                return `<p class="italic text-sm text-gray-400 mb-2">${content}</p>`;
+                                return `<p class="font-semibold text-base text-gray-300 mb-3 mt-2">${content}</p>`;
                               }
                               // Bold questions (lines ending with ?)
                               else if (line.trim().endsWith('?')) {
-                                return `<p class="font-bold text-base text-foreground mt-6 mb-2 leading-relaxed">${line}</p>`;
+                                return `<p class="font-bold text-lg text-foreground mt-6 mb-2 leading-relaxed">${line}</p>`;
                               }
-                              // Numbered items (1., 2., etc)
+                              // Numbered items (1., 2., etc) - make bolder
                               else if (line.trim().match(/^\d+\./)) {
-                                return `<p class="font-medium text-foreground mt-3 mb-2 leading-relaxed">${line}</p>`;
+                                return `<p class="font-semibold text-base text-foreground mt-3 mb-2 leading-relaxed">${line}</p>`;
                               }
-                              // Bullet points (one level only)
+                              // Bullet points - make bolder
                               else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
                                 const content = line.trim().substring(2);
-                                return `<p class="ml-4 text-muted-foreground mb-2 leading-relaxed">• ${content}</p>`;
+                                return `<p class="ml-4 text-gray-300 font-medium mb-2 leading-relaxed">• ${content}</p>`;
                               }
-                              // Regular paragraphs
+                              // Regular paragraphs - make bolder and easier to read
                               else if (line.trim()) {
-                                return `<p class="text-muted-foreground leading-relaxed mb-3">${line}</p>`;
+                                return `<p class="text-gray-300 font-medium leading-relaxed mb-3">${line}</p>`;
                               }
-                              return '<div class="h-2"></div>'; // Whitespace
+                              return '<div class="h-3"></div>'; // Whitespace
                             })
                             .join('') 
                         }}
