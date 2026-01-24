@@ -585,6 +585,26 @@ export default function JobSearch({ user }) {
                                 Greenhouse
                               </Badge>
                             )}
+                            {job.source === "lever" && (
+                              <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0 text-[10px]">
+                                Lever
+                              </Badge>
+                            )}
+                            {job.source === "ashby" && (
+                              <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-0 text-[10px]">
+                                Ashby
+                              </Badge>
+                            )}
+                            {job.is_linkedin && (
+                              <Badge className="bg-blue-600/20 text-blue-300 border border-blue-600/30 px-1.5 py-0 text-[10px]">
+                                🔒 LinkedIn
+                              </Badge>
+                            )}
+                            {job.source === "aggregator" && !job.is_linkedin && (
+                              <Badge className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0 text-[10px]">
+                                Job Board
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
