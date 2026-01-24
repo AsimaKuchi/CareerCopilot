@@ -1583,6 +1583,28 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         else:
             gaps.append("Salary may be below your minimum requirement")
     
+    # 8. Resume-Based Contextual Matching (bonus insights)
+    if has_resume:
+        # Look for company-specific experience
+        if company_name.lower() in resume_text:
+            strengths.append(f"Your resume shows previous experience with {company_name} - excellent company familiarity")
+        
+        # Check for relevant keywords from job title in resume
+        job_title_keywords = [word for word in job_title.split() if len(word) > 3 and word not in ["the", "and", "for", "with"]]
+        matching_keywords = [kw for kw in job_title_keywords if kw in resume_text]
+        if len(matching_keywords) >= 2:
+            strengths.append(f"Your resume demonstrates relevant experience with {', '.join(matching_keywords[:3])}")
+        
+        # Check for leadership/management if it's a senior role
+        if "senior" in job_title or "lead" in job_title or "manager" in job_title:
+            leadership_keywords = ["led", "managed", "directed", "coordinated", "supervised", "mentored"]
+            if any(keyword in resume_text for keyword in leadership_keywords):
+                strengths.append("Your resume highlights leadership experience relevant for this senior position")
+    
+    # If no resume, suggest uploading one for better matching
+    if not has_resume and len(strengths) < 2:
+        gaps.append("Upload your resume for more accurate match analysis and personalized strengths")
+    
     # Determine recommendation
     score = min(score, 100)
     
