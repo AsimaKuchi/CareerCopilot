@@ -152,15 +152,18 @@ backend:
 
   - task: "Job Search API (JSearch)"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "medium"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Working correctly with JSearch API"
+      - working: false
+        agent: "testing"
+        comment: "❌ JSEARCH API RATE LIMITED: Testing revealed JSearch API is returning 429 (rate limiting) errors. Backend logs show 'JSearch API error: 429'. The /api/jobs/search endpoint returns 0 jobs due to API rate limits being exceeded. This is a third-party API limitation, not a code issue. The endpoint structure and authentication are working correctly, but the external JSearch service is blocking requests due to usage limits. Recommendation: Monitor API usage or consider upgrading JSearch plan."
 
   - task: "Application Save and Management"
     implemented: true
