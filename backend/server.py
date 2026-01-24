@@ -775,7 +775,10 @@ async def search_greenhouse(request: Request):
                     continue
                 
                 if not company_jobs:
+                    logger.info(f"  No jobs found from {company}")
                     continue
+                
+                logger.info(f"  Found {len(company_jobs)} jobs from {company}")
                 
                 # Filter and enrich jobs from this company
                 for job in company_jobs:
