@@ -274,6 +274,25 @@ class JobMatchAPITester:
         
         return all_scenarios_passed
 
+    def test_exact_user_reported_search(self):
+        """Test the EXACT search scenario reported by user as failing"""
+        print("\n" + "="*60)
+        print("🎯 TESTING EXACT USER REPORTED SEARCH SCENARIO")
+        print("="*60)
+        print("Testing: query='business analyst', location='greater toronto area, ontario'")
+        print("Expected: Should return 40+ jobs from companies like Stripe, Coinbase, Airbnb, Dropbox")
+        print("Reason: Fixed location matching to extract keywords: ['toronto', 'ontario']")
+        
+        scenario = {
+            "name": "Business Analyst in Greater Toronto Area",
+            "query": "business analyst",
+            "location": "greater toronto area, ontario", 
+            "expected_min_jobs": 40,
+            "description": "User reported this exact search was failing - should now work with smart location matching"
+        }
+        
+        return self.test_single_greenhouse_scenario(scenario)
+
     def test_single_greenhouse_scenario(self, scenario):
         """Test a single Greenhouse streaming scenario"""
         print(f"\n🔍 Testing: {scenario['name']}")
