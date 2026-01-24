@@ -62,7 +62,7 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
-  const [jobSource, setJobSource] = useState("all"); // "all", "greenhouse", "jsearch"
+  const [jobSource, setJobSource] = useState("greenhouse"); // "all", "greenhouse" (includes Lever+Ashby), "jsearch"
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
