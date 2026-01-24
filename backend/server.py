@@ -1129,6 +1129,11 @@ async def search_jobs(request: Request):
             data = response.json()
             jobs = data.get("data", [])
             
+            # Filter out Bebee jobs (poor quality spam)
+            jobs = [job for job in jobs if "bebee.com" not in job.get("job_apply_link", "").lower()]
+            
+            logger.info(f"Filtered to {len(jobs)} non-Bebee jobs")
+            
             # Get user profile for matching
             profile = await db.user_profiles.find_one(
                 {"user_id": user.user_id},
