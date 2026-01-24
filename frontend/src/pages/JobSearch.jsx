@@ -62,7 +62,7 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
-  const [jobSource, setJobSource] = useState("greenhouse"); // "all", "greenhouse" (includes Lever+Ashby), "jsearch"
+  const [jobSource, setJobSource] = useState("greenhouse"); // Only quality sources now
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
@@ -105,8 +105,8 @@ export default function JobSearch({ user }) {
     try {
       let allJobs = [];
       
-      // Search based on selected source
-      if (source === "all" || source === "greenhouse") {
+      // Search quality sources (Greenhouse, Lever, Ashby)
+      if (source === "greenhouse" || source === "all") {
         // Search Greenhouse with streaming
         try {
           const ghResponse = await fetch(`${API}/jobs/greenhouse/search`, {
@@ -168,15 +168,12 @@ export default function JobSearch({ user }) {
             allJobs = [...allJobs, ...tempJobs];
           }
         } catch (err) {
-          console.error("Greenhouse search error:", err);
-          toast.error("Failed to search Greenhouse jobs");
+          console.error("Job search error:", err);
+          toast.error("Failed to search for jobs");
         }
       }
-      
-      if (source === "all" || source === "jsearch") {
-        // Search JSearch
-        try {
-          const jsResponse = await fetch(`${API}/jobs/search`, {
+
+      // Sort and set final results
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
