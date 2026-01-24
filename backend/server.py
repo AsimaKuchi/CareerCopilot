@@ -1250,7 +1250,7 @@ async def search_jobs(request: Request):
 
 def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     """
-    Intelligently evaluate job match with detailed reasoning.
+    Intelligently evaluate job match with detailed reasoning using BOTH profile fields AND resume text.
     Returns match score, strengths, gaps, recommendation, and skip reason if applicable.
     """
     if not profile:
@@ -1276,6 +1276,10 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     job_state = job.get("job_state") or ""
     job_location = (job_city + " " + job_state).lower().strip()
     is_remote = job.get("job_is_remote", False)
+    
+    # Get resume text for deeper analysis
+    resume_text = (profile.get("resume_text") or "").lower()
+    has_resume = len(resume_text) > 100  # Has meaningful resume content
     
     # 1. Role Relevance (max +25 points)
     role_match = False
