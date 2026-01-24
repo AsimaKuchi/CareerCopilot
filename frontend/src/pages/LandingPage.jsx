@@ -117,63 +117,86 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* Hero Section with Professional Background */}
+      {/* Hero Section with Two-Column Layout */}
       <main className="relative z-10 px-6">
-        {/* Background Image with Overlay */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop')`,
-          }}
-        />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/98 to-background" />
-        
-        <div className="max-w-5xl mx-auto pt-16 pb-20 text-center relative z-10">
-          <div className="space-y-8 animate-fade-in">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-sm">
-              <Target className="w-4 h-4 text-indigo-500" />
-              <span className="text-sm text-indigo-600 font-medium">Quality-First Job Applications</span>
+        <div className="max-w-7xl mx-auto pt-16 pb-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Column - Content */}
+            <div className="space-y-8 animate-fade-in">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-sm">
+                <Target className="w-4 h-4 text-indigo-500" />
+                <span className="text-sm text-indigo-600 font-medium">Quality-First Job Applications</span>
+              </div>
+              
+              {/* Main Headline */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-foreground">
+                Apply to the right jobs —{" "}
+                <span className="text-gradient">not every job</span>
+              </h1>
+              
+              {/* Subheadline */}
+              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
+                A quality-first job application platform that finds strong matches, explains why they fit, 
+                and lets you approve every application before it's sent.
+              </p>
+
+              {/* Anti-spam message */}
+              <p className="text-base text-foreground font-medium">
+                No resume spam. No blind auto-apply. No burned opportunities.
+              </p>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button
+                  data-testid="get-started-btn"
+                  onClick={handleGoogleLogin}
+                  size="lg"
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-14 px-8 text-base shadow-xl"
+                >
+                  Find jobs that actually fit me
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <Button
+                  data-testid="learn-more-btn"
+                  variant="outline"
+                  size="lg"
+                  className="h-14 px-8 text-base border-2 border-white/10 hover:border-white/20 backdrop-blur-sm"
+                  onClick={() => navigate('/how-it-works')}
+                >
+                  See how it works →
+                </Button>
+              </div>
             </div>
-            
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-foreground">
-              Apply to the right jobs —{" "}
-              <span className="text-gradient">not every job</span>
-            </h1>
-            
-            {/* Subheadline */}
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              A quality-first job application platform that finds strong matches, explains why they fit, 
-              and lets you approve every application before it's sent.
-            </p>
 
-            {/* Anti-spam message */}
-            <p className="text-base text-foreground font-medium">
-              No resume spam. No blind auto-apply. No burned opportunities.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-              <Button
-                data-testid="get-started-btn"
-                onClick={handleGoogleLogin}
-                size="lg"
-                className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-14 px-8 text-base shadow-xl"
-              >
-                Find jobs that actually fit me
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button
-                data-testid="learn-more-btn"
-                variant="outline"
-                size="lg"
-                className="h-14 px-8 text-base border-2 border-white/10 hover:border-white/20 backdrop-blur-sm"
-                onClick={() => navigate('/how-it-works')}
-              >
-                See how it works →
-              </Button>
+            {/* Right Column - Hero Image */}
+            <div className="relative hidden lg:block">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop"
+                  alt="Professional using laptop for job search"
+                  className="w-full h-[600px] object-cover"
+                />
+                {/* Overlay gradient for depth */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
+              </div>
+              {/* Floating stats card */}
+              <div className="absolute bottom-8 left-8 right-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 shadow-xl border border-white/20">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-indigo-600">2,800+</p>
+                    <p className="text-xs text-muted-foreground mt-1">Active Users</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-600">45K+</p>
+                    <p className="text-xs text-muted-foreground mt-1">Applications</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">100%</p>
+                    <p className="text-xs text-muted-foreground mt-1">Human-Approved</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
