@@ -701,6 +701,12 @@ class JobMatchAPITester:
         # Test Greenhouse streaming (PRIORITY - mentioned in review request)
         print("\n🌿 Testing Greenhouse Streaming with Simplified Filtering")
         self.test_greenhouse_companies()
+        
+        # Test the EXACT user reported search scenario FIRST
+        print("\n🎯 TESTING EXACT USER REPORTED FAILING SEARCH")
+        exact_search_success = self.test_exact_user_reported_search()
+        
+        # Then test other scenarios
         self.test_greenhouse_streaming_scenarios()
         
         self.test_application_endpoints()
