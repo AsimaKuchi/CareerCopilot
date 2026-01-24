@@ -516,7 +516,7 @@ async def fetch_lever_company_jobs(company: str) -> List[Dict]:
     """Fetch job listings from a Lever company board."""
     jobs = []
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
             # Lever API endpoint
             api_url = f"https://api.lever.co/v0/postings/{company}"
             response = await client.get(api_url)
@@ -540,8 +540,10 @@ async def fetch_lever_company_jobs(company: str) -> List[Dict]:
             else:
                 logger.debug(f"Lever API returned {response.status_code} for {company}")
                 
+    except httpx.TimeoutException:
+        logger.debug(f"Timeout fetching Lever jobs for {company}")
     except Exception as e:
-        logger.error(f"Error fetching Lever jobs for {company}: {str(e)}")
+        logger.debug(f"Error fetching Lever jobs for {company}: {type(e).__name__}")
     
     return jobs
 
