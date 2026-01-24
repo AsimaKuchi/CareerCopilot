@@ -732,10 +732,14 @@ async def search_greenhouse(request: Request):
         logger.info("=== STREAMING FUNCTION STARTED ===")
         import json
         
+        # Send immediate heartbeat so frontend knows we're alive
+        yield f"data: {json.dumps({'heartbeat': True, 'message': 'Search started'})}\n\n"
+        
         query_words = query.lower().split() if query else []
         location_lower = location.lower() if location else ""
         
         jobs_found = 0
+        companies_checked = 0
         
         # Combine all company lists
         all_companies = [
@@ -748,6 +752,12 @@ async def search_greenhouse(request: Request):
         
         # Process companies from all platforms
         for platform, company in all_companies:
+            companies_checked += 1
+            
+            # Send progress update every 10 companies
+            if companies_checked % 10 == 0:
+                yield f"data: {json.dumps({'progress': True, 'checked': companies_checked, 'found': jobs_found})}\n\n"
+            
             try:
                 # Fetch jobs based on platform
                 if platform == "greenhouse":
