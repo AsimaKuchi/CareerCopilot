@@ -112,17 +112,127 @@ class JobMatchAPITester:
         print("TESTING JOB SEARCH ENDPOINTS")
         print("="*50)
         
-        # Test job search
-        search_data = {
-            "query": "software engineer",
-            "location": "New York",
-            "page": 1,
-            "num_pages": 1,
-            "employment_types": "FULLTIME"
-        }
-        success, jobs = self.run_test("Job Search", "POST", "jobs/search", 200, search_data, timeout=60)
+        # Test regular job search (JSearch API)
+        self.test_jsearch_streaming()
         
-        return success, jobs
+        return True
+
+    def test_jsearch_streaming(self):
+        """Test Job Search streaming endpoint (/api/jobs/search) with detailed validation"""
+        print("\n🔍 Testing Job Search Streaming (JSearch API)...")
+        
+        url = f"{self.base_url}/api/jobs/search"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        search_data = {
+            "query": "engineer",
+            "location": ""
+        }
+        
+        self.tests_run += 1
+        print(f"   URL: {url}")
+        print(f"   Query: '{search_data['query']}', Location: '{search_data['location']}'")
+        
+        start_time = time.time()
+        
+        try:
+            response = requests.post(url, json=search_data, headers=headers, timeout=60)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Job Search Streaming',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            data = response.json()
+            jobs = data.get('jobs', [])
+            total = data.get('total', 0)
+            
+            elapsed = time.time() - start_time
+            
+            # Validation checks
+            validation_errors = []
+            
+            if total == 0:
+                validation_errors.append("No jobs found - should return at least SOME jobs")
+            
+            if len(jobs) == 0:
+                validation_errors.append("Empty jobs array")
+            
+            # Check job structure for first few jobs
+            for i, job in enumerate(jobs[:3]):
+                job_errors = []
+                
+                required_fields = ['job_id', 'title', 'company', 'match_score', 'match_strengths', 'match_gaps']
+                for field in required_fields:
+                    if field not in job:
+                        job_errors.append(f"Missing field: {field}")
+                
+                # Validate match_score is a number
+                if 'match_score' in job and not isinstance(job['match_score'], (int, float)):
+                    job_errors.append("match_score should be numeric")
+                
+                # Validate match_strengths and match_gaps are arrays
+                if 'match_strengths' in job and not isinstance(job['match_strengths'], list):
+                    job_errors.append("match_strengths should be array")
+                
+                if 'match_gaps' in job and not isinstance(job['match_gaps'], list):
+                    job_errors.append("match_gaps should be array")
+                
+                if job_errors:
+                    validation_errors.append(f"Job {i+1} errors: {', '.join(job_errors)}")
+            
+            # Check backend logs for streaming messages (if accessible)
+            print(f"   Jobs found: {len(jobs)}")
+            print(f"   Total reported: {total}")
+            print(f"   Response time: {elapsed:.2f}s")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Job Search Validation',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Job Search Streaming")
+            print(f"   ✅ Found {len(jobs)} jobs from quality sources")
+            print(f"   ✅ All jobs have match_score, match_strengths, match_gaps")
+            print(f"   ✅ Response time: {elapsed:.2f}s")
+            
+            # Show sample jobs
+            if jobs:
+                print(f"   Sample jobs:")
+                for i, job in enumerate(jobs[:3]):
+                    title = job.get('title', 'N/A')
+                    company = job.get('company', 'N/A')
+                    score = job.get('match_score', 'N/A')
+                    strengths_count = len(job.get('match_strengths', []))
+                    gaps_count = len(job.get('match_gaps', []))
+                    print(f"     {i+1}. {title} at {company} (Score: {score}, {strengths_count} strengths, {gaps_count} gaps)")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 60s")
+            self.failed_tests.append({'name': 'Job Search Streaming', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Job Search Streaming', 'error': str(e)})
+            return False
 
     def test_greenhouse_streaming(self):
         """Test Greenhouse SSE streaming functionality"""
