@@ -174,26 +174,6 @@ export default function JobSearch({ user }) {
       }
 
       // Sort and set final results
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              query: searchQuery.trim(),
-              location: searchLocation?.trim() || null,
-              employment_types: searchEmploymentType || null,
-              page: 1,
-              num_pages: 1,
-            }),
-          });
-
-          if (jsResponse.ok) {
-            const jsData = await jsResponse.json();
-            allJobs = [...allJobs, ...(jsData.jobs || [])];
-          }
-        } catch (err) {
-          console.error("JSearch error:", err);
-        }
-      }
       
       // Sort combined results by match score
       allJobs.sort((a, b) => {
@@ -208,9 +188,7 @@ export default function JobSearch({ user }) {
       if (allJobs.length === 0) {
         toast.info("No jobs found. Try different keywords.");
       } else {
-        const ghCount = allJobs.filter(j => j.source === "greenhouse").length;
-        const jsCount = allJobs.filter(j => j.source === "jsearch").length;
-        toast.success(`Found ${allJobs.length} jobs (${ghCount} Greenhouse, ${jsCount} other)`);
+        toast.success(`Found ${allJobs.length} quality jobs from Greenhouse, Lever & Ashby`);
       }
     } catch (error) {
       toast.error("Failed to search jobs. Please try again.");
