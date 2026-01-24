@@ -234,11 +234,50 @@ class JobMatchAPITester:
             self.failed_tests.append({'name': 'Job Search Streaming', 'error': str(e)})
             return False
 
-    def test_greenhouse_streaming(self):
-        """Test Greenhouse SSE streaming functionality"""
+    def test_greenhouse_streaming_scenarios(self):
+        """Test Greenhouse SSE streaming with specific scenarios from review request"""
         print("\n" + "="*50)
-        print("TESTING GREENHOUSE STREAMING")
+        print("TESTING GREENHOUSE STREAMING - SIMPLIFIED FILTERING")
         print("="*50)
+        
+        # Test scenarios as requested in review
+        test_scenarios = [
+            {
+                "name": "Engineer Query (Empty Location)",
+                "query": "engineer", 
+                "location": "",
+                "expected_min_jobs": 20,  # Should return MANY jobs now (5,335 available)
+                "description": "Should return MANY jobs with simplified filtering"
+            },
+            {
+                "name": "Software + San Francisco",
+                "query": "software",
+                "location": "san francisco", 
+                "expected_min_jobs": 5,
+                "description": "Should return SF-based software jobs"
+            },
+            {
+                "name": "Empty Query and Location",
+                "query": "",
+                "location": "",
+                "expected_min_jobs": 10,
+                "description": "Should return jobs even with empty query"
+            }
+        ]
+        
+        all_scenarios_passed = True
+        
+        for scenario in test_scenarios:
+            success = self.test_single_greenhouse_scenario(scenario)
+            if not success:
+                all_scenarios_passed = False
+        
+        return all_scenarios_passed
+
+    def test_single_greenhouse_scenario(self, scenario):
+        """Test a single Greenhouse streaming scenario"""
+        print(f"\n🔍 Testing: {scenario['name']}")
+        print(f"   Description: {scenario['description']}")
         
         url = f"{self.base_url}/api/jobs/greenhouse/search"
         headers = {
@@ -248,19 +287,20 @@ class JobMatchAPITester:
         }
         
         search_data = {
-            "query": "engineer",
-            "location": ""
+            "query": scenario['query'],
+            "location": scenario['location']
         }
         
         self.tests_run += 1
-        print(f"\n🔍 Testing Greenhouse SSE Streaming...")
-        print(f"   URL: {url}")
-        print(f"   Query: {search_data['query']}")
+        print(f"   Query: '{search_data['query']}', Location: '{search_data['location']}'")
         
         start_time = time.time()
         jobs_received = 0
         completion_received = False
         first_job_time = None
+        greenhouse_sources = set()
+        jobs_with_match_data = 0
+        backend_log_message_found = False
         
         try:
             response = requests.post(url, json=search_data, headers=headers, stream=True, timeout=70)
@@ -270,7 +310,7 @@ class JobMatchAPITester:
             if 'text/event-stream' not in content_type:
                 print(f"❌ FAILED - Expected text/event-stream, got {content_type}")
                 self.failed_tests.append({
-                    'name': 'Greenhouse SSE Content Type',
+                    'name': f'Greenhouse SSE {scenario["name"]}',
                     'error': f'Wrong content type: {content_type}'
                 })
                 return False
@@ -284,6 +324,10 @@ class JobMatchAPITester:
                     try:
                         data = json.loads(data_str)
                         
+                        # Check for heartbeat or progress messages
+                        if data.get('heartbeat') or data.get('progress'):
+                            continue
+                        
                         if data.get('done'):
                             completion_received = True
                             total_jobs = data.get('total', 0)
@@ -296,14 +340,29 @@ class JobMatchAPITester:
                                 first_job_time = time.time() - start_time
                                 print(f"✅ First job received after {first_job_time:.2f}s")
                             
+                            # Track job sources (should be quality sources like Greenhouse)
+                            source = data.get('source', 'unknown')
+                            if source in ['greenhouse', 'lever', 'ashby']:
+                                greenhouse_sources.add(source)
+                            
+                            # Validate job has match scoring data
+                            if all(field in data for field in ['match_score', 'match_strengths', 'match_gaps']):
+                                jobs_with_match_data += 1
+                            
                             # Validate job structure
-                            required_fields = ['job_id', 'title', 'company', 'match_score']
+                            required_fields = ['job_id', 'title', 'company', 'match_score', 'match_strengths', 'match_gaps']
                             missing_fields = [field for field in required_fields if field not in data]
                             if missing_fields:
                                 print(f"⚠️  Job missing fields: {missing_fields}")
                             
-                            if jobs_received <= 3:  # Show first few jobs
-                                print(f"   Job {jobs_received}: {data.get('title', 'N/A')} at {data.get('company', 'N/A')} (Score: {data.get('match_score', 'N/A')})")
+                            if jobs_received <= 5:  # Show first few jobs
+                                title = data.get('title', 'N/A')
+                                company = data.get('company', 'N/A')
+                                score = data.get('match_score', 'N/A')
+                                strengths = len(data.get('match_strengths', []))
+                                gaps = len(data.get('match_gaps', []))
+                                source = data.get('source', 'N/A')
+                                print(f"   Job {jobs_received}: {title} at {company} (Score: {score}, {strengths} strengths, {gaps} gaps, Source: {source})")
                     
                     except json.JSONDecodeError as e:
                         print(f"❌ Invalid JSON in stream: {data_str[:100]}")
@@ -311,44 +370,59 @@ class JobMatchAPITester:
             
             elapsed_total = time.time() - start_time
             
-            # Validate streaming performance
-            success = True
+            # Validation checks specific to review request
+            validation_errors = []
+            
             if not completion_received:
-                print(f"❌ FAILED - No completion message received")
-                success = False
+                validation_errors.append("No completion message received")
             
             if elapsed_total > 60:
-                print(f"❌ FAILED - Streaming took too long: {elapsed_total:.2f}s")
-                success = False
-            else:
-                print(f"✅ Total streaming time: {elapsed_total:.2f}s")
+                validation_errors.append(f"Streaming took too long: {elapsed_total:.2f}s")
             
+            # CRITICAL: Check if we got enough jobs (simplified filtering should return MORE jobs)
+            if jobs_received < scenario['expected_min_jobs']:
+                validation_errors.append(f"Only {jobs_received} jobs found, expected at least {scenario['expected_min_jobs']} with simplified filtering")
+            
+            # Check if jobs are from quality sources
+            if not greenhouse_sources:
+                validation_errors.append("No jobs from quality sources (Greenhouse/Lever/Ashby) found")
+            
+            # Check if jobs have match scoring
+            if jobs_with_match_data == 0:
+                validation_errors.append("No jobs have match scoring data (match_score, match_strengths, match_gaps)")
+            
+            # Performance checks
             if first_job_time and first_job_time > 5:
-                print(f"⚠️  First job took {first_job_time:.2f}s (should be < 5s)")
+                validation_errors.append(f"First job took {first_job_time:.2f}s (should be < 5s)")
             
-            if jobs_received < 5:
-                print(f"⚠️  Only {jobs_received} jobs found (expected 10+)")
-            else:
-                print(f"✅ Received {jobs_received} jobs")
-            
-            if success:
-                self.tests_passed += 1
-                print(f"✅ PASSED - Greenhouse streaming working correctly")
-            else:
+            if validation_errors:
+                print(f"❌ FAILED - {scenario['name']}:")
+                for error in validation_errors:
+                    print(f"   • {error}")
                 self.failed_tests.append({
-                    'name': 'Greenhouse SSE Streaming',
-                    'error': 'Streaming validation failed'
+                    'name': f'Greenhouse Streaming {scenario["name"]}',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
                 })
+                return False
             
-            return success
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - {scenario['name']}")
+            print(f"   ✅ Jobs returned: {jobs_received} (≥ {scenario['expected_min_jobs']} expected)")
+            print(f"   ✅ Quality sources: {', '.join(greenhouse_sources)}")
+            print(f"   ✅ Jobs with match data: {jobs_with_match_data}/{jobs_received}")
+            print(f"   ✅ Response time: {elapsed_total:.2f}s")
+            print(f"   ✅ First job time: {first_job_time:.2f}s")
+            
+            return True
             
         except requests.exceptions.Timeout:
             print(f"❌ FAILED - Request timed out after 70s")
-            self.failed_tests.append({'name': 'Greenhouse SSE Streaming', 'error': 'Timeout'})
+            self.failed_tests.append({'name': f'Greenhouse Streaming {scenario["name"]}', 'error': 'Timeout'})
             return False
         except Exception as e:
             print(f"❌ FAILED - Error: {str(e)}")
-            self.failed_tests.append({'name': 'Greenhouse SSE Streaming', 'error': str(e)})
+            self.failed_tests.append({'name': f'Greenhouse Streaming {scenario["name"]}', 'error': str(e)})
             return False
 
     def test_greenhouse_companies(self):
