@@ -539,17 +539,34 @@ class JobMatchAPITester:
         
         start_time = datetime.now()
         
-        # Run test suites
+        # Run basic health checks first
         self.test_health_endpoints()
         self.test_auth_endpoints()
-        self.test_profile_endpoints()
-        self.test_job_search_endpoints()
         
-        # Test Greenhouse streaming (high priority)
+        # PRIORITY TESTS - As requested in review
+        print("\n" + "="*60)
+        print("🎯 PRIORITY TESTS - REVIEW REQUEST FOCUS")
+        print("="*60)
+        
+        # Test Interview Prep generation endpoint
+        print("\n📋 Testing Interview Prep Generation (/api/ai/interview-prep)")
+        self.test_interview_prep_detailed()
+        
+        # Test Job Search streaming endpoint  
+        print("\n🔍 Testing Job Search Streaming (/api/jobs/search)")
+        self.test_jsearch_streaming()
+        
+        # Additional tests
+        print("\n" + "="*60)
+        print("🔧 ADDITIONAL SYSTEM TESTS")
+        print("="*60)
+        
+        self.test_profile_endpoints()
+        
+        # Test Greenhouse streaming (also mentioned in review)
         self.test_greenhouse_companies()
         self.test_greenhouse_streaming()
         
-        self.test_ai_endpoints()
         self.test_application_endpoints()
         self.test_dashboard_endpoints()
         
