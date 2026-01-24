@@ -62,7 +62,7 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
-  const [jobSource, setJobSource] = useState("greenhouse"); // Only quality sources now
+  const [jobSource, setJobSource] = useState("all"); // "all", "quality" (Greenhouse/Lever/Ashby), "aggregator" (LinkedIn/Indeed/etc)
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function JobSearch({ user }) {
       let allJobs = [];
       
       // Search quality sources (Greenhouse, Lever, Ashby)
-      if (source === "greenhouse" || source === "all") {
+      if (source === "greenhouse" || source === "quality" || source === "all") {
         // Search Greenhouse with streaming
         try {
           const ghResponse = await fetch(`${API}/jobs/greenhouse/search`, {
@@ -177,6 +177,28 @@ export default function JobSearch({ user }) {
         }
       }
 
+      // Search aggregators (LinkedIn, Indeed, Glassdoor, etc.)
+      if (source === "aggregator" || source === "all") {
+        try {
+          const aggResponse = await fetch(`${API}/jobs/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              query: searchQuery.trim(),
+              location: searchLocation?.trim() || "",
+            }),
+          });
+
+          if (aggResponse.ok) {
+            const aggData = await aggResponse.json();
+            allJobs = [...allJobs, ...(aggData.jobs || [])];
+          }
+        } catch (err) {
+          console.error("Aggregator search error:", err);
+        }
+      }
+
       // Sort and set final results
       
       // Sort combined results by match score
@@ -192,7 +214,13 @@ export default function JobSearch({ user }) {
       if (allJobs.length === 0) {
         toast.info("No jobs found. Try different keywords.");
       } else {
-        toast.success(`Found ${allJobs.length} quality jobs from Greenhouse, Lever & Ashby`);
+        const qualityCount = allJobs.filter(j => ["greenhouse", "lever", "ashby"].includes(j.source)).length;
+        const aggCount = allJobs.filter(j => j.source === "aggregator").length;
+        if (source === "all") {
+          toast.success(`Found ${allJobs.length} jobs (${qualityCount} direct, ${aggCount} from aggregators)`);
+        } else {
+          toast.success(`Found ${allJobs.length} jobs`);
+        }
       }
     } catch (error) {
       toast.error("Failed to search jobs. Please try again.");
