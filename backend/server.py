@@ -1714,7 +1714,7 @@ STAR method examples, company research tips, and confidence-building advice."""
     
     skills = ", ".join(profile.get("skills", [])) if profile else "Not specified"
     
-    prompt = f"""Create comprehensive interview preparation for:
+    prompt = f"""Create professional interview preparation materials for:
 
 POSITION: {req.job_title} at {req.company}
 
@@ -1723,15 +1723,40 @@ JOB DESCRIPTION:
 
 CANDIDATE SKILLS: {skills}
 
-Please provide:
-1. **Common Interview Questions** (10 questions with suggested answers)
-2. **Technical Questions** (if applicable, based on job description)
-3. **Behavioral Questions** (with STAR method examples)
-4. **Questions to Ask the Interviewer** (5 thoughtful questions)
-5. **Company Research Tips** (what to research about {req.company})
-6. **Quick Tips** (confidence boosters, body language, etc.)
+CRITICAL FORMATTING INSTRUCTIONS (must follow exactly):
 
-Format as clear sections with bullet points."""
+1. Use clean, professional markdown suitable for a Google Doc or PDF
+2. Use numbered sections with clear headings (##)
+3. For each interview question, format as:
+
+**Question text here?**
+Suggested structure: [brief guidance in one line]
+> Sample answer: [4-6 sentences maximum, quoted]
+
+4. Keep all answers concise (4-6 sentences maximum)
+5. Use generous whitespace (blank lines between questions)
+6. Do NOT nest bullet points more than one level
+7. Avoid emojis, casual language, or filler words
+8. Optimize for skimmability and interview prep
+
+REQUIRED SECTIONS (in this order):
+
+## COMPANY OVERVIEW
+Brief research summary (4-5 bullet points only)
+
+## ROLE-SPECIFIC QUESTIONS
+5 questions specific to {req.job_title} role with structured answers
+
+## BEHAVIORAL QUESTIONS
+5 behavioral questions with STAR method guidance
+
+## QUESTIONS TO ASK INTERVIEWER
+5 intelligent questions (no bullets, just numbered)
+
+## PREPARATION CHECKLIST
+Final prep steps (numbered list, 5 items max)
+
+Focus on quality over quantity. Keep everything scannable and professional."""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
