@@ -728,6 +728,7 @@ async def search_greenhouse(request: Request):
     
     async def stream_multi_platform_jobs():
         """Generator function that streams jobs from all platforms as they're found."""
+        logger.info("=== STREAMING FUNCTION STARTED ===")
         import json
         
         query_words = query.lower().split() if query else []
