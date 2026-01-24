@@ -234,6 +234,8 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Interview Prep Generation API"
+    - "Job Search Streaming API (JSearch)"
     - "Playwright Auto-Submit for Approved Applications"
     - "Auto-Submit Button in Applications Dashboard"
   stuck_tasks: []
