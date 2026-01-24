@@ -741,14 +741,18 @@ async def search_greenhouse(request: Request):
         jobs_found = 0
         companies_checked = 0
         
-        # Combine all company lists
-        all_companies = [
+        # Combine all company lists - PRIORITIZE quality platforms first
+        quality_companies = [
             ("greenhouse", company) for company in GREENHOUSE_COMPANIES
         ] + [
             ("lever", company) for company in LEVER_COMPANIES
         ] + [
             ("ashby", company) for company in ASHBY_COMPANIES
         ]
+        
+        all_companies = quality_companies  # Only quality platforms for now
+        
+        logger.info(f"Searching {len(all_companies)} quality platform companies")
         
         # Process companies from all platforms
         for platform, company in all_companies:
@@ -760,6 +764,7 @@ async def search_greenhouse(request: Request):
             
             try:
                 # Fetch jobs based on platform
+                logger.info(f"Fetching from {platform}: {company}")
                 if platform == "greenhouse":
                     company_jobs = await fetch_greenhouse_company_jobs(company)
                 elif platform == "lever":
@@ -859,13 +864,14 @@ async def search_greenhouse(request: Request):
                     
                     # Stream this job immediately
                     jobs_found += 1
+                    logger.info(f"Streaming job {jobs_found}: {job.get('title')} at {job.get('company')} ({platform})")
                     yield f"data: {json.dumps(job)}\n\n"
                     
-                    # Limit to 30 jobs
-                    if jobs_found >= 30:
+                    # Limit to 100 jobs (increased from 30)
+                    if jobs_found >= 100:
                         break
                 
-                if jobs_found >= 30:
+                if jobs_found >= 100:
                     break
                     
             except Exception as e:
