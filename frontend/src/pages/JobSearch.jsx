@@ -141,7 +141,11 @@ export default function JobSearch({ user }) {
                   try {
                     const data = JSON.parse(jsonStr);
                     
-                    if (data.done) {
+                    if (data.heartbeat) {
+                      console.log("✓ Search started, waiting for jobs...");
+                    } else if (data.progress) {
+                      console.log(`Progress: Checked ${data.checked} companies, found ${data.found} jobs`);
+                    } else if (data.done) {
                       // Stream completed
                       console.log(`Greenhouse search completed: ${data.total} jobs found`);
                     } else {
