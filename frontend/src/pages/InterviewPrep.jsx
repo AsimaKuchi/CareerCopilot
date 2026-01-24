@@ -213,24 +213,46 @@ export default function InterviewPrep({ user }) {
                           __html: prepMaterials
                             .split('\n')
                             .map(line => {
+                              // Horizontal rule
+                              if (line.trim() === '---' || line.trim() === '___') {
+                                return `<hr class="my-8 border-white/10" />`;
+                              }
+                              // ALL-CAPS numbered headers (1. COMPANY OVERVIEW)
+                              else if (line.trim().match(/^\d+\.\s+[A-Z\s]+$/)) {
+                                return `<h2 class="font-bold text-2xl text-indigo-400 mt-12 mb-6 uppercase tracking-wide">${line}</h2>`;
+                              }
+                              // Level-4 headers (#### Question)
+                              else if (line.trim().startsWith('####')) {
+                                const text = line.replace(/^####\s*/, '');
+                                return `<h4 class="font-bold text-lg text-foreground mt-8 mb-3 leading-tight">${text}</h4>`;
+                              }
+                              // Level-3 headers (### Sub-section)
+                              else if (line.trim().startsWith('###')) {
+                                return `<h3 class="font-bold text-xl text-emerald-400 mt-8 mb-4">${line.replace(/^###\s*/, '')}</h3>`;
+                              }
+                              // Level-2 headers (## Section)
+                              else if (line.trim().startsWith('##')) {
+                                return `<h2 class="font-bold text-2xl text-indigo-400 mt-10 mb-5">${line.replace(/^##\s*/, '')}</h2>`;
+                              }
+                              // Blockquotes (> Sample answer)
+                              else if (line.trim().startsWith('>')) {
+                                const content = line.trim().substring(1).trim();
+                                return `<blockquote class="border-l-4 border-indigo-500 pl-4 py-2 my-3 text-muted-foreground italic bg-white/5 rounded-r">${content}</blockquote>`;
+                              }
+                              // Italics for suggested structure (*text*)
+                              else if (line.trim().match(/^\*[^*]+\*$/)) {
+                                const content = line.trim().replace(/^\*/, '').replace(/\*$/, '');
+                                return `<p class="italic text-sm text-gray-400 mb-2">${content}</p>`;
+                              }
                               // Bold questions (lines ending with ?)
-                              if (line.trim().endsWith('?')) {
+                              else if (line.trim().endsWith('?')) {
                                 return `<p class="font-bold text-base text-foreground mt-6 mb-2 leading-relaxed">${line}</p>`;
                               }
-                              // Bold section headers (ALL CAPS or starts with ##)
-                              else if ((line.trim() === line.trim().toUpperCase() && line.trim().length > 3 && !line.includes('http')) || line.trim().startsWith('##')) {
-                                const headerText = line.replace(/^##\s*/, '');
-                                return `<h3 class="font-bold text-lg text-indigo-400 mt-8 mb-4 border-b border-white/10 pb-2">${headerText}</h3>`;
-                              }
-                              // Bold sub-headers (###)
-                              else if (line.trim().startsWith('###')) {
-                                return `<h4 class="font-bold text-base text-emerald-400 mt-6 mb-3">${line.replace(/^###\s*/, '')}</h4>`;
-                              }
-                              // Bold numbered items (1., 2., etc)
+                              // Numbered items (1., 2., etc)
                               else if (line.trim().match(/^\d+\./)) {
-                                return `<p class="font-semibold text-foreground mt-4 mb-2 leading-relaxed">${line}</p>`;
+                                return `<p class="font-medium text-foreground mt-3 mb-2 leading-relaxed">${line}</p>`;
                               }
-                              // Bullet points
+                              // Bullet points (one level only)
                               else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
                                 const content = line.trim().substring(2);
                                 return `<p class="ml-4 text-muted-foreground mb-2 leading-relaxed">• ${content}</p>`;
@@ -239,11 +261,12 @@ export default function InterviewPrep({ user }) {
                               else if (line.trim()) {
                                 return `<p class="text-muted-foreground leading-relaxed mb-3">${line}</p>`;
                               }
-                              return '<br/>';
+                              return '<div class="h-2"></div>'; // Whitespace
                             })
                             .join('') 
                         }}
                       />
+                    </div>
                     </div>
                   </ScrollArea>
                 ) : (
