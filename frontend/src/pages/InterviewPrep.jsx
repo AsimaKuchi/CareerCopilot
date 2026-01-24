@@ -207,9 +207,43 @@ export default function InterviewPrep({ user }) {
                 {prepMaterials ? (
                   <ScrollArea className="h-[600px] pr-4">
                     <div className="prose prose-invert prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground leading-relaxed bg-transparent p-0">
-                        {prepMaterials}
-                      </pre>
+                      <div 
+                        className="interview-prep-content space-y-4"
+                        dangerouslySetInnerHTML={{ 
+                          __html: prepMaterials
+                            .split('\n')
+                            .map(line => {
+                              // Bold questions (lines ending with ?)
+                              if (line.trim().endsWith('?')) {
+                                return `<p class="font-bold text-base text-foreground mt-6 mb-2 leading-relaxed">${line}</p>`;
+                              }
+                              // Bold section headers (ALL CAPS or starts with ##)
+                              else if ((line.trim() === line.trim().toUpperCase() && line.trim().length > 3 && !line.includes('http')) || line.trim().startsWith('##')) {
+                                const headerText = line.replace(/^##\s*/, '');
+                                return `<h3 class="font-bold text-lg text-indigo-400 mt-8 mb-4 border-b border-white/10 pb-2">${headerText}</h3>`;
+                              }
+                              // Bold sub-headers (###)
+                              else if (line.trim().startsWith('###')) {
+                                return `<h4 class="font-bold text-base text-emerald-400 mt-6 mb-3">${line.replace(/^###\s*/, '')}</h4>`;
+                              }
+                              // Bold numbered items (1., 2., etc)
+                              else if (line.trim().match(/^\d+\./)) {
+                                return `<p class="font-semibold text-foreground mt-4 mb-2 leading-relaxed">${line}</p>`;
+                              }
+                              // Bullet points
+                              else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+                                const content = line.trim().substring(2);
+                                return `<p class="ml-4 text-muted-foreground mb-2 leading-relaxed">• ${content}</p>`;
+                              }
+                              // Regular paragraphs
+                              else if (line.trim()) {
+                                return `<p class="text-muted-foreground leading-relaxed mb-3">${line}</p>`;
+                              }
+                              return '<br/>';
+                            })
+                            .join('') 
+                        }}
+                      />
                     </div>
                   </ScrollArea>
                 ) : (
