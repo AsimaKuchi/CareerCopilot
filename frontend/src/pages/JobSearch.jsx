@@ -449,6 +449,16 @@ export default function JobSearch({ user }) {
                   All Sources
                 </button>
               </div>
+              {jobSource === "greenhouse" && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Searching 145 companies on Greenhouse, Lever & Ashby platforms
+                </p>
+              )}
+              {jobSource === "jsearch" && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Searching job aggregators (may include Bebee, LinkedIn, Indeed, etc.)
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
