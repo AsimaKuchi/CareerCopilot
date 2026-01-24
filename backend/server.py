@@ -1168,13 +1168,7 @@ async def search_jobs(request: Request, query: JobSearchQuery):
         return {
             "jobs": enriched_jobs,
             "total": len(enriched_jobs)
-        }
-        
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Job search timed out")
-    except Exception as e:
-        logger.error(f"Job search error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+# JSearch aggregator removed - using only quality sources (Greenhouse, Lever, Ashby)
 
 def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     """
