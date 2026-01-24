@@ -786,6 +786,7 @@ async def search_greenhouse(request: Request):
                 for job in company_jobs:
                     # Skip already applied jobs
                     if job.get("job_id") in applied_job_ids:
+                        logger.debug(f"  Skipping already applied: {job.get('title')}")
                         continue
                     
                     # Filter by query
@@ -802,6 +803,7 @@ async def search_greenhouse(request: Request):
                     location_match = not location_lower or location_lower in job_location
                     
                     if not (query_match and location_match):
+                        logger.debug(f"  Filtered by query/location: {job.get('title')} (query_match={query_match}, location_match={location_match})")
                         continue
                     
                     # Calculate match score
