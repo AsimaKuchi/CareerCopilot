@@ -798,10 +798,15 @@ async def search_greenhouse(request: Request):
                         }
                         match_eval = evaluate_job_match(job_for_match, profile)
                         
-                        # Log skipped jobs with reason
+                        # Only skip jobs with critical blockers (e.g., way above seniority)
+                        # Most "skip_reason" jobs will still be shown
                         if match_eval.get("skip_reason"):
-                            logger.info(f"SKIPPED ({platform}): {job.get('title')} at {job.get('company')} - {match_eval['skip_reason']}")
-                            continue  # Don't stream skipped jobs
+                            skip_reason = match_eval.get("skip_reason", "")
+                            # Only skip if it's a hard blocker
+                            if "significantly above" in skip_reason or "2 levels above" in skip_reason:
+                                logger.info(f"SKIPPED ({platform}): {job.get('title')} at {job.get('company')} - {skip_reason}")
+                                continue  # Skip hard blockers only
+                            # Otherwise, show the job but mark it as skip
                         
                         # INTENSITY FILTERING DISABLED - Show all jobs
                         # if match_eval["score"] < min_match_score:
