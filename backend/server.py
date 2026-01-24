@@ -710,14 +710,15 @@ async def search_greenhouse(request: Request):
     # Get application intensity setting (default: balanced)
     intensity = profile.get("application_intensity", "balanced") if profile else "balanced"
     
-    # Define minimum match score based on intensity
-    min_match_score = {
-        "conservative": 90,
-        "balanced": 70,
-        "ambitious": 50
-    }.get(intensity, 70)
+    # Define minimum match score based on intensity (DISABLED - showing all jobs)
+    min_match_score = 0  # Disabled - show all jobs regardless of score
+    # min_match_score = {
+    #     "conservative": 90,
+    #     "balanced": 50,  # Lowered from 70 to 50
+    #     "ambitious": 30
+    # }.get(intensity, 50)
     
-    logger.info(f"Application intensity: {intensity}, min match score: {min_match_score}")
+    logger.info(f"Application intensity: {intensity}, min match score: {min_match_score} (FILTERING DISABLED)")
     
     # Get applied job IDs to filter duplicates
     existing_applications = await db.applications.find(
