@@ -197,10 +197,10 @@ class GreenhouseStreamingTester:
         print("\n🔍 Checking backend logs for simplified filtering message...")
         
         try:
-            # Check supervisor backend logs
+            # Check supervisor backend error logs (where application logs go)
             import subprocess
             result = subprocess.run(
-                ['tail', '-n', '100', '/var/log/supervisor/backend.out.log'],
+                ['tail', '-n', '100', '/var/log/supervisor/backend.err.log'],
                 capture_output=True, text=True, timeout=10
             )
             
@@ -208,6 +208,9 @@ class GreenhouseStreamingTester:
                 log_content = result.stdout
                 if "Show ALL jobs matching query/location" in log_content:
                     print("✅ Found expected log message: 'Show ALL jobs matching query/location'")
+                    # Count occurrences to show activity
+                    count = log_content.count("Show ALL jobs matching query/location")
+                    print(f"   Message appears {count} times in recent logs (indicating active searches)")
                     return True
                 else:
                     print("⚠️  Expected log message not found in recent logs")
