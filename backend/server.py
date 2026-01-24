@@ -803,10 +803,10 @@ async def search_greenhouse(request: Request):
                             logger.info(f"SKIPPED ({platform}): {job.get('title')} at {job.get('company')} - {match_eval['skip_reason']}")
                             continue  # Don't stream skipped jobs
                         
-                        # INTENSITY FILTERING: Skip jobs below minimum match score
-                        if match_eval["score"] < min_match_score:
-                            logger.info(f"FILTERED ({platform}): {job.get('title')} at {job.get('company')} - Score {match_eval['score']} below {min_match_score} threshold ({intensity} intensity)")
-                            continue
+                        # INTENSITY FILTERING DISABLED - Show all jobs
+                        # if match_eval["score"] < min_match_score:
+                        #     logger.info(f"FILTERED ({platform}): {job.get('title')} at {job.get('company')} - Score {match_eval['score']} below {min_match_score} threshold ({intensity} intensity)")
+                        #     continue
                         
                         job.update({
                             "match_score": match_eval["score"],
