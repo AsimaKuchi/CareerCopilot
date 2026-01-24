@@ -425,7 +425,34 @@ class JobMatchAPITester:
             self.failed_tests.append({'name': f'Greenhouse Streaming {scenario["name"]}', 'error': str(e)})
             return False
 
-    def test_greenhouse_companies(self):
+    def check_backend_logs(self):
+        """Check backend logs for the expected message about simplified filtering"""
+        print("\n🔍 Checking backend logs for simplified filtering message...")
+        
+        try:
+            # Check supervisor backend logs
+            import subprocess
+            result = subprocess.run(
+                ['tail', '-n', '50', '/var/log/supervisor/backend.out.log'],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if result.returncode == 0:
+                log_content = result.stdout
+                if "Show ALL jobs matching query/location" in log_content:
+                    print("✅ Found expected log message: 'Show ALL jobs matching query/location'")
+                    return True
+                else:
+                    print("⚠️  Expected log message not found in recent logs")
+                    print("   Looking for: 'Show ALL jobs matching query/location'")
+                    return False
+            else:
+                print("⚠️  Could not read backend logs")
+                return False
+                
+        except Exception as e:
+            print(f"⚠️  Error checking logs: {str(e)}")
+            return False
         """Test Greenhouse companies endpoint"""
         print("\n🔍 Testing Greenhouse Companies...")
         success, companies = self.run_test("Get Greenhouse Companies", "GET", "jobs/greenhouse/companies", 200)
