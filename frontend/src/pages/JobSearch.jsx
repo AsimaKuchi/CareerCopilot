@@ -419,16 +419,6 @@ export default function JobSearch({ user }) {
             <div className="flex justify-center mb-4">
               <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white/5 border border-white/10">
                 <button
-                  onClick={() => setJobSource("all")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    jobSource === "all" 
-                      ? "bg-indigo-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  All Sources
-                </button>
-                <button
                   onClick={() => setJobSource("greenhouse")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                     jobSource === "greenhouse" 
@@ -436,7 +426,7 @@ export default function JobSearch({ user }) {
                       : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}
                 >
-                  Greenhouse Only
+                  Quality Sources ✨
                 </button>
                 <button
                   onClick={() => setJobSource("jsearch")}
@@ -446,7 +436,17 @@ export default function JobSearch({ user }) {
                       : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}
                 >
-                  Other Job Boards
+                  Job Aggregators
+                </button>
+                <button
+                  onClick={() => setJobSource("all")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    jobSource === "all" 
+                      ? "bg-indigo-500 text-white" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  All Sources
                 </button>
               </div>
             </div>
