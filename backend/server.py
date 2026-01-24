@@ -1082,7 +1082,109 @@ async def reparse_resume(request: Request):
 # JOB SEARCH ROUTES
 # ========================
 
-# JSearch aggregator endpoint removed - now using only quality sources (Greenhouse, Lever, Ashby)
+@api_router.post("/jobs/search")
+async def search_jobs(request: Request):
+    """Search for jobs using JSearch API - includes LinkedIn, Indeed, Glassdoor, etc."""
+    user = await get_current_user(request)
+    
+    body = await request.json()
+    query = body.get("query", "")
+    location = body.get("location", "")
+    
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            params = {
+                "query": f"{query} {location}".strip(),
+                "num_pages": "1",
+                "page": "1"
+            }
+            
+            response = await client.get(
+                "https://jsearch.p.rapidapi.com/search",
+                params=params,
+                headers=headers
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"JSearch API error: {response.status_code}")
+                return {"jobs": [], "total": 0}
+            
+            data = response.json()
+            jobs = data.get("data", [])
+            
+            # Get user profile for matching
+            profile = await db.user_profiles.find_one(
+                {"user_id": user.user_id},
+                {"_id": 0}
+            )
+            
+            # Get applied job IDs to filter duplicates
+            existing_applications = await db.applications.find(
+                {"user_id": user.user_id},
+                {"job_id": 1, "_id": 0}
+            ).to_list(500)
+            applied_job_ids = set(app.get("job_id") for app in existing_applications if app.get("job_id"))
+            
+            # Filter out already applied jobs (KEEP LinkedIn this time)
+            jobs = [job for job in jobs if job.get("job_id") not in applied_job_ids]
+            
+            # Enrich jobs with match evaluation
+            enriched_jobs = []
+            for job in jobs[:30]:
+                if profile:
+                    match_eval = evaluate_job_match(job, profile)
+                    job.update({
+                        "match_score": match_eval["score"],
+                        "match_recommendation": match_eval["recommendation"],
+                        "match_strengths": match_eval["strengths"],
+                        "match_gaps": match_eval["gaps"],
+                        "match_reasoning": match_eval["match_reasoning"],
+                        "skip_reason": match_eval["skip_reason"]
+                    })
+                else:
+                    job.update({
+                        "match_score": 50,
+                        "match_recommendation": "review",
+                        "match_strengths": [],
+                        "match_gaps": ["Complete your profile for better matching"],
+                        "match_reasoning": "Profile incomplete",
+                        "skip_reason": None
+                    })
+                
+                # Transform to match our format
+                enriched_jobs.append({
+                    "job_id": job.get("job_id"),
+                    "title": job.get("job_title"),
+                    "company": job.get("employer_name"),
+                    "location": f"{job.get('job_city', '')}, {job.get('job_state', '')}".strip(", "),
+                    "employment_type": job.get("job_employment_type"),
+                    "description": job.get("job_description", "")[:500] + "..." if job.get("job_description") else "",
+                    "apply_link": job.get("job_apply_link"),
+                    "posted_at": job.get("job_posted_at_datetime_utc"),
+                    "source": "aggregator",
+                    "match_score": job.get("match_score"),
+                    "match_recommendation": job.get("match_recommendation"),
+                    "match_strengths": job.get("match_strengths"),
+                    "match_gaps": job.get("match_gaps"),
+                    "match_reasoning": job.get("match_reasoning"),
+                    "skip_reason": job.get("skip_reason")
+                })
+            
+            # Sort by match score
+            enriched_jobs.sort(key=lambda x: (0 if x.get("match_recommendation") == "skip" else 1, x.get("match_score", 0)), reverse=True)
+            
+            return {
+                "jobs": enriched_jobs,
+                "total": len(enriched_jobs)
+            }
+    except Exception as e:
+        logger.error(f"JSearch error: {str(e)}")
+        return {"jobs": [], "total": 0}
 
 def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     """
