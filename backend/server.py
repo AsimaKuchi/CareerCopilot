@@ -1714,49 +1714,70 @@ STAR method examples, company research tips, and confidence-building advice."""
     
     skills = ", ".join(profile.get("skills", [])) if profile else "Not specified"
     
-    prompt = f"""Create professional interview preparation materials for:
+    prompt = f"""You are an expert interview coach creating a polished, professional interview preparation document suitable for a FAANG / enterprise role.
 
 POSITION: {req.job_title} at {req.company}
-
 JOB DESCRIPTION:
 {req.job_description}
-
 CANDIDATE SKILLS: {skills}
 
-CRITICAL FORMATTING INSTRUCTIONS (must follow exactly):
+FORMATTING RULES (must follow exactly):
 
-1. Use clean, professional markdown suitable for a Google Doc or PDF
-2. Use numbered sections with clear headings (##)
-3. For each interview question, format as:
+1. Use clean, professional Markdown optimized for Google Docs / Notion / PDF export
+2. Use numbered, ALL-CAPS section headers (e.g., 1. COMPANY OVERVIEW)
+3. Separate major sections with a horizontal rule (---)
+4. Format each interview question using this exact structure and order:
+   - Question as a level-4 header (####)
+   - Suggested structure in italics on one line
+   - Sample answer as a blockquote (>)
+5. Keep sample answers concise: 4–6 sentences max, professional tone, no filler
+6. Use clear whitespace between questions; avoid dense paragraphs
+7. Do NOT nest bullet points more than one level
+8. Do NOT use emojis, casual language, or sales language
+9. Optimize for skimmability, clarity, and interview readiness
+10. Maintain consistent formatting throughout the document
 
-**Question text here?**
-Suggested structure: [brief guidance in one line]
-> Sample answer: [4-6 sentences maximum, quoted]
+CONTENT REQUIREMENTS:
 
-4. Keep all answers concise (4-6 sentences maximum)
-5. Use generous whitespace (blank lines between questions)
-6. Do NOT nest bullet points more than one level
-7. Avoid emojis, casual language, or filler words
-8. Optimize for skimmability and interview prep
+Include the following sections in this exact order:
 
-REQUIRED SECTIONS (in this order):
+1. COMPANY OVERVIEW
+- 4-5 bullet points about {req.company}
+- Focus on: mission, recent initiatives, culture, market position
 
-## COMPANY OVERVIEW
-Brief research summary (4-5 bullet points only)
+---
 
-## ROLE-SPECIFIC QUESTIONS
-5 questions specific to {req.job_title} role with structured answers
+2. ROLE-SPECIFIC QUESTIONS
+- 5 questions specific to {req.job_title} role
+- Each with: #### Question, *Suggested structure*, > Sample answer
+- Focus on technical depth and role expectations
 
-## BEHAVIORAL QUESTIONS
-5 behavioral questions with STAR method guidance
+---
 
-## QUESTIONS TO ASK INTERVIEWER
-5 intelligent questions (no bullets, just numbered)
+3. BEHAVIORAL QUESTIONS (STAR FORMAT)
+- 5 behavioral questions
+- Each with STAR method guidance
+- Focus on: leadership, collaboration, problem-solving, impact
 
-## PREPARATION CHECKLIST
-Final prep steps (numbered list, 5 items max)
+---
 
-Focus on quality over quantity. Keep everything scannable and professional."""
+4. QUESTIONS TO ASK THE INTERVIEWER
+- 5 intelligent questions (numbered list only)
+- Categories: role scope, team dynamics, growth, company direction
+
+---
+
+5. PREPARATION CHECKLIST
+- Final preparation steps (numbered list, 5-7 items max)
+- Tactical and actionable
+
+ANSWER STYLE:
+- Reflect structured thinking and data-driven decision making
+- Emphasize collaboration and measurable impact
+- Use consulting-style language (clear, direct, professional)
+- Avoid generic AI phrases
+
+GOAL: Produce an interview prep document that looks like an internal consulting-style prep guide, not generic AI output."""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
