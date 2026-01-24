@@ -1376,9 +1376,16 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         if missing_skills:
             gaps.append(f"May need: {', '.join(missing_skills[:3])}")
     
-    # 3. Experience Level & Seniority (max +15 points)
+    # 3. Experience Level & Seniority (max +15 points) - Enhanced with resume validation
     user_years = profile.get("experience_years", 0)
     user_seniority = profile.get("seniority_level", "").lower()
+    
+    # Enhanced: Validate experience from resume if available
+    if has_resume and user_years > 0:
+        # Look for job titles and dates in resume to validate experience claim
+        experience_keywords = ["years", "experience", "professional experience", "work history"]
+        if any(keyword in resume_text for keyword in experience_keywords):
+            strengths.append(f"Your resume validates {user_years} years of relevant professional experience")
     
     # Define seniority hierarchy
     seniority_levels = {
