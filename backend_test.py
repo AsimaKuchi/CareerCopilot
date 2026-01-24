@@ -453,6 +453,21 @@ class JobMatchAPITester:
         except Exception as e:
             print(f"⚠️  Error checking logs: {str(e)}")
             return False
+
+    def test_greenhouse_companies(self):
+        """Test Greenhouse companies endpoint"""
+        print("\n🔍 Testing Greenhouse Companies...")
+        success, companies = self.run_test("Get Greenhouse Companies", "GET", "jobs/greenhouse/companies", 200)
+        
+        if success and companies:
+            company_list = companies.get('companies', [])
+            print(f"   Found {len(company_list)} companies")
+            if len(company_list) >= 10:
+                print(f"✅ Good company coverage: {company_list[:5]}...")
+            else:
+                print(f"⚠️  Limited companies: {company_list}")
+        
+        return success
         """Test Greenhouse companies endpoint"""
         print("\n🔍 Testing Greenhouse Companies...")
         success, companies = self.run_test("Get Greenhouse Companies", "GET", "jobs/greenhouse/companies", 200)
