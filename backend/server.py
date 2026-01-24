@@ -845,6 +845,18 @@ async def search_greenhouse(request: Request):
                     job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
                     job["full_description"] = ""
                     
+                    # Mark as new if posted in last 24 hours
+                    job_posted_date = job.get("posted_at")
+                    is_new = False
+                    if job_posted_date:
+                        try:
+                            posted_dt = datetime.fromisoformat(job_posted_date.replace('Z', '+00:00'))
+                            hours_ago = (datetime.now(timezone.utc) - posted_dt).total_seconds() / 3600
+                            is_new = hours_ago <= 24
+                        except:
+                            is_new = False
+                    job["is_new"] = is_new
+                    
                     # Stream this job immediately
                     jobs_found += 1
                     yield f"data: {json.dumps(job)}\n\n"
