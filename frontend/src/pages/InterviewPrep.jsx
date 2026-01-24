@@ -267,7 +267,6 @@ export default function InterviewPrep({ user }) {
                         }}
                       />
                     </div>
-                    </div>
                   </ScrollArea>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[500px] text-center">
