@@ -691,7 +691,9 @@ async def enrich_greenhouse_job(job: Dict, profile: Optional[Dict]) -> Dict:
 @api_router.post("/jobs/greenhouse/search")
 async def search_greenhouse(request: Request):
     """Search for jobs from Greenhouse, Lever, and Ashby-powered career pages with streaming."""
+    logger.info("=== GREENHOUSE SEARCH ENDPOINT CALLED ===")
     user = await get_current_user(request)
+    logger.info(f"User authenticated: {user.user_id}")
     
     body = await request.json()
     query = body.get("query", "")
