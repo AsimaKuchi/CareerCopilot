@@ -68,62 +68,33 @@ GREENHOUSE_COMPANIES = [
     "kraken", "gemini", "chainalysis", "alchemy"
 ]
 
-# Known Lever company boards
+# VERIFIED Lever company boards (tested and working)
 LEVER_COMPANIES = [
-    # Original companies
-    "netflix", "github", "robinhood", "grubhub", "strava", "canva",
-    "attentive", "nextdoor", "thumbtack", "classpass", "benchling",
-    "splice", "unity", "calm", "crossover", "greenhouse",
-    "lever", "cockroachdb", "mux", "moveworks",
-    "postscript", "sourcegraph", "cameo", "hopin", "clubhouse",
-    "superhuman", "airtable", "cloudflare", "segment", "twilio",
-    "docker", "elastic", "hashicorp", "kong", "ngrok",
-    "snyk", "temporal", "retool", "webflow", "zapier",
-    "figma", "invision", "miro", "notion", "airtable",
-    "coda", "linear", "asana", "monday", "clickup",
+    # Verified Working - Major Tech
+    "netflix", "canva", "attentive", "benchling", "unity",
+    "greenhouse", "lever", "mux", "sourcegraph", "superhuman",
+    "twilio", "docker", "kong", "ngrok", "temporal", 
+    "webflow", "zapier",
     
-    # Additional Major Companies
-    "box", "yelp", "soundcloud", "vimeo", "medium",
-    "behance", "dribbble", "unsplash", "stackoverflow", "reddit",
+    # Verified Working - Enterprise
+    "box", "medium",
     
-    # Enterprise
-    "servicenow", "workday", "salesforce", "oracle", "sap",
-    "atlassian", "jira", "confluence", "trello", "bitbucket",
+    # Verified Working - Fintech
+    "square",
     
-    # Marketplaces
-    "airbnb", "booking", "expedia", "tripadvisor", "kayak",
-    "stubhub", "ticketmaster", "eventbrite", "meetup",
-    
-    # Fintech
-    "square", "paypal", "venmo", "cashapp", "zelle",
-    "stripe", "adyen", "checkout", "plaid", "finicity",
-    
-    # Social/Content
-    "tiktok", "snap", "pinterest", "tumblr", "wordpress",
-    "substack", "patreon", "onlyfans", "twitch", "mixer",
-    
-    # Gaming
-    "riot-games", "blizzard", "activision", "ea", "epic-games",
-    "discord", "steam", "playstation", "xbox", "nintendo",
-    
-    # Transportation
-    "uber", "lyft", "doordash", "postmates", "grubhub",
-    "instacart", "gopuff", "cornershop", "getir", "gorillas",
-    
-    # Real Estate/PropTech
-    "zillow", "redfin", "opendoor", "compass", "realtor",
-    "apartments", "rentpath", "costar", "buildium"
+    # Verified Working - Gaming
+    "riot-games", "epic-games"
 ]
 
-# Known Ashby company boards  
+# VERIFIED Ashby company boards (tested and working)
 ASHBY_COMPANIES = [
-    "linear", "vercel", "replicate", "anthropic", "perplexity",
-    "together", "modal", "watershed", "vanta", "merge",
-    "census", "hightouch", "dbtlabs", "hex", "omni",
-    "preset", "metabase", "lightdash", "superset", "mode",
-    "looker", "sigma", "thoughtspot", "holistics", "periscope",
-    "chartio", "redash", "dash", "tableau", "qlik"
+    "linear", "vercel", "anthropic", "perplexity",
+    "together", "modal", "vanta", "merge", "census"
 ]
+
+# Job cache settings
+JOB_CACHE_TTL_MINUTES = 30  # Cache jobs for 30 minutes
+PARALLEL_BATCH_SIZE = 15    # Fetch 15 companies in parallel
 
 # Create the main app
 app = FastAPI()
