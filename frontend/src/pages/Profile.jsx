@@ -21,8 +21,6 @@ import {
   CheckCircle,
   Shield,
   Building2,
-  TrendingUp,
-  Download,
   Phone,
   Linkedin,
 } from "lucide-react";
