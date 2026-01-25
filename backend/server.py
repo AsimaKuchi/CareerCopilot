@@ -106,6 +106,19 @@ class UserProfile(BaseModel):
     # Contact information for auto-fill
     phone_number: Optional[str] = None
     linkedin_url: Optional[str] = None
+    # Auto-application fields
+    current_company: Optional[str] = None
+    willing_to_relocate: Optional[str] = None  # yes, no, open_to_discussion
+    notice_period: Optional[str] = None  # immediately, two_weeks, one_month, two_months, three_months_plus
+    referral_source: Optional[str] = None  # Default answer for "How did you hear about us?"
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    # Address fields
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None  # State/Province
+    address_postal_code: Optional[str] = None
+    address_country: Optional[str] = None
     # Application intensity and tracking
     application_intensity: str = "balanced"  # conservative, balanced, ambitious
     daily_applications_count: int = 0
