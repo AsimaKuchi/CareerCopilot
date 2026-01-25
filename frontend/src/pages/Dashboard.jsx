@@ -17,16 +17,22 @@ import {
   ArrowRight,
   Search,
   Sparkles,
+  Star,
+  MapPin,
+  Building,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard({ user }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [savedJobs, setSavedJobs] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
+    fetchSavedJobs();
   }, []);
 
   const fetchStats = async () => {
@@ -41,6 +47,20 @@ export default function Dashboard({ user }) {
       toast.error("Failed to load dashboard stats");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSavedJobs = async () => {
+    try {
+      const response = await fetch(`${API}/jobs/saved`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSavedJobs(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch saved jobs:", error);
     }
   };
 
