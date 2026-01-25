@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Navbar from "@/components/Navbar";
+import AnalyzeMatchDialog from "@/components/AnalyzeMatchDialog";
 import {
   Search,
   MapPin,
@@ -43,6 +44,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 
