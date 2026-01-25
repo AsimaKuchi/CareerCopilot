@@ -357,6 +357,10 @@ export default function Applications({ user }) {
         return <CheckCircle className="w-5 h-5 text-emerald-400" />;
       case "pending":
         return <Clock className="w-5 h-5 text-amber-400" />;
+      case "approved":
+        return <CheckCircle className="w-5 h-5 text-blue-400" />;
+      case "ready_to_submit":
+        return <Rocket className="w-5 h-5 text-purple-400" />;
       case "rejected":
         return <XCircle className="w-5 h-5 text-red-400" />;
       default:
@@ -370,6 +374,10 @@ export default function Applications({ user }) {
         return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
       case "pending":
         return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      case "approved":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "ready_to_submit":
+        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
       case "rejected":
         return "bg-red-500/10 text-red-400 border-red-500/20";
       default:
