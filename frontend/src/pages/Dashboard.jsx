@@ -357,7 +357,7 @@ export default function Dashboard({ user }) {
               <>
                 {savedJobs.last_search_query && (
                   <p className="text-sm text-muted-foreground mb-4">
-                    Last search: "{savedJobs.last_search_query}" in {savedJobs.last_search_location || "Any location"}
+                    Last search: &quot;{savedJobs.last_search_query}&quot; in {savedJobs.last_search_location || "Any location"}
                     {savedJobs.updated_at && (
                       <span className="ml-2">
                         • Updated {new Date(savedJobs.updated_at).toLocaleDateString()}
