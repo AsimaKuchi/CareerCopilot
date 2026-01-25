@@ -152,6 +152,18 @@ export default function JobSearch({ user }) {
                     } else if (data.done) {
                       // Stream completed
                       console.log(`Greenhouse search completed: ${data.total} jobs found`);
+                      
+                      // Check if fallback is suggested (0 results for multi-word query)
+                      if (data.suggest_fallback && data.total === 0) {
+                        // Automatically trigger fallback search
+                        console.log("No exact matches found. Searching for related roles...");
+                        toast.info(`No exact "${data.original_query}" jobs found. Showing related roles in your location...`);
+                        
+                        // Trigger fallback search with same location, broader matching
+                        setTimeout(() => {
+                          performFallbackSearch(searchQuery, searchLocation, source);
+                        }, 500);
+                      }
                     } else {
                       // New job received - add it to temp list
                       tempJobs.push(data);
