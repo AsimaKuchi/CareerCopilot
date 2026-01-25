@@ -843,7 +843,7 @@ export default function JobSearch({ user }) {
                           data-testid={`apply-btn-${i}`}
                           onClick={() => handleApplyClick(job)}
                           className="bg-indigo-500 hover:bg-indigo-600"
-                          disabled={job.match_recommendation === "skip"}
+                          disabled={isNotRecommended}
                         >
                           <Sparkles className="w-4 h-4 mr-2" />
                           Quick Apply
