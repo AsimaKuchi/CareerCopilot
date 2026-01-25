@@ -806,8 +806,9 @@ async def search_greenhouse(request: Request):
     body = await request.json()
     query = body.get("query", "")
     location = body.get("location", "")
+    is_fallback = body.get("fallback_search", False)
     
-    logger.info(f"Multi-platform job search (streaming): query='{query}', location='{location}'")
+    logger.info(f"Multi-platform job search (streaming): query='{query}', location='{location}', fallback={is_fallback}")
     
     # Get user profile for matching and intensity filtering
     profile = await db.user_profiles.find_one(
