@@ -482,8 +482,8 @@ export default function Profile({ user }) {
               <div className="pt-4 border-t border-white/10">
                 <Label className="text-foreground mb-2 block">Preferred Work Arrangement</Label>
                 <Select
-                  value={profile?.work_arrangement || ""}
-                  onValueChange={(value) => updateProfile({ work_arrangement: value }, true)}
+                  value={profile?.preferred_work_arrangement || ""}
+                  onValueChange={(value) => updateProfile({ preferred_work_arrangement: value }, true)}
                 >
                   <SelectTrigger className="bg-white/5 border-white/10" data-testid="work-arrangement-select">
                     <SelectValue placeholder="Select your preference" />
