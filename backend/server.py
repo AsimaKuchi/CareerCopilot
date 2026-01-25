@@ -1346,6 +1346,124 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     # 2. Skills Match (max +20 points) - Enhanced with resume analysis
     skills = profile.get("skills", [])
     matched_skills = []
+    
+    # 1.2 SKILL OVERLAP (20 points) - Required vs Preferred skills
+    skill_score = 0
+    matched_skills = []
+    resume_skills = []
+    
+    # Common technical and business skills to check
+    skill_library = [
+        "python", "javascript", "java", "sql", "excel", "tableau", "power bi",
+        "aws", "azure", "docker", "kubernetes", "react", "node", "angular",
+        "machine learning", "data analysis", "project management", "agile",
+        "salesforce", "sap", "oracle", "mongodb", "postgresql", "git",
+        "financial modeling", "budgeting", "forecasting", "reporting",
+        "leadership", "stakeholder management", "workday", "peoplesoft"
+    ]
+    
+    # Check profile skills
+    for skill in profile_skills:
+        if skill in job_desc or skill in job_title:
+            matched_skills.append(skill)
+    
+    # Check resume for additional skills
+    if has_resume:
+        for skill in skill_library:
+            if skill in job_desc and skill in resume_text:
+                if skill not in matched_skills:
+                    resume_skills.append(skill)
+    
+    all_skills = matched_skills + resume_skills
+    
+    if all_skills:
+        # Weight: more skills = higher score, cap at 20
+        skill_ratio = min(len(all_skills) / 5, 1.0)  # 5+ skills = full points
+        skill_score = int(skill_ratio * 20)
+        
+        if len(all_skills) >= 3:
+            strengths.append(f"Strong skill match: {', '.join(all_skills[:4])} align with job requirements")
+        elif len(all_skills) >= 1:
+            strengths.append(f"Key skills match: {', '.join(all_skills[:2])} mentioned in requirements")
+    else:
+        skill_score = 3  # Minimal points
+        if profile_skills or has_resume:
+            risks.append("Limited skill overlap detected - may need to highlight transferable skills")
+    
+    score += skill_score
+    
+    # 1.3 EXPERIENCE SCOPE (20 points) - Seniority based on scope, not just years
+    exp_score = 0
+    seniority_gap = 0
+    
+    # Detect job seniority from title
+    job_seniority_level = 2  # Default: mid
+    job_seniority_name = "mid"
+    
+    if any(word in job_title for word in ["ceo", "cto", "cfo", "vp", "chief"]):
+        job_seniority_level = 6
+        job_seniority_name = "executive"
+    elif any(word in job_title for word in ["director", "head of"]):
+        job_seniority_level = 5
+        job_seniority_name = "director"
+    elif any(word in job_title for word in ["senior", "sr.", "lead", "principal", "staff"]):
+        job_seniority_level = 3
+        job_seniority_name = "senior"
+    elif any(word in job_title for word in ["junior", "jr.", "entry", "associate", "graduate", "intern"]):
+        job_seniority_level = 1
+        job_seniority_name = "junior"
+    elif any(word in job_title for word in ["manager"]):
+        job_seniority_level = 4
+        job_seniority_name = "manager"
+    
+    # Determine user seniority
+    seniority_map = {"entry": 0, "junior": 1, "mid": 2, "senior": 3, "lead": 4, "manager": 4, "director": 5, "executive": 6}
+    user_seniority_level = seniority_map.get(user_seniority, None)
+    
+    # Infer from years if not set
+    if user_seniority_level is None:
+        if user_years <= 2:
+            user_seniority_level = 1
+            user_seniority = "junior"
+        elif user_years <= 5:
+            user_seniority_level = 2
+            user_seniority = "mid"
+        elif user_years <= 8:
+            user_seniority_level = 3
+            user_seniority = "senior"
+        else:
+            user_seniority_level = 4
+            user_seniority = "lead"
+    
+    seniority_gap = job_seniority_level - user_seniority_level
+    
+    # Scoring based on seniority alignment
+    if seniority_gap == 0:
+        exp_score = 20
+        strengths.append(f"Experience aligns well: Your {user_seniority}-level background matches this {job_seniority_name} position")
+    elif seniority_gap == 1:
+        exp_score = 15
+        risks.append(f"One level stretch: This {job_seniority_name} role is one level above your {user_seniority} position - achievable with strong application")
+    elif seniority_gap == -1:
+        exp_score = 18
+        strengths.append(f"Solid fit: Your {user_seniority}-level experience exceeds this {job_seniority_name} position")
+    elif seniority_gap >= 2:
+        exp_score = 5
+        risks.append(f"Significant stretch: This {job_seniority_name} role is {seniority_gap} levels above your current {user_seniority} level - high risk")
+        auto_apply_blocked = True
+        auto_apply_reason = "Seniority gap exceeds one level"
+    elif seniority_gap <= -2:
+        exp_score = 10
+        risks.append(f"Overqualified: This {job_seniority_name} role may be below your {user_seniority}-level experience")
+    
+    # Resume evidence boost
+    if has_resume and user_years > 0:
+        leadership_keywords = ["led", "managed", "directed", "owned", "coordinated", "supervised"]
+        if any(kw in resume_text for kw in leadership_keywords):
+            exp_score = min(exp_score + 2, 20)
+    
+    score += exp_score
+
     missing_skills = []
     resume_matched_skills = []
     
