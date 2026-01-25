@@ -579,15 +579,20 @@ export default function Applications({ user }) {
                                       <FileText className="w-4 h-4" />
                                       Optimized Resume
                                     </h5>
-                                    <a
-                                      href={`${API}/applications/${app.application_id}/download/resume`}
-                                      download
-                                      className="inline-flex items-center h-7 px-3 text-xs rounded-md border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                                      onClick={() => toast.success('Downloading resume...')}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        // Open in new window - this carries cookies for auth
+                                        const downloadUrl = `${API}/applications/${app.application_id}/download/resume`;
+                                        window.open(downloadUrl, '_blank');
+                                        toast.success('Download started! Check your Downloads folder.');
+                                      }}
+                                      className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Download .docx
-                                    </a>
+                                    </Button>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.optimized_resume}
@@ -601,15 +606,20 @@ export default function Applications({ user }) {
                                       <MessageSquare className="w-4 h-4" />
                                       Cover Letter
                                     </h5>
-                                    <a
-                                      href={`${API}/applications/${app.application_id}/download/cover-letter`}
-                                      download
-                                      className="inline-flex items-center h-7 px-3 text-xs rounded-md border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
-                                      onClick={() => toast.success('Downloading cover letter...')}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        // Open in new window - this carries cookies for auth
+                                        const downloadUrl = `${API}/applications/${app.application_id}/download/cover-letter`;
+                                        window.open(downloadUrl, '_blank');
+                                        toast.success('Download started! Check your Downloads folder.');
+                                      }}
+                                      className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Download .docx
-                                    </a>
+                                    </Button>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.cover_letter}
