@@ -65,6 +65,8 @@ export default function JobSearch({ user }) {
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [jobSource, setJobSource] = useState("all"); // "all", "quality" (Greenhouse/Lever/Ashby), "aggregator" (LinkedIn/Indeed/etc)
+  const [showAnalyzeDialog, setShowAnalyzeDialog] = useState(false);
+  const [jobToAnalyze, setJobToAnalyze] = useState(null);
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
