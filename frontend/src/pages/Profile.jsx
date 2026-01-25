@@ -525,6 +525,186 @@ export default function Profile({ user }) {
                   Optional but recommended. Many employers request your LinkedIn profile.
                 </p>
               </div>
+
+              <div>
+                <Label className="text-foreground mb-2 block">GitHub URL (for tech roles)</Label>
+                <Input
+                  data-testid="github-input"
+                  type="url"
+                  placeholder="e.g., https://github.com/yourusername"
+                  value={profile?.github_url || ""}
+                  onChange={(e) => updateProfile({ github_url: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+
+              <div>
+                <Label className="text-foreground mb-2 block">Portfolio / Personal Website</Label>
+                <Input
+                  data-testid="portfolio-input"
+                  type="url"
+                  placeholder="e.g., https://yourportfolio.com"
+                  value={profile?.portfolio_url || ""}
+                  onChange={(e) => updateProfile({ portfolio_url: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Auto-Application Details Card */}
+          <Card className="glass-light" data-testid="auto-application-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-purple-400" />
+                Auto-Application Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-sm text-muted-foreground">
+                These fields are used to automatically fill out job application forms. Complete them once, apply everywhere.
+              </p>
+
+              <div>
+                <Label className="text-foreground mb-2 block">Current Company</Label>
+                <Input
+                  data-testid="current-company-input"
+                  placeholder="e.g., Acme Corp (leave blank if unemployed)"
+                  value={profile?.current_company || ""}
+                  onChange={(e) => updateProfile({ current_company: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+
+              <div>
+                <Label className="text-foreground mb-2 block">
+                  Willing to Relocate?
+                  <span className="text-red-400 ml-1">*</span>
+                </Label>
+                <Select
+                  value={profile?.willing_to_relocate || ""}
+                  onValueChange={(value) => updateProfile({ willing_to_relocate: value })}
+                >
+                  <SelectTrigger className="bg-white/5 border-white/10" data-testid="relocation-select">
+                    <SelectValue placeholder="Select your preference" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes - willing to relocate</SelectItem>
+                    <SelectItem value="no">No - not willing to relocate</SelectItem>
+                    <SelectItem value="open_to_discussion">Open to discussion</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-foreground mb-2 block">
+                  Notice Period / When can you start?
+                  <span className="text-red-400 ml-1">*</span>
+                </Label>
+                <Select
+                  value={profile?.notice_period || ""}
+                  onValueChange={(value) => updateProfile({ notice_period: value })}
+                >
+                  <SelectTrigger className="bg-white/5 border-white/10" data-testid="notice-period-select">
+                    <SelectValue placeholder="Select your availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediately">Immediately available</SelectItem>
+                    <SelectItem value="two_weeks">2 weeks notice</SelectItem>
+                    <SelectItem value="one_month">1 month notice</SelectItem>
+                    <SelectItem value="two_months">2 months notice</SelectItem>
+                    <SelectItem value="three_months_plus">3+ months notice</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-foreground mb-2 block">
+                  Default answer for &quot;How did you hear about us?&quot;
+                </Label>
+                <Input
+                  data-testid="referral-source-input"
+                  placeholder="e.g., LinkedIn, Company website, Referral"
+                  value={profile?.referral_source || ""}
+                  onChange={(e) => updateProfile({ referral_source: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+                <p className="text-sm text-gray-400 mt-1">
+                  This will be used as the default answer when applications ask this question
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Address Card */}
+          <Card className="glass-light" data-testid="address-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-rose-400" />
+                Full Address (for applications)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Some job applications require your full address. This will be auto-filled when needed.
+              </p>
+
+              <div>
+                <Label className="text-foreground mb-2 block">Street Address</Label>
+                <Input
+                  data-testid="address-street-input"
+                  placeholder="e.g., 123 Main Street, Apt 4B"
+                  value={profile?.address_street || ""}
+                  onChange={(e) => updateProfile({ address_street: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-foreground mb-2 block">City</Label>
+                  <Input
+                    data-testid="address-city-input"
+                    placeholder="e.g., Toronto"
+                    value={profile?.address_city || ""}
+                    onChange={(e) => updateProfile({ address_city: e.target.value })}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground mb-2 block">State/Province</Label>
+                  <Input
+                    data-testid="address-state-input"
+                    placeholder="e.g., Ontario"
+                    value={profile?.address_state || ""}
+                    onChange={(e) => updateProfile({ address_state: e.target.value })}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-foreground mb-2 block">Postal/ZIP Code</Label>
+                  <Input
+                    data-testid="address-postal-input"
+                    placeholder="e.g., M5V 1A1"
+                    value={profile?.address_postal_code || ""}
+                    onChange={(e) => updateProfile({ address_postal_code: e.target.value })}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground mb-2 block">Country</Label>
+                  <Input
+                    data-testid="address-country-input"
+                    placeholder="e.g., Canada"
+                    value={profile?.address_country || ""}
+                    onChange={(e) => updateProfile({ address_country: e.target.value })}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
