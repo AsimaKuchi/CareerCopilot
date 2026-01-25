@@ -585,7 +585,10 @@ export default function Profile({ user }) {
               </div>
 
               <div>
-                <Label className="text-foreground mb-2 block">GitHub URL (for tech roles)</Label>
+                <Label className="text-foreground mb-2 block">
+                  GitHub URL
+                  <span className="text-gray-400 text-xs font-normal ml-2">(Optional - for tech roles)</span>
+                </Label>
                 <Input
                   data-testid="github-input"
                   type="url"
@@ -597,7 +600,10 @@ export default function Profile({ user }) {
               </div>
 
               <div>
-                <Label className="text-foreground mb-2 block">Portfolio / Personal Website</Label>
+                <Label className="text-foreground mb-2 block">
+                  Portfolio / Personal Website
+                  <span className="text-gray-400 text-xs font-normal ml-2">(Optional)</span>
+                </Label>
                 <Input
                   data-testid="portfolio-input"
                   type="url"
