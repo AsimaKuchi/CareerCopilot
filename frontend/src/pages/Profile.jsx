@@ -483,7 +483,7 @@ export default function Profile({ user }) {
                 <Label className="text-foreground mb-2 block">Preferred Work Arrangement</Label>
                 <Select
                   value={profile?.work_arrangement || ""}
-                  onValueChange={(value) => updateProfile({ work_arrangement: value })}
+                  onValueChange={(value) => updateProfile({ work_arrangement: value }, true)}
                 >
                   <SelectTrigger className="bg-white/5 border-white/10" data-testid="work-arrangement-select">
                     <SelectValue placeholder="Select your preference" />
