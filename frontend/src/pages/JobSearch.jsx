@@ -997,6 +997,13 @@ export default function JobSearch({ user }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Analyze Match Dialog */}
+      <AnalyzeMatchDialog
+        job={jobToAnalyze}
+        open={showAnalyzeDialog}
+        onOpenChange={setShowAnalyzeDialog}
+      />
     </div>
   );
 }
