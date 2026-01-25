@@ -37,35 +37,14 @@ RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
 # VERIFIED Greenhouse company boards (tested and working - no 404s)
 # These companies have active Greenhouse job boards as of Jan 2025
 GREENHOUSE_COMPANIES = [
-    # Verified Working - Major Tech
-    "airbnb", "stripe", "figma", "notion", "dropbox", "discord", 
-    "doordash", "instacart", "coinbase", "affirm", "brex", "ramp",
-    "rippling", "gusto", "lattice", "carta", "deel", "gitlab", 
-    "datadog", "databricks", "confluent",
-    
-    # Verified Working - AI/ML
-    "openai", "anthropic", "cohere", "huggingface", "scale",
-    
-    # Verified Working - Developer Tools  
-    "postman", "sentry", "launchdarkly", "mixpanel", "amplitude",
-    
-    # Verified Working - Fintech
-    "wise", "klarna", "checkout", "adyen", "marqeta",
-    
-    # Verified Working - Enterprise
-    "asana", "miro", "intercom", "zendesk", "gong",
-    
-    # Verified Working - E-commerce
-    "etsy", "wayfair", "faire",
-    
-    # Verified Working - Healthcare
-    "oscar", "zocdoc", "headway",
-    
-    # Verified Working - EdTech
-    "coursera", "duolingo",
-    
-    # Verified Working - Crypto
-    "kraken", "gemini", "chainalysis", "alchemy"
+    # Verified Working - Tested Jan 2025
+    "airbnb", "stripe", "figma", "dropbox", "discord", 
+    "instacart", "coinbase", "affirm", "brex", "gusto", 
+    "lattice", "carta", "gitlab", "datadog", "databricks",
+    "anthropic", "postman", "launchdarkly", "mixpanel", "amplitude",
+    "marqeta", "adyen", "asana", "intercom", "oscar",
+    "faire", "headway", "coursera", "duolingo", "gemini",
+    "zocdoc", "alchemy"
 ]
 
 # VERIFIED Lever company boards (tested and working)
