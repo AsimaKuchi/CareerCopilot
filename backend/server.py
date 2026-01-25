@@ -2120,7 +2120,7 @@ Generate the analysis now. Respond with ONLY valid JSON, no other text."""
             comparison_json = json.loads(clean_response)
             
             # Validate structure
-            required_keys = ["strengths", "areas_to_address", "keywords_to_include", "suggested_resume_edits"]
+            required_keys = ["decision_summary", "strengths", "improvement_opportunities", "keywords_to_include", "suggested_resume_edits"]
             for key in required_keys:
                 if key not in comparison_json:
                     raise ValueError(f"Missing required key: {key}")
