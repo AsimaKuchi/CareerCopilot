@@ -245,6 +245,91 @@ export default function JobSearch({ user }) {
     }
   };
 
+  const performFallbackSearch = async (searchQuery, searchLocation, source) => {
+    // Fallback search: Show related jobs with shared keywords, ranked by resume match
+    // Keeps SAME location - never goes global
+    try {
+      setLoading(true);
+      let allJobs = [];
+
+      // Quality sources with fallback flag
+      if (source === "quality" || source === "all") {
+        try {
+          const response = await fetch(`${API}/jobs/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              query: searchQuery.trim(),
+              location: searchLocation?.trim() || "",
+              fallback_search: true  // Signal to backend to use broader matching
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch");
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          const tempJobs = [];
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const jsonStr = line.slice(6);
+                try {
+                  const data = JSON.parse(jsonStr);
+
+                  if (data.heartbeat || data.progress) {
+                    // Ignore
+                  } else if (data.done) {
+                    console.log(`Fallback search completed: ${data.total} related jobs found`);
+                  } else {
+                    tempJobs.push(data);
+                    
+                    // Update UI immediately
+                    const sortedJobs = [...tempJobs].sort((a, b) => {
+                      return (b.match_score || 0) - (a.match_score || 0);
+                    });
+                    setJobs(sortedJobs);
+                  }
+                } catch (parseErr) {
+                  console.error("Failed to parse SSE data:", parseErr);
+                }
+              }
+            }
+          }
+
+          allJobs = [...tempJobs];
+        } catch (err) {
+          console.error("Fallback search error:", err);
+        }
+      }
+
+      setJobs(allJobs);
+      
+      if (allJobs.length > 0) {
+        toast.success(`Found ${allJobs.length} related roles matching your background`);
+      } else {
+        toast.info("No related jobs found in your location. Try broadening your search.");
+      }
+    } catch (error) {
+      toast.error("Fallback search failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const findJobsForMe = async () => {
     if (!profile) {
       toast.error("Please complete your profile first");
