@@ -1414,6 +1414,10 @@ CERTIFICATIONS
         print("\n🎯 TESTING EXACT USER REPORTED FAILING SEARCH")
         exact_search_success = self.test_exact_user_reported_search()
         
+        # NEW: Test business analyst phrase matching (MAIN REVIEW REQUEST)
+        print("\n🎯 TESTING BUSINESS ANALYST PHRASE MATCHING (REVIEW REQUEST)")
+        phrase_matching_success = self.test_business_analyst_phrase_matching()
+        
         # Then test other scenarios
         self.test_greenhouse_streaming_scenarios()
         
