@@ -648,12 +648,13 @@ export default function JobSearch({ user }) {
               const recBadge = getRecommendationBadge(job.match_recommendation, job.skip_reason);
               const RecIcon = recBadge.icon;
               const isExpanded = expandedJobId === job.job_id;
+              const isNotRecommended = job.match_recommendation === "skip" || job.match_recommendation === "not_recommended";
               
               return (
               <Card
                 key={job.job_id || i}
                 data-testid={`job-card-${i}`}
-                className={`glass-light card-hover ${job.match_recommendation === "skip" ? "opacity-60" : ""}`}
+                className={`glass-light card-hover ${isNotRecommended ? "opacity-60" : ""}`}
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
