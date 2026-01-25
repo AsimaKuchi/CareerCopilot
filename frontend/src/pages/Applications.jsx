@@ -579,59 +579,15 @@ export default function Applications({ user }) {
                                       <FileText className="w-4 h-4" />
                                       Optimized Resume
                                     </h5>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={async () => {
-                                        try {
-                                          toast.info('Preparing download...', { duration: 2000 });
-                                          
-                                          const response = await fetch(`${API}/applications/${app.application_id}/download/resume`, {
-                                            credentials: 'include',
-                                          });
-                                          
-                                          if (!response.ok) {
-                                            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                                            throw new Error(error.detail || 'Download failed');
-                                          }
-                                          
-                                          const blob = await response.blob();
-                                          
-                                          if (blob.size === 0) {
-                                            throw new Error('Downloaded file is empty');
-                                          }
-                                          
-                                          // Create filename
-                                          const company = app.company.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const jobTitle = app.job_title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const filename = `Resume_${company}_${jobTitle}.docx`;
-                                          
-                                          // Force browser download
-                                          const url = window.URL.createObjectURL(blob);
-                                          const link = document.createElement('a');
-                                          link.href = url;
-                                          link.download = filename;
-                                          link.style.display = 'none';
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          
-                                          // Cleanup
-                                          setTimeout(() => {
-                                            document.body.removeChild(link);
-                                            window.URL.revokeObjectURL(url);
-                                          }, 100);
-                                          
-                                          toast.success(`Resume downloaded as "${filename}"! Check your Downloads folder.`);
-                                        } catch (err) {
-                                          console.error('Download error:', err);
-                                          toast.error(`Failed to download resume: ${err.message}`);
-                                        }
-                                      }}
-                                      className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                    <a
+                                      href={`${API}/applications/${app.application_id}/download/resume`}
+                                      download
+                                      className="inline-flex items-center h-7 px-3 text-xs rounded-md border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                                      onClick={() => toast.success('Downloading resume...')}
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Download .docx
-                                    </Button>
+                                    </a>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.optimized_resume}
@@ -645,59 +601,15 @@ export default function Applications({ user }) {
                                       <MessageSquare className="w-4 h-4" />
                                       Cover Letter
                                     </h5>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={async () => {
-                                        try {
-                                          toast.info('Preparing download...', { duration: 2000 });
-                                          
-                                          const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
-                                            credentials: 'include',
-                                          });
-                                          
-                                          if (!response.ok) {
-                                            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                                            throw new Error(error.detail || 'Download failed');
-                                          }
-                                          
-                                          const blob = await response.blob();
-                                          
-                                          if (blob.size === 0) {
-                                            throw new Error('Downloaded file is empty');
-                                          }
-                                          
-                                          // Create filename
-                                          const company = app.company.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const jobTitle = app.job_title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const filename = `Cover_Letter_${company}_${jobTitle}.docx`;
-                                          
-                                          // Force browser download
-                                          const url = window.URL.createObjectURL(blob);
-                                          const link = document.createElement('a');
-                                          link.href = url;
-                                          link.download = filename;
-                                          link.style.display = 'none';
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          
-                                          // Cleanup
-                                          setTimeout(() => {
-                                            document.body.removeChild(link);
-                                            window.URL.revokeObjectURL(url);
-                                          }, 100);
-                                          
-                                          toast.success(`Cover letter downloaded as "${filename}"! Check your Downloads folder.`);
-                                        } catch (err) {
-                                          console.error('Download error:', err);
-                                          toast.error(`Failed to download cover letter: ${err.message}`);
-                                        }
-                                      }}
-                                      className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                                    <a
+                                      href={`${API}/applications/${app.application_id}/download/cover-letter`}
+                                      download
+                                      className="inline-flex items-center h-7 px-3 text-xs rounded-md border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                                      onClick={() => toast.success('Downloading cover letter...')}
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Download .docx
-                                    </Button>
+                                    </a>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.cover_letter}
