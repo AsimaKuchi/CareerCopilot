@@ -36,6 +36,7 @@ RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
 
 # Known Greenhouse company boards (will be expanded dynamically)
 GREENHOUSE_COMPANIES = [
+    # Original companies
     "airbnb", "stripe", "figma", "notion", "airtable", "dropbox", "slack",
     "twitch", "discord", "spotify", "pinterest", "lyft", "doordash",
     "instacart", "robinhood", "coinbase", "plaid", "affirm", "chime",
@@ -46,7 +47,58 @@ GREENHOUSE_COMPANIES = [
     "openai", "anthropic", "cohere", "huggingface", "scale", "labelbox",
     "weights-and-biases", "mlflow", "prefect", "dagster", "airbyte",
     "fivetran", "dbt-labs", "looker", "metabase", "preset", "hex",
-    "retool", "airplane", "appsmith", "budibase", "tooljet"
+    "retool", "airplane", "appsmith", "budibase", "tooljet",
+    
+    # Major Canadian Companies
+    "shopify", "wealthsimple", "hootsuite", "ada", "lightspeedhq",
+    
+    # Major Tech Companies
+    "uber", "lyft", "reddit", "stackoverflow", "squarespace", "squareup",
+    "mongodb", "elastic", "confluent", "snyk", "cloudflare",
+    
+    # Fintech & Finance
+    "wise", "n26", "revolut", "monzo", "nubank", "klarna",
+    "checkout", "adyen", "marqeta", "unit", "sezzle",
+    
+    # E-commerce & Marketplaces
+    "etsy", "wayfair", "postmates", "gopuff", "getir",
+    "faire", "turo", "outdoorsy", "poshmark",
+    
+    # Enterprise SaaS
+    "asana", "monday", "airtable", "miro", "canva",
+    "freshworks", "intercom", "zendesk", "gong", "clari",
+    "outreach", "salesloft", "apollo", "zoominfo",
+    
+    # Developer Tools
+    "postman", "sentry", "launchdarkly", "splitio", "optimizely",
+    "mixpanel", "amplitude", "heap", "segment", "rudderstack",
+    
+    # AI/ML Companies
+    "deepgram", "replicate", "runway", "midjourney", "jasper",
+    "copy", "writer", "grammarly", "otter",
+    
+    # Healthcare Tech
+    "oscar", "cityblock", "devoted", "clover", "onemedical",
+    "zocdoc", "headway", "talkspace", "cerebral",
+    
+    # EdTech
+    "coursera", "udemy", "masterclass", "duolingo", "outschool",
+    "quizlet", "kahoot", "teachable", "thinkific",
+    
+    # Climate/Sustainability
+    "watershed", "persefoni", "patch", "watershed", "lanzatech",
+    
+    # Crypto/Web3
+    "kraken", "gemini", "blockfi", "anchorage", "chainalysis",
+    "alchemy", "quicknode", "moralis", "thirdweb",
+    
+    # Productivity & Collaboration
+    "coda", "roam", "mem", "reflect", "craft",
+    "linear", "height", "dopt", "plane",
+    
+    # Security
+    "oomnitza", "vanta", "drata", "secureframe", "tugboat",
+    "wiz", "lacework", "orca", "aquasec"
 ]
 
 # Known Lever company boards
