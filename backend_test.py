@@ -1702,6 +1702,10 @@ CERTIFICATIONS
         print("🎯 PRIORITY TESTS - REVIEW REQUEST FOCUS")
         print("="*60)
         
+        # NEW: Test Download Endpoints (MAIN REVIEW REQUEST)
+        print("\n🎯 Testing Download Endpoints (MAIN REVIEW REQUEST)")
+        download_success = self.test_download_endpoints()
+        
         # NEW: Test Analyze Match feature end-to-end (MAIN REVIEW REQUEST)
         print("\n🎯 Testing NEW Analyze Match Feature (MAIN REVIEW REQUEST)")
         analyze_match_success = self.test_analyze_match_feature()
