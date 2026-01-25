@@ -444,29 +444,19 @@ export default function Profile({ user }) {
                   className="bg-white/5 border-white/10 w-32"
                 />
               </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-foreground mb-2 block">Minimum Salary ($)</Label>
-                  <Input
-                    data-testid="salary-min-input"
-                    type="number"
-                    placeholder="e.g., 50000"
-                    value={profile?.salary_min || ""}
-                    onChange={(e) => updateProfile({ salary_min: parseInt(e.target.value) || null })}
-                    className="bg-white/5 border-white/10"
-                  />
-                </div>
-                <div>
-                  <Label className="text-foreground mb-2 block">Maximum Salary ($)</Label>
-                  <Input
-                    data-testid="salary-max-input"
-                    type="number"
-                    placeholder="e.g., 100000"
-                    value={profile?.salary_max || ""}
-                    onChange={(e) => updateProfile({ salary_max: parseInt(e.target.value) || null })}
-                    className="bg-white/5 border-white/10"
-                  />
-                </div>
+              <div>
+                <Label className="text-foreground mb-2 block">Salary Expectations ($)</Label>
+                <Input
+                  data-testid="salary-expectations-input"
+                  type="number"
+                  placeholder="e.g., 75000"
+                  value={profile?.salary_min || ""}
+                  onChange={(e) => updateProfile({ salary_min: parseInt(e.target.value) || null })}
+                  className="bg-white/5 border-white/10"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your desired annual salary
+                </p>
               </div>
             </CardContent>
           </Card>
