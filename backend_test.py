@@ -1441,6 +1441,11 @@ CERTIFICATIONS
         else:
             print(f"   ❌ Analyze Match Feature: FAILED")
         
+        if phrase_matching_success:
+            print(f"   ✅ Business Analyst Phrase Matching: WORKING")
+        else:
+            print(f"   ❌ Business Analyst Phrase Matching: FAILED")
+        
         if self.failed_tests:
             print(f"\n❌ Failed tests ({len(self.failed_tests)}):")
             for test in self.failed_tests:
