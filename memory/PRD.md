@@ -11,7 +11,7 @@ Build a website that helps users find jobs best suited for them based on what in
 
 ## User Choices
 - **AI Provider**: OpenAI GPT-5.2 (via Emergent Universal Key)
-- **Job Data Source**: JSearch API (RapidAPI) + Greenhouse (planned)
+- **Job Data Source**: JSearch API (RapidAPI) + Greenhouse + Lever (real-time scraping)
 - **Authentication**: Google Social Login (Emergent OAuth)
 - **Design**: Light theme with glassmorphism
 
@@ -22,7 +22,7 @@ Build a website that helps users find jobs best suited for them based on what in
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
 - **AI**: OpenAI GPT-5.2 via emergentintegrations
-- **Job API**: JSearch (RapidAPI)
+- **Job API**: JSearch (RapidAPI) + Greenhouse/Lever APIs
 - **Auth**: Emergent Google OAuth
 
 ### Key Files
@@ -33,20 +33,24 @@ Build a website that helps users find jobs best suited for them based on what in
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (January 19, 2025)
+## What's Been Implemented (January 25, 2025)
 
 ### MVP Features ✅
 - **Landing Page**: Hero section, features showcase, CTAs with light theme
 - **Google Auth**: Full OAuth flow with session management
-- **Dashboard**: Stats cards, quick actions, profile completion guide
+- **Dashboard**: 
+  - Stats cards, quick actions, profile completion guide
+  - **NEW (Jan 25)**: "Your Saved Jobs" section showing jobs from last search
+  - **NEW (Jan 25)**: "NEW" star badge on jobs not seen before
+  - **NEW (Jan 25)**: "Find New Jobs" button to trigger fresh search
 - **Profile Page**: 
   - Resume upload (PDF, DOCX, TXT)
   - Skills management
   - Job preferences
   - Salary expectations
-  - **NEW**: Work Authorization (citizen, permanent_resident, work_permit, require_sponsorship)
-  - **NEW**: Target Industries (max 3, with "open to any" option)
-  - **NEW**: Seniority Level (entry, junior, mid, senior, lead, manager, director, executive)
+  - Work Authorization (citizen, permanent_resident, work_permit, require_sponsorship)
+  - Target Industries (max 3, with "open to any" option)
+  - Seniority Level (entry, junior, mid, senior, lead, manager, director, executive)
 - **Job Search**: 
   - Real-time search via JSearch API
   - **NEW**: Detailed match evaluation with:
