@@ -7,7 +7,7 @@ from datetime import datetime
 import time
 
 class DownloadTester:
-    def __init__(self, base_url="https://jobsmart-8.preview.emergentagent.com"):
+    def __init__(self, base_url="https://jobmatchpro-15.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = "test_session_1768797070346"  # From auth setup
         self.tests_run = 0

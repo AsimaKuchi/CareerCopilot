@@ -7,7 +7,7 @@ import time
 def test_location_matching_debug():
     """Debug the location matching for the specific user reported search"""
     
-    base_url = "https://jobsmart-8.preview.emergentagent.com"
+    base_url = "https://jobmatchpro-15.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"

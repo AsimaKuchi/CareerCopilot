@@ -28,7 +28,7 @@ A Chrome extension that automatically fills job application forms with your tail
 
 ## How to Use
 
-1. **Log in to JobMatch AI** at https://jobsmart-8.preview.emergentagent.com
+1. **Log in to JobMatch AI** at https://jobmatchpro-15.preview.emergentagent.com
 2. **Find a job** and save it to your applications
 3. **Generate** your tailored resume and cover letter
 4. **Approve** the application
@@ -48,7 +48,7 @@ A Chrome extension that automatically fills job application forms with your tail
 ## Troubleshooting
 
 **"Please log in to JobMatch AI first"**
-- Make sure you're logged in at https://jobsmart-8.preview.emergentagent.com
+- Make sure you're logged in at https://jobmatchpro-15.preview.emergentagent.com
 
 **Form fields not filling**
 - Some custom forms may have non-standard field names

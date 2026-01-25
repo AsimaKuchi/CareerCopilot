@@ -6,7 +6,7 @@ import time
 
 def test_exact_user_search():
     """Test the EXACT search scenario from review request"""
-    base_url = "https://jobsmart-8.preview.emergentagent.com"
+    base_url = "https://jobmatchpro-15.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     print("🎯 TESTING EXACT USER SEARCH SCENARIO")

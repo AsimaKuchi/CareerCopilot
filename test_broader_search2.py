@@ -7,7 +7,7 @@ import time
 def test_broader_analyst_search():
     """Test broader analyst searches to understand job availability"""
     
-    base_url = "https://jobsmart-8.preview.emergentagent.com"
+    base_url = "https://jobmatchpro-15.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"
