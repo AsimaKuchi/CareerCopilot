@@ -3207,17 +3207,25 @@ async def download_resume_docx(request: Request, application_id: str):
     if not app_doc.get("optimized_resume"):
         raise HTTPException(status_code=400, detail="No optimized resume found for this application")
     
-    # Create DOCX file
-    company = app_doc.get("company", "Company").replace(" ", "_")
-    job_title = app_doc.get("job_title", "Position").replace(" ", "_")
+    # Create DOCX file - sanitize filename
+    import re
+    company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
+    job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
     filename = f"Resume_{company}_{job_title}.docx"
     
     buffer = create_docx_from_text(app_doc["optimized_resume"])
     
+    # Use RFC 5987 encoding for filename to handle special characters
+    from urllib.parse import quote
+    encoded_filename = quote(filename)
+    
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
 
 @api_router.get("/applications/{application_id}/download/cover-letter")
@@ -3236,17 +3244,25 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     if not app_doc.get("cover_letter"):
         raise HTTPException(status_code=400, detail="No cover letter found for this application")
     
-    # Create DOCX file
-    company = app_doc.get("company", "Company").replace(" ", "_")
-    job_title = app_doc.get("job_title", "Position").replace(" ", "_")
+    # Create DOCX file - sanitize filename
+    import re
+    company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
+    job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
     filename = f"Cover_Letter_{company}_{job_title}.docx"
     
     buffer = create_docx_from_text(app_doc["cover_letter"])
     
+    # Use RFC 5987 encoding for filename to handle special characters
+    from urllib.parse import quote
+    encoded_filename = quote(filename)
+    
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
 
 @api_router.get("/applications/{application_id}/autofill-script")
