@@ -909,21 +909,45 @@ export default function Applications({ user }) {
                         variant="outline"
                         onClick={async () => {
                           try {
+                            console.log('Downloading cover letter for application:', reviewApp.application_id);
                             const response = await fetch(`${API}/applications/${reviewApp.application_id}/download/cover-letter`, {
-                              credentials: 'include'
+                              credentials: 'include',
+                              headers: {
+                                'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                              }
                             });
-                            if (!response.ok) throw new Error('Download failed');
+                            
+                            console.log('Response status:', response.status);
+                            
+                            if (!response.ok) {
+                              const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                              throw new Error(error.detail || 'Download failed');
+                            }
+                            
                             const blob = await response.blob();
+                            console.log('Blob size:', blob.size, 'type:', blob.type);
+                            
+                            if (blob.size === 0) {
+                              throw new Error('Downloaded file is empty');
+                            }
+                            
                             const url = window.URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = `Cover_Letter_${reviewApp.company.replace(/\s+/g, '_')}.docx`;
                             document.body.appendChild(a);
                             a.click();
-                            window.URL.revokeObjectURL(url);
-                            a.remove();
+                            
+                            // Cleanup
+                            setTimeout(() => {
+                              window.URL.revokeObjectURL(url);
+                              a.remove();
+                            }, 100);
+                            
+                            toast.success('Cover letter downloaded successfully!');
                           } catch (err) {
-                            toast.error('Failed to download');
+                            console.error('Download error:', err);
+                            toast.error(`Failed to download cover letter: ${err.message}`);
                           }
                         }}
                         className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
