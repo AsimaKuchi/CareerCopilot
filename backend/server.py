@@ -644,6 +644,102 @@ async def fetch_ashby_company_jobs(company: str) -> List[Dict]:
     
     return jobs
 
+# ========================
+# PARALLEL BATCH FETCHING & CACHING
+# ========================
+
+async def fetch_all_jobs_parallel() -> List[Dict]:
+    """Fetch jobs from all platforms in parallel batches for speed."""
+    all_jobs = []
+    
+    # Prepare all fetch tasks
+    tasks = []
+    for company in GREENHOUSE_COMPANIES:
+        tasks.append(("greenhouse", company, fetch_greenhouse_company_jobs(company)))
+    for company in LEVER_COMPANIES:
+        tasks.append(("lever", company, fetch_lever_company_jobs(company)))
+    # Skip Ashby for now - requires Playwright
+    
+    logger.info(f"Fetching from {len(tasks)} companies in parallel...")
+    start_time = datetime.now(timezone.utc)
+    
+    # Process in batches for controlled parallelism
+    batch_size = PARALLEL_BATCH_SIZE
+    for i in range(0, len(tasks), batch_size):
+        batch = tasks[i:i + batch_size]
+        batch_coros = [t[2] for t in batch]
+        
+        results = await asyncio.gather(*batch_coros, return_exceptions=True)
+        
+        for j, result in enumerate(results):
+            platform, company, _ = batch[j]
+            if isinstance(result, list) and result:
+                all_jobs.extend(result)
+                logger.debug(f"  {platform}/{company}: {len(result)} jobs")
+            elif isinstance(result, Exception):
+                logger.debug(f"  {platform}/{company}: error - {type(result).__name__}")
+    
+    elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
+    logger.info(f"Parallel fetch complete: {len(all_jobs)} jobs in {elapsed:.1f}s")
+    
+    return all_jobs
+
+async def get_cached_jobs(user_id: str) -> Optional[Dict]:
+    """Get cached jobs for a user if still valid."""
+    cache = await db.job_cache.find_one({"user_id": user_id})
+    if cache:
+        cached_at = cache.get("cached_at")
+        if cached_at:
+            age_minutes = (datetime.now(timezone.utc) - cached_at).total_seconds() / 60
+            if age_minutes < JOB_CACHE_TTL_MINUTES:
+                return cache
+    return None
+
+async def save_jobs_to_cache(user_id: str, jobs: List[Dict], query: str, location: str):
+    """Save fetched jobs to user's cache."""
+    # Get existing job IDs to detect new jobs later
+    existing_cache = await db.job_cache.find_one({"user_id": user_id})
+    existing_job_ids = set()
+    if existing_cache:
+        existing_job_ids = set(j.get("job_id") for j in existing_cache.get("jobs", []))
+    
+    # Mark new jobs
+    for job in jobs:
+        job["is_new_for_user"] = job.get("job_id") not in existing_job_ids
+    
+    await db.job_cache.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "user_id": user_id,
+                "jobs": jobs,
+                "query": query,
+                "location": location,
+                "cached_at": datetime.now(timezone.utc),
+                "total_jobs": len(jobs)
+            }
+        },
+        upsert=True
+    )
+    
+    # Also save to user's saved jobs collection for dashboard
+    await db.user_saved_jobs.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "user_id": user_id,
+                "jobs": jobs[:50],  # Keep top 50 for dashboard
+                "last_search_query": query,
+                "last_search_location": location,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        },
+        upsert=True
+    )
+    
+    new_count = sum(1 for j in jobs if j.get("is_new_for_user"))
+    logger.info(f"Saved {len(jobs)} jobs to cache for user {user_id} ({new_count} new)")
+
 async def search_greenhouse_jobs(query: str = "", location: str = "", limit: int = 50) -> List[Dict]:
     """Search for jobs across multiple Greenhouse company boards."""
     all_jobs = []
