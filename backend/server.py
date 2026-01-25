@@ -817,25 +817,30 @@ async def search_greenhouse(request: Request):
                     # Query match: Smart phrase + keyword search
                     # For multi-word queries like "business analyst":
                     # - First try phrase match: "business analyst" in job title
-                    # - If no phrase match, fall back to keyword match (ANY word)
-                    # This prioritizes exact phrases while still allowing flexibility
+                    # - Require ALL words present (not just any)
+                    # This ensures "business analyst" doesn't match just "business" roles
                     
                     query_match = True
                     if query_words:
                         search_text = f"{job_title} {job_company} {job_dept}"
                         
-                        # If it's a multi-word query (likely a job title), try phrase match first
+                        # If it's a multi-word query (likely a job title), require more precision
                         if len(query_words) >= 2:
-                            # Try exact phrase in title
+                            # Try exact phrase in title (best match)
                             query_phrase = query.lower()
                             if query_phrase in job_title:
                                 query_match = True
-                            # Try partial phrase (e.g., "senior business analyst" contains "business analyst")
+                            # Require ALL words to be present in title (e.g., "senior business analyst" has both "business" AND "analyst")
                             elif all(word in job_title for word in query_words):
                                 query_match = True
-                            # Fall back to keyword match (at least 1 word must match)
+                            # If not all in title, check if phrase exists anywhere in search text
+                            elif query_phrase in search_text:
+                                query_match = True
+                            # Otherwise, require at least 2 words to match for multi-word queries
+                            elif sum(1 for word in query_words if word in search_text) >= 2:
+                                query_match = True
                             else:
-                                query_match = any(word in search_text for word in query_words)
+                                query_match = False
                         else:
                             # Single word search - simple keyword match
                             query_match = any(word in search_text for word in query_words)
