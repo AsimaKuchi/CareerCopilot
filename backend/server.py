@@ -34,71 +34,38 @@ db = client[os.environ['DB_NAME']]
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
 
-# Known Greenhouse company boards (will be expanded dynamically)
+# VERIFIED Greenhouse company boards (tested and working - no 404s)
+# These companies have active Greenhouse job boards as of Jan 2025
 GREENHOUSE_COMPANIES = [
-    # Original companies
-    "airbnb", "stripe", "figma", "notion", "airtable", "dropbox", "slack",
-    "twitch", "discord", "spotify", "pinterest", "lyft", "doordash",
-    "instacart", "robinhood", "coinbase", "plaid", "affirm", "chime",
-    "brex", "ramp", "rippling", "gusto", "lattice", "carta", "deel",
-    "remote", "gitlab", "datadog", "mongodb", "elastic", "snowflake",
-    "databricks", "confluent", "hashicorp", "cockroachlabs", "planetscale",
-    "vercel", "netlify", "render", "railway", "supabase", "neon",
-    "openai", "anthropic", "cohere", "huggingface", "scale", "labelbox",
-    "weights-and-biases", "mlflow", "prefect", "dagster", "airbyte",
-    "fivetran", "dbt-labs", "looker", "metabase", "preset", "hex",
-    "retool", "airplane", "appsmith", "budibase", "tooljet",
+    # Verified Working - Major Tech
+    "airbnb", "stripe", "figma", "notion", "dropbox", "discord", 
+    "doordash", "instacart", "coinbase", "affirm", "brex", "ramp",
+    "rippling", "gusto", "lattice", "carta", "deel", "gitlab", 
+    "datadog", "databricks", "confluent",
     
-    # Major Canadian Companies
-    "shopify", "wealthsimple", "hootsuite", "ada", "lightspeedhq",
+    # Verified Working - AI/ML
+    "openai", "anthropic", "cohere", "huggingface", "scale",
     
-    # Major Tech Companies
-    "uber", "lyft", "reddit", "stackoverflow", "squarespace", "squareup",
-    "mongodb", "elastic", "confluent", "snyk", "cloudflare",
+    # Verified Working - Developer Tools  
+    "postman", "sentry", "launchdarkly", "mixpanel", "amplitude",
     
-    # Fintech & Finance
-    "wise", "n26", "revolut", "monzo", "nubank", "klarna",
-    "checkout", "adyen", "marqeta", "unit", "sezzle",
+    # Verified Working - Fintech
+    "wise", "klarna", "checkout", "adyen", "marqeta",
     
-    # E-commerce & Marketplaces
-    "etsy", "wayfair", "postmates", "gopuff", "getir",
-    "faire", "turo", "outdoorsy", "poshmark",
+    # Verified Working - Enterprise
+    "asana", "miro", "intercom", "zendesk", "gong",
     
-    # Enterprise SaaS
-    "asana", "monday", "airtable", "miro", "canva",
-    "freshworks", "intercom", "zendesk", "gong", "clari",
-    "outreach", "salesloft", "apollo", "zoominfo",
+    # Verified Working - E-commerce
+    "etsy", "wayfair", "faire",
     
-    # Developer Tools
-    "postman", "sentry", "launchdarkly", "splitio", "optimizely",
-    "mixpanel", "amplitude", "heap", "segment", "rudderstack",
+    # Verified Working - Healthcare
+    "oscar", "zocdoc", "headway",
     
-    # AI/ML Companies
-    "deepgram", "replicate", "runway", "midjourney", "jasper",
-    "copy", "writer", "grammarly", "otter",
+    # Verified Working - EdTech
+    "coursera", "duolingo",
     
-    # Healthcare Tech
-    "oscar", "cityblock", "devoted", "clover", "onemedical",
-    "zocdoc", "headway", "talkspace", "cerebral",
-    
-    # EdTech
-    "coursera", "udemy", "masterclass", "duolingo", "outschool",
-    "quizlet", "kahoot", "teachable", "thinkific",
-    
-    # Climate/Sustainability
-    "watershed", "persefoni", "patch", "watershed", "lanzatech",
-    
-    # Crypto/Web3
-    "kraken", "gemini", "blockfi", "anchorage", "chainalysis",
-    "alchemy", "quicknode", "moralis", "thirdweb",
-    
-    # Productivity & Collaboration
-    "coda", "roam", "mem", "reflect", "craft",
-    "linear", "height", "dopt", "plane",
-    
-    # Security
-    "oomnitza", "vanta", "drata", "secureframe", "tugboat",
-    "wiz", "lacework", "orca", "aquasec"
+    # Verified Working - Crypto
+    "kraken", "gemini", "chainalysis", "alchemy"
 ]
 
 # Known Lever company boards
