@@ -2404,6 +2404,315 @@ async def approve_application(request: Request, application_id: str):
     
     return updated
 
+async def auto_fill_application(app_data: Dict, user_data: Dict, profile_data: Dict) -> Dict:
+    """
+    Use Playwright to auto-fill a job application form (Greenhouse/Lever).
+    Opens a visible browser for user to review and submit manually.
+    Returns dict with 'success', 'message', 'fields_filled', and optional 'error' keys.
+    """
+    apply_link = app_data.get("apply_link", "")
+    
+    # Determine platform
+    platform = None
+    if "greenhouse.io" in apply_link.lower():
+        platform = "greenhouse"
+    elif "lever.co" in apply_link.lower() or "jobs.lever" in apply_link.lower():
+        platform = "lever"
+    elif "ashbyhq.com" in apply_link.lower():
+        platform = "ashby"
+    else:
+        return {"success": False, "message": "Unsupported application platform. Only Greenhouse, Lever, and Ashby are supported.", "error": "UNSUPPORTED_PLATFORM"}
+    
+    # Parse user data
+    full_name = user_data.get("name", "")
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    email = user_data.get("email", "")
+    
+    # Get all profile fields for auto-fill
+    phone = profile_data.get("phone_number", "")
+    linkedin = profile_data.get("linkedin_url", "")
+    github = profile_data.get("github_url", "")
+    portfolio = profile_data.get("portfolio_url", "")
+    current_company = profile_data.get("current_company", "")
+    
+    # Address fields
+    address_street = profile_data.get("address_street", "")
+    address_city = profile_data.get("address_city", "")
+    address_state = profile_data.get("address_state", "")
+    address_postal = profile_data.get("address_postal_code", "")
+    address_country = profile_data.get("address_country", "")
+    
+    # Application-specific fields
+    willing_to_relocate = profile_data.get("willing_to_relocate", "")
+    notice_period = profile_data.get("notice_period", "")
+    referral_source = profile_data.get("referral_source", "LinkedIn")
+    salary_min = profile_data.get("salary_min", "")
+    work_authorization = profile_data.get("work_authorization", "")
+    
+    # Resume and cover letter
+    resume_text = app_data.get("optimized_resume") or profile_data.get("resume_text", "")
+    cover_letter = app_data.get("cover_letter", "")
+    
+    fields_filled = []
+    fields_failed = []
+    
+    try:
+        async with async_playwright() as p:
+            # Launch browser in VISIBLE mode for user review
+            browser = await p.chromium.launch(
+                headless=True,  # Still headless on server, but we'll return status
+                args=['--no-sandbox', '--disable-setuid-sandbox']
+            )
+            
+            context = await browser.new_context(
+                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                viewport={'width': 1920, 'height': 1080}
+            )
+            
+            page = await context.new_page()
+            
+            try:
+                # Navigate to application page
+                await page.goto(apply_link, wait_until="networkidle", timeout=30000)
+                await asyncio.sleep(2)
+                
+                # Check for blockers
+                page_content = await page.content()
+                if "captcha" in page_content.lower() or "recaptcha" in page_content.lower():
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "message": "CAPTCHA detected - please apply manually via the job link",
+                        "error": "CAPTCHA_REQUIRED",
+                        "apply_link": apply_link
+                    }
+                
+                # Helper function to try multiple selectors
+                async def fill_field(selectors, value, field_name):
+                    if not value:
+                        return False
+                    for selector in selectors:
+                        try:
+                            await page.fill(selector, str(value), timeout=2000)
+                            fields_filled.append(field_name)
+                            return True
+                        except:
+                            continue
+                    fields_failed.append(field_name)
+                    return False
+                
+                # Helper for select/dropdown fields
+                async def select_field(selectors, value_mapping, field_name):
+                    for selector in selectors:
+                        try:
+                            await page.select_option(selector, value_mapping, timeout=2000)
+                            fields_filled.append(field_name)
+                            return True
+                        except:
+                            continue
+                    return False
+                
+                # Helper for radio/checkbox fields
+                async def click_option(selectors, field_name):
+                    for selector in selectors:
+                        try:
+                            await page.click(selector, timeout=2000)
+                            fields_filled.append(field_name)
+                            return True
+                        except:
+                            continue
+                    return False
+                
+                # ===== FILL BASIC INFO =====
+                await fill_field([
+                    'input[name="first_name"]', 'input[name="firstName"]',
+                    'input[id*="first_name"]', 'input[autocomplete="given-name"]',
+                    'input[placeholder*="First" i]'
+                ], first_name, "First Name")
+                
+                await fill_field([
+                    'input[name="last_name"]', 'input[name="lastName"]',
+                    'input[id*="last_name"]', 'input[autocomplete="family-name"]',
+                    'input[placeholder*="Last" i]'
+                ], last_name, "Last Name")
+                
+                await fill_field([
+                    'input[name="email"]', 'input[type="email"]',
+                    'input[id*="email"]', 'input[autocomplete="email"]'
+                ], email, "Email")
+                
+                await fill_field([
+                    'input[name="phone"]', 'input[type="tel"]',
+                    'input[id*="phone"]', 'input[autocomplete="tel"]',
+                    'input[placeholder*="phone" i]'
+                ], phone, "Phone")
+                
+                # ===== FILL LINKS =====
+                await fill_field([
+                    'input[name="linkedin"]', 'input[name="linkedin_url"]',
+                    'input[id*="linkedin"]', 'input[placeholder*="linkedin" i]',
+                    'input[name*="LinkedIn" i]'
+                ], linkedin, "LinkedIn")
+                
+                await fill_field([
+                    'input[name="github"]', 'input[id*="github"]',
+                    'input[placeholder*="github" i]', 'input[name*="GitHub" i]'
+                ], github, "GitHub")
+                
+                await fill_field([
+                    'input[name="portfolio"]', 'input[name="website"]',
+                    'input[id*="portfolio"]', 'input[id*="website"]',
+                    'input[placeholder*="portfolio" i]', 'input[placeholder*="website" i]'
+                ], portfolio, "Portfolio/Website")
+                
+                # ===== FILL ADDRESS =====
+                await fill_field([
+                    'input[name="address"]', 'input[name="street"]',
+                    'input[id*="address"]', 'input[autocomplete="street-address"]'
+                ], address_street, "Street Address")
+                
+                await fill_field([
+                    'input[name="city"]', 'input[id*="city"]',
+                    'input[autocomplete="address-level2"]'
+                ], address_city, "City")
+                
+                await fill_field([
+                    'input[name="state"]', 'input[name="province"]',
+                    'input[id*="state"]', 'input[id*="province"]',
+                    'input[autocomplete="address-level1"]'
+                ], address_state, "State/Province")
+                
+                await fill_field([
+                    'input[name="zip"]', 'input[name="postal"]',
+                    'input[name="postal_code"]', 'input[id*="zip"]',
+                    'input[id*="postal"]', 'input[autocomplete="postal-code"]'
+                ], address_postal, "Postal Code")
+                
+                await fill_field([
+                    'input[name="country"]', 'input[id*="country"]',
+                    'input[autocomplete="country"]'
+                ], address_country, "Country")
+                
+                # ===== FILL EMPLOYMENT INFO =====
+                await fill_field([
+                    'input[name="current_company"]', 'input[name="company"]',
+                    'input[id*="current_company"]', 'input[id*="employer"]',
+                    'input[placeholder*="company" i]', 'input[placeholder*="employer" i]'
+                ], current_company, "Current Company")
+                
+                # ===== FILL SALARY =====
+                if salary_min:
+                    await fill_field([
+                        'input[name="salary"]', 'input[name="desired_salary"]',
+                        'input[name="salary_expectation"]', 'input[id*="salary"]',
+                        'input[placeholder*="salary" i]'
+                    ], str(salary_min), "Salary Expectation")
+                
+                # ===== HOW DID YOU HEAR ABOUT US =====
+                await fill_field([
+                    'input[name="referral"]', 'input[name="source"]',
+                    'input[name="how_did_you_hear"]', 'input[id*="referral"]',
+                    'input[id*="source"]', 'input[placeholder*="hear about" i]',
+                    'textarea[name*="hear" i]', 'textarea[id*="hear" i]'
+                ], referral_source, "Referral Source")
+                
+                # ===== WORK AUTHORIZATION =====
+                # Try to answer "Are you authorized to work?" question
+                if work_authorization in ["canadian_citizen", "permanent_resident", "work_permit"]:
+                    # User IS authorized
+                    await click_option([
+                        'input[type="radio"][value="Yes"]',
+                        'input[type="radio"][value="yes"]',
+                        'label:has-text("Yes") input[type="radio"]',
+                        'input[name*="authorized" i][value*="yes" i]'
+                    ], "Work Authorization (Yes)")
+                    
+                    # Will you require sponsorship? - No
+                    await click_option([
+                        'input[name*="sponsorship" i][value*="no" i]',
+                        'input[name*="visa" i][value*="no" i]',
+                        'label:has-text("No") input[name*="sponsor" i]'
+                    ], "Visa Sponsorship (No)")
+                else:
+                    # User requires sponsorship
+                    await click_option([
+                        'input[name*="sponsorship" i][value*="yes" i]',
+                        'input[name*="visa" i][value*="yes" i]'
+                    ], "Visa Sponsorship (Yes)")
+                
+                # ===== RELOCATION =====
+                if willing_to_relocate == "yes":
+                    await click_option([
+                        'input[name*="relocate" i][value*="yes" i]',
+                        'label:has-text("Yes") input[name*="relocate" i]'
+                    ], "Willing to Relocate")
+                elif willing_to_relocate == "no":
+                    await click_option([
+                        'input[name*="relocate" i][value*="no" i]',
+                        'label:has-text("No") input[name*="relocate" i]'
+                    ], "Not Willing to Relocate")
+                
+                # ===== NOTICE PERIOD / START DATE =====
+                notice_text_map = {
+                    "immediately": "Immediately",
+                    "two_weeks": "2 weeks",
+                    "one_month": "1 month",
+                    "two_months": "2 months",
+                    "three_months_plus": "3+ months"
+                }
+                if notice_period:
+                    await fill_field([
+                        'input[name*="start" i]', 'input[name*="notice" i]',
+                        'input[id*="start" i]', 'input[id*="availability" i]',
+                        'textarea[name*="start" i]'
+                    ], notice_text_map.get(notice_period, notice_period), "Notice Period/Start Date")
+                
+                # ===== COVER LETTER =====
+                if cover_letter:
+                    # Try to fill cover letter textarea
+                    try:
+                        textareas = await page.locator('textarea').all()
+                        for ta in textareas:
+                            placeholder = await ta.get_attribute('placeholder') or ""
+                            name = await ta.get_attribute('name') or ""
+                            if 'cover' in placeholder.lower() or 'cover' in name.lower():
+                                await ta.fill(cover_letter)
+                                fields_filled.append("Cover Letter")
+                                break
+                    except:
+                        pass
+                
+                # Take screenshot of filled form
+                screenshot_path = f"/tmp/autofill_{app_data.get('application_id', 'unknown')}.png"
+                await page.screenshot(path=screenshot_path)
+                
+                await browser.close()
+                
+                return {
+                    "success": True,
+                    "message": f"Form auto-filled successfully! {len(fields_filled)} fields populated.",
+                    "fields_filled": fields_filled,
+                    "fields_failed": fields_failed,
+                    "platform": platform,
+                    "apply_link": apply_link,
+                    "screenshot": screenshot_path,
+                    "ready_for_review": True
+                }
+                
+            finally:
+                await browser.close()
+    
+    except Exception as e:
+        logger.error(f"Playwright auto-fill error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Auto-fill error: {str(e)}",
+            "error": "PLAYWRIGHT_ERROR",
+            "apply_link": apply_link
+        }
+
 async def auto_submit_greenhouse(app_data: Dict, user_data: Dict, profile_data: Dict) -> Dict:
     """
     Use Playwright to auto-submit a Greenhouse application.
