@@ -20,6 +20,9 @@ import {
   ChevronDown,
   ChevronUp,
   Save,
+  TrendingUp,
+  Target,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +31,8 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
   const [analysis, setAnalysis] = useState(null);
   const [personalNotes, setPersonalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [expandedStrengths, setExpandedStrengths] = useState({});
+  const [expandedOpportunities, setExpandedOpportunities] = useState({});
   const [expandedEdit, setExpandedEdit] = useState(null);
 
   useEffect(() => {
@@ -134,6 +139,21 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
     }
   };
 
+  const getReadinessColor = (level) => {
+    if (level?.toLowerCase().includes("ready")) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+    if (level?.toLowerCase().includes("light")) return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+    if (level?.toLowerCase().includes("moderate")) return "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
+    return "bg-orange-500/10 text-orange-400 border-orange-500/30";
+  };
+
+  const toggleStrength = (idx) => {
+    setExpandedStrengths(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const toggleOpportunity = (idx) => {
+    setExpandedOpportunities(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
   if (!job) return null;
 
   return (
@@ -148,7 +168,7 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mb-4" />
-            <p className="text-muted-foreground">Generating detailed analysis...</p>
+            <p className="text-muted-foreground">Analyzing your fit for this role...</p>
             <p className="text-sm text-muted-foreground mt-2">
               This may take 10-15 seconds
             </p>
@@ -156,6 +176,35 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
         ) : analysis ? (
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-6">
+              {/* Decision Summary */}
+              {analysis.decision_summary && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Target className="w-5 h-5 text-indigo-400" />
+                      Decision Summary
+                    </h3>
+                    <Badge className={getReadinessColor(analysis.decision_summary.readiness_level)}>
+                      {analysis.decision_summary.readiness_level}
+                    </Badge>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/20 space-y-2">
+                    <p className="text-sm text-foreground">
+                      {analysis.decision_summary.overall_fit}
+                    </p>
+                    {analysis.decision_summary.primary_risk && (
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-orange-400">Primary consideration:</span> {analysis.decision_summary.primary_risk}
+                      </p>
+                    )}
+                    <p className="text-sm font-medium text-indigo-400">
+                      → {analysis.decision_summary.recommendation}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Personal Notes */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Personal Notes</label>
@@ -186,64 +235,113 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
                 </Button>
               </div>
 
-              {/* Two-column layout: Strengths & Areas to Address */}
+              {/* Two-column layout: Strengths & Improvement Opportunities */}
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Strengths */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-emerald-400" />
-                    Your Strengths
+                    Your Strengths ({analysis.strengths?.length || 0})
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {analysis.strengths?.map((strength, idx) => (
                       <div
                         key={idx}
-                        className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20"
+                        className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 overflow-hidden"
                       >
-                        <h4 className="font-medium text-emerald-400 mb-2">
-                          {strength.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {strength.why_it_matches}
-                        </p>
-                        {strength.evidence && strength.evidence.length > 0 && (
-                          <ul className="space-y-1">
-                            {strength.evidence.map((ev, evIdx) => (
-                              <li key={evIdx} className="text-sm text-foreground/80 pl-4">
-                                • {ev}
-                              </li>
-                            ))}
-                          </ul>
+                        <div
+                          className="p-3 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                          onClick={() => toggleStrength(idx)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-emerald-400 text-sm">
+                                {strength.title}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {strength.summary}
+                              </p>
+                            </div>
+                            {expandedStrengths[idx] ? (
+                              <ChevronUp className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        {expandedStrengths[idx] && (
+                          <div className="px-3 pb-3 space-y-2 border-t border-emerald-500/20">
+                            <p className="text-sm text-muted-foreground pt-2">
+                              {strength.why_it_matches}
+                            </p>
+                            {strength.evidence && strength.evidence.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium text-emerald-400">Evidence:</p>
+                                <ul className="space-y-1">
+                                  {strength.evidence.map((ev, evIdx) => (
+                                    <li key={evIdx} className="text-xs text-foreground/80 pl-4">
+                                      • {ev}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Areas to Address */}
+                {/* Improvement Opportunities */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-orange-400" />
-                    Areas to Address
+                    <Lightbulb className="w-5 h-5 text-amber-400" />
+                    Improvement Opportunities ({analysis.improvement_opportunities?.length || 0})
                   </h3>
-                  <div className="space-y-3">
-                    {analysis.areas_to_address?.map((area, idx) => (
+                  <div className="space-y-2">
+                    {analysis.improvement_opportunities?.map((opp, idx) => (
                       <div
                         key={idx}
-                        className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20"
+                        className="rounded-lg bg-amber-500/5 border border-amber-500/20 overflow-hidden"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h4 className="font-medium text-orange-400">{area.gap}</h4>
-                          <Badge className={getPriorityColor(area.priority)}>
-                            {area.priority}
-                          </Badge>
+                        <div
+                          className="p-3 cursor-pointer hover:bg-amber-500/10 transition-colors"
+                          onClick={() => toggleOpportunity(idx)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-amber-400 text-sm">
+                                  {opp.title}
+                                </h4>
+                                <Badge className={getPriorityColor(opp.priority) + " text-xs px-1.5 py-0"}>
+                                  {opp.priority}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {opp.summary}
+                              </p>
+                            </div>
+                            {expandedOpportunities[idx] ? (
+                              <ChevronUp className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {area.why_it_matters}
-                        </p>
-                        <p className="text-sm text-foreground/80 font-medium">
-                          💡 {area.fix}
-                        </p>
+                        
+                        {expandedOpportunities[idx] && (
+                          <div className="px-3 pb-3 space-y-2 border-t border-amber-500/20">
+                            <p className="text-sm text-muted-foreground pt-2">
+                              <span className="font-medium">Why it matters:</span> {opp.why_it_matters}
+                            </p>
+                            <p className="text-sm text-foreground/80">
+                              <span className="font-medium text-amber-400">How to improve:</span> {opp.fix}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
