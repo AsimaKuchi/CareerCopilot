@@ -1715,10 +1715,11 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     elif score >= 70:
         recommendation = "good_match"
         match_label = "Good Match"
-    elif score >= 55:
-        recommendation = "stretch"
-        match_label = "Stretch"
+    elif score > 65:
+        recommendation = "review"
+        match_label = "Review"
     else:
+        # 65% or below is "Not Recommended"
         recommendation = "not_recommended"
         match_label = "Not Recommended"
     
