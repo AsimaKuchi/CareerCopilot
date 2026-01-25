@@ -232,7 +232,7 @@ export default function Dashboard({ user }) {
         </div>
 
         {/* Recent Applications */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 mb-8">
           <Card className="glass-light" data-testid="recent-applications">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -329,6 +329,132 @@ export default function Dashboard({ user }) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Saved Jobs Section */}
+        <Card className="glass-light" data-testid="saved-jobs">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-amber-400" />
+              Your Saved Jobs
+              {savedJobs?.jobs?.filter(j => j.is_new_for_user).length > 0 && (
+                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 ml-2">
+                  <Star className="w-3 h-3 mr-1 fill-amber-400" />
+                  {savedJobs.jobs.filter(j => j.is_new_for_user).length} New
+                </Badge>
+              )}
+            </CardTitle>
+            <Button
+              data-testid="find-new-jobs-btn"
+              className="bg-indigo-500 hover:bg-indigo-600"
+              onClick={() => navigate("/jobs")}
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Find New Jobs
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {savedJobs?.jobs?.length > 0 ? (
+              <>
+                {savedJobs.last_search_query && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Last search: "{savedJobs.last_search_query}" in {savedJobs.last_search_location || "Any location"}
+                    {savedJobs.updated_at && (
+                      <span className="ml-2">
+                        • Updated {new Date(savedJobs.updated_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </p>
+                )}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {savedJobs.jobs.slice(0, 6).map((job, i) => (
+                    <div
+                      key={job.job_id || i}
+                      className={`relative p-4 rounded-lg border transition-all hover:shadow-lg cursor-pointer ${
+                        job.is_new_for_user 
+                          ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50' 
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
+                      onClick={() => job.apply_link && window.open(job.apply_link, '_blank')}
+                    >
+                      {/* New Job Star Badge */}
+                      {job.is_new_for_user && (
+                        <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
+                          <Star className="w-3 h-3 fill-white" />
+                          NEW
+                        </div>
+                      )}
+                      
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-foreground text-sm line-clamp-2 pr-6">
+                          {job.title}
+                        </h3>
+                        {job.match_score && (
+                          <Badge className={`text-xs shrink-0 ${
+                            job.match_score >= 70 
+                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              : job.match_score >= 50 
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {job.match_score}%
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Building className="w-3 h-3" />
+                          <span className="truncate">{job.company}</span>
+                        </div>
+                        {job.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate">{job.location}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mt-3 flex items-center justify-between">
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {job.source}
+                        </Badge>
+                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {savedJobs.jobs.length > 6 && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      variant="ghost"
+                      className="text-indigo-400"
+                      onClick={() => navigate("/jobs")}
+                    >
+                      View all {savedJobs.jobs.length} saved jobs
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No saved jobs yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Search for jobs and they'll appear here for quick access
+                </p>
+                <Button
+                  className="bg-indigo-500 hover:bg-indigo-600"
+                  onClick={() => navigate("/jobs")}
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Find Jobs
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
