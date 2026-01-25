@@ -224,6 +224,257 @@ class JobSearchQuery(BaseModel):
     employment_types: Optional[str] = None  # FULLTIME, PARTTIME, CONTRACTOR, INTERN
 
 # ========================
+# PUBLIC JOBS API (Phase 1)
+# For Lovable Frontend Integration
+# ========================
+
+public_router = APIRouter(prefix="/public", tags=["Public Jobs API"])
+
+@public_router.get("/health")
+async def public_health():
+    """Health check endpoint."""
+    job_count = await db.stored_jobs.count_documents({})
+    return {
+        "status": "healthy",
+        "service": "JobMatch API",
+        "version": "1.0.0",
+        "jobs_in_database": job_count,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@public_router.get("/jobs")
+async def get_jobs(
+    page: int = 1,
+    limit: int = 20,
+    query: Optional[str] = None,
+    location: Optional[str] = None,
+    company: Optional[str] = None,
+    source: Optional[str] = None,  # greenhouse, lever, jsearch
+    remote_only: bool = False,
+    posted_after: Optional[str] = None,  # ISO date string
+    sort_by: str = "posted_at",  # posted_at, company, title
+    sort_order: str = "desc"  # asc, desc
+):
+    """
+    Get paginated list of jobs with filtering.
+    Returns UI-ready JSON.
+    """
+    # Build filter
+    filter_query = {}
+    
+    if query:
+        # Search in title and description
+        filter_query["$or"] = [
+            {"title": {"$regex": query, "$options": "i"}},
+            {"description": {"$regex": query, "$options": "i"}},
+            {"company": {"$regex": query, "$options": "i"}}
+        ]
+    
+    if location:
+        filter_query["location"] = {"$regex": location, "$options": "i"}
+    
+    if company:
+        filter_query["company"] = {"$regex": company, "$options": "i"}
+    
+    if source:
+        filter_query["source"] = source
+    
+    if remote_only:
+        filter_query["is_remote"] = True
+    
+    if posted_after:
+        try:
+            posted_date = datetime.fromisoformat(posted_after.replace('Z', '+00:00'))
+            filter_query["posted_at"] = {"$gte": posted_date}
+        except:
+            pass
+    
+    # Pagination
+    skip = (page - 1) * limit
+    limit = min(limit, 100)  # Max 100 per page
+    
+    # Sort
+    sort_direction = -1 if sort_order == "desc" else 1
+    sort_field = sort_by if sort_by in ["posted_at", "company", "title"] else "posted_at"
+    
+    # Get total count
+    total = await db.stored_jobs.count_documents(filter_query)
+    
+    # Get jobs
+    cursor = db.stored_jobs.find(filter_query, {"_id": 0}).sort(sort_field, sort_direction).skip(skip).limit(limit)
+    jobs = await cursor.to_list(length=limit)
+    
+    # Format for UI
+    formatted_jobs = []
+    for job in jobs:
+        formatted_jobs.append({
+            "id": job.get("job_id"),
+            "title": job.get("title"),
+            "company": job.get("company"),
+            "location": job.get("location"),
+            "description_preview": (job.get("description", "")[:300] + "...") if job.get("description") else None,
+            "apply_url": job.get("apply_link"),
+            "source": job.get("source"),
+            "is_remote": job.get("is_remote", False),
+            "posted_at": job.get("posted_at").isoformat() if job.get("posted_at") else None,
+            "department": job.get("department"),
+            "employment_type": job.get("employment_type")
+        })
+    
+    return {
+        "jobs": formatted_jobs,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": (total + limit - 1) // limit,
+            "has_next": skip + limit < total,
+            "has_prev": page > 1
+        },
+        "filters_applied": {
+            "query": query,
+            "location": location,
+            "company": company,
+            "source": source,
+            "remote_only": remote_only
+        }
+    }
+
+@public_router.get("/jobs/{job_id}")
+async def get_job_by_id(job_id: str):
+    """
+    Get full job details by ID.
+    Returns complete job data including full description.
+    """
+    job = await db.stored_jobs.find_one({"job_id": job_id}, {"_id": 0})
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    return {
+        "id": job.get("job_id"),
+        "title": job.get("title"),
+        "company": job.get("company"),
+        "location": job.get("location"),
+        "description": job.get("description"),
+        "apply_url": job.get("apply_link"),
+        "source": job.get("source"),
+        "source_url": job.get("source_url"),
+        "is_remote": job.get("is_remote", False),
+        "posted_at": job.get("posted_at").isoformat() if job.get("posted_at") else None,
+        "department": job.get("department"),
+        "employment_type": job.get("employment_type"),
+        "salary_min": job.get("salary_min"),
+        "salary_max": job.get("salary_max"),
+        "requirements": job.get("requirements", []),
+        "benefits": job.get("benefits", []),
+        "metadata": {
+            "ingested_at": job.get("ingested_at").isoformat() if job.get("ingested_at") else None,
+            "last_updated": job.get("last_updated").isoformat() if job.get("last_updated") else None
+        }
+    }
+
+@public_router.post("/jobs/ingest")
+async def trigger_job_ingestion(background: bool = True):
+    """
+    Trigger job ingestion from all sources.
+    This fetches jobs from Greenhouse/Lever and stores them in the database.
+    """
+    if background:
+        # Run in background
+        asyncio.create_task(ingest_all_jobs())
+        return {"status": "started", "message": "Job ingestion started in background"}
+    else:
+        # Run synchronously (may take a while)
+        result = await ingest_all_jobs()
+        return result
+
+async def ingest_all_jobs():
+    """Fetch jobs from all sources and store in database."""
+    logger.info("Starting job ingestion...")
+    total_ingested = 0
+    errors = []
+    
+    # Ingest from Greenhouse
+    for company in GREENHOUSE_COMPANIES:
+        try:
+            jobs = await fetch_greenhouse_company_jobs(company)
+            for job in jobs:
+                # Add metadata
+                job["ingested_at"] = datetime.now(timezone.utc)
+                job["last_updated"] = datetime.now(timezone.utc)
+                job["is_remote"] = "remote" in job.get("location", "").lower()
+                
+                # Upsert job
+                await db.stored_jobs.update_one(
+                    {"job_id": job["job_id"]},
+                    {"$set": job},
+                    upsert=True
+                )
+                total_ingested += 1
+        except Exception as e:
+            errors.append(f"Greenhouse/{company}: {str(e)}")
+    
+    # Ingest from Lever
+    for company in LEVER_COMPANIES:
+        try:
+            jobs = await fetch_lever_company_jobs(company)
+            for job in jobs:
+                job["ingested_at"] = datetime.now(timezone.utc)
+                job["last_updated"] = datetime.now(timezone.utc)
+                job["is_remote"] = "remote" in job.get("location", "").lower()
+                
+                await db.stored_jobs.update_one(
+                    {"job_id": job["job_id"]},
+                    {"$set": job},
+                    upsert=True
+                )
+                total_ingested += 1
+        except Exception as e:
+            errors.append(f"Lever/{company}: {str(e)}")
+    
+    logger.info(f"Job ingestion complete: {total_ingested} jobs")
+    
+    return {
+        "status": "complete",
+        "jobs_ingested": total_ingested,
+        "errors": errors if errors else None,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@public_router.get("/sources")
+async def get_job_sources():
+    """Get list of available job sources and their job counts."""
+    pipeline = [
+        {"$group": {"_id": "$source", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    
+    results = await db.stored_jobs.aggregate(pipeline).to_list(length=100)
+    
+    sources = [{"source": r["_id"], "job_count": r["count"]} for r in results]
+    
+    return {
+        "sources": sources,
+        "total_jobs": sum(s["job_count"] for s in sources)
+    }
+
+@public_router.get("/companies")
+async def get_companies(limit: int = 50):
+    """Get list of companies with job counts."""
+    pipeline = [
+        {"$group": {"_id": "$company", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": limit}
+    ]
+    
+    results = await db.stored_jobs.aggregate(pipeline).to_list(length=limit)
+    
+    return {
+        "companies": [{"name": r["_id"], "job_count": r["count"]} for r in results]
+    }
+
+# ========================
 # AUTH HELPERS
 # ========================
 
