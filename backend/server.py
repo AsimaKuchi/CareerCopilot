@@ -3191,6 +3191,128 @@ def create_docx_from_text(text: str, title: str = None) -> bytes:
     buffer.seek(0)
     return buffer.getvalue()
 
+# Directory for storing generated DOCX files
+DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "downloads")
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+
+def generate_and_save_docx(text: str, user_id: str, job_id: str, doc_type: str) -> str:
+    """
+    Generate a DOCX file and save it to disk.
+    Returns the file_id for downloading.
+    """
+    doc = Document()
+    
+    # Add content
+    paragraphs = text.split('\n')
+    for para in paragraphs:
+        if para.strip():
+            doc.add_paragraph(para)
+    
+    # Generate unique filename
+    file_id = f"{doc_type}_{user_id}_{job_id}"
+    filename = f"{file_id}.docx"
+    filepath = os.path.join(DOWNLOADS_DIR, filename)
+    
+    # Save to disk
+    doc.save(filepath)
+    logger.info(f"Saved DOCX to: {filepath}")
+    
+    return file_id
+
+@api_router.get("/download/{file_id}")
+async def download_file(file_id: str):
+    """
+    Download a generated DOCX file.
+    file_id format: {doc_type}_{user_id}_{job_id}
+    """
+    filename = f"{file_id}.docx"
+    filepath = os.path.join(DOWNLOADS_DIR, filename)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine friendly filename
+    parts = file_id.split('_', 2)
+    doc_type = parts[0] if parts else "document"
+    friendly_name = f"{doc_type}.docx"
+    
+    return FileResponse(
+        path=filepath,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=friendly_name,
+        headers={
+            "Content-Disposition": f'attachment; filename="{friendly_name}"'
+        }
+    )
+
+@api_router.post("/applications/{application_id}/generate-resume-docx")
+async def generate_resume_docx(request: Request, application_id: str):
+    """Generate and save optimized resume as DOCX, return download URL."""
+    user = await get_current_user(request)
+    
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not app_doc.get("optimized_resume"):
+        raise HTTPException(status_code=400, detail="No optimized resume found")
+    
+    try:
+        file_id = generate_and_save_docx(
+            text=app_doc["optimized_resume"],
+            user_id=user.user_id,
+            job_id=application_id,
+            doc_type="resume"
+        )
+        
+        return {
+            "success": True,
+            "file_id": file_id,
+            "download_url": f"/api/download/{file_id}",
+            "filename": f"Resume_{app_doc.get('company', 'Company')}_{app_doc.get('job_title', 'Position')}.docx"
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate resume DOCX: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate file: {str(e)}")
+
+@api_router.post("/applications/{application_id}/generate-cover-letter-docx")
+async def generate_cover_letter_docx(request: Request, application_id: str):
+    """Generate and save cover letter as DOCX, return download URL."""
+    user = await get_current_user(request)
+    
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not app_doc.get("cover_letter"):
+        raise HTTPException(status_code=400, detail="No cover letter found")
+    
+    try:
+        file_id = generate_and_save_docx(
+            text=app_doc["cover_letter"],
+            user_id=user.user_id,
+            job_id=application_id,
+            doc_type="cover_letter"
+        )
+        
+        return {
+            "success": True,
+            "file_id": file_id,
+            "download_url": f"/api/download/{file_id}",
+            "filename": f"CoverLetter_{app_doc.get('company', 'Company')}_{app_doc.get('job_title', 'Position')}.docx"
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate cover letter DOCX: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate file: {str(e)}")
+
 @api_router.get("/applications/{application_id}/download/resume")
 async def download_resume_docx(request: Request, application_id: str):
     """Download optimized resume as DOCX file."""
