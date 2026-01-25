@@ -358,6 +358,14 @@ async def get_job_by_id(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
+    # Helper to safely format dates
+    def format_date(d):
+        if d is None:
+            return None
+        if hasattr(d, 'isoformat'):
+            return d.isoformat()
+        return str(d)
+    
     return {
         "id": job.get("job_id"),
         "title": job.get("title"),
@@ -368,7 +376,7 @@ async def get_job_by_id(job_id: str):
         "source": job.get("source"),
         "source_url": job.get("source_url"),
         "is_remote": job.get("is_remote", False),
-        "posted_at": job.get("posted_at").isoformat() if job.get("posted_at") else None,
+        "posted_at": format_date(job.get("posted_at")),
         "department": job.get("department"),
         "employment_type": job.get("employment_type"),
         "salary_min": job.get("salary_min"),
@@ -376,8 +384,8 @@ async def get_job_by_id(job_id: str):
         "requirements": job.get("requirements", []),
         "benefits": job.get("benefits", []),
         "metadata": {
-            "ingested_at": job.get("ingested_at").isoformat() if job.get("ingested_at") else None,
-            "last_updated": job.get("last_updated").isoformat() if job.get("last_updated") else None
+            "ingested_at": format_date(job.get("ingested_at")),
+            "last_updated": format_date(job.get("last_updated"))
         }
     }
 
