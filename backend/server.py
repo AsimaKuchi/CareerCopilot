@@ -1464,6 +1464,215 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     
     score += exp_score
 
+    
+    # ============================================================================
+    # CATEGORY 2: CONSTRAINTS & PRACTICALITY (25 points) - Can I apply?
+    # ============================================================================
+    
+    # 2.1 LOCATION / REMOTE FIT (10 points)
+    location_score = 0
+    preferred_locations = [loc.lower() for loc in profile.get("preferred_locations", [])]
+    
+    if is_remote:
+        location_score = 10
+        strengths.append("Remote position offers location flexibility")
+    elif preferred_locations and any(loc in job_location for loc in preferred_locations):
+        location_score = 10
+        strengths.append(f"Location matches your preferences")
+    elif preferred_locations:
+        location_score = 3
+        gaps.append("Location may not match your preferences - consider if relocation is feasible")
+    else:
+        location_score = 7  # No preference set, give partial credit
+    
+    score += location_score
+    
+    # 2.2 INDUSTRY ALIGNMENT (5 points)
+    industry_score = 0
+    industries = [ind.lower() for ind in profile.get("industries", [])]
+    open_to_any = profile.get("open_to_any_industry", False)
+    
+    if open_to_any:
+        industry_score = 5
+    elif industries:
+        # Simplified industry check
+        industry_matched = False
+        for ind in industries:
+            if ind in company_name.lower() or ind in job_desc:
+                industry_score = 5
+                industry_matched = True
+                break
+        
+        if not industry_matched:
+            industry_score = 2
+            gaps.append("Industry alignment unclear - may require additional research on company")
+    else:
+        industry_score = 4  # No preference, neutral
+    
+    score += industry_score
+    
+    # 2.3 SALARY ALIGNMENT (5 points) - Don't penalize heavily if missing
+    salary_score = 4  # Default: assume okay if not specified
+    job_min_salary = job.get("job_min_salary")
+    user_min_salary = profile.get("salary_min")
+    
+    if job_min_salary and user_min_salary:
+        if job_min_salary >= user_min_salary:
+            salary_score = 5
+            strengths.append(f"Salary (${job_min_salary:,}+) meets your requirements")
+        else:
+            salary_score = 1
+            risks.append("Salary may be below your minimum - negotiate or clarify compensation")
+    
+    score += salary_score
+    
+    # 2.4 WORK AUTHORIZATION / ELIGIBILITY (5 points) - CRITICAL
+    auth_score = 5  # Default: assume eligible
+    work_auth = profile.get("work_authorization", "")
+    
+    if work_auth == "require_sponsorship":
+        blockers = ["no sponsorship", "must be authorized", "no visa", "pr only"]
+        if any(blocker in job_desc.lower() for blocker in blockers):
+            auth_score = 0
+            auto_apply_blocked = True
+            auto_apply_reason = "Work authorization requirement not met"
+            risks.append("CRITICAL: Role does not offer sponsorship - not eligible to apply")
+    
+    score += auth_score
+    
+    # ============================================================================
+    # CATEGORY 3: CONFIDENCE & RISK ADJUSTERS (15 points) - How risky is this?
+    # ============================================================================
+    
+    # 3.1 RESUME EVIDENCE STRENGTH (5 points)
+    resume_score = 0
+    if has_resume:
+        # Check for substantive content
+        if len(resume_text) > 500:
+            resume_score = 5
+        elif len(resume_text) > 200:
+            resume_score = 3
+        else:
+            resume_score = 1
+            auto_apply_blocked = True
+            auto_apply_reason = "Weak resume evidence"
+    else:
+        resume_score = 0
+        gaps.append("Upload resume for stronger application and better match analysis")
+        auto_apply_blocked = True
+        auto_apply_reason = "No resume uploaded"
+    
+    score += resume_score
+    
+    # 3.2 ATS COMPATIBILITY (5 points)
+    ats_score = 5  # Bonus for Greenhouse/Lever/Ashby
+    source = job.get("source", "")
+    if source in ["greenhouse", "lever", "ashby"]:
+        ats_score = 5  # Full points - these are friendly ATS
+    elif source == "aggregator":
+        ats_score = 3  # Neutral for other sources
+    
+    score += ats_score
+    
+    # 3.3 SENIORITY STRETCH INDICATOR (5 points)
+    stretch_score = 0
+    if seniority_gap == 0:
+        stretch_score = 5
+    elif abs(seniority_gap) == 1:
+        stretch_score = 3
+    else:
+        stretch_score = 1
+    
+    score += stretch_score
+    
+    # Contextual bonuses (capped at +5 total)
+    bonus = 0
+    if has_resume and company_name.lower() in resume_text:
+        bonus += 2
+        strengths.append(f"Previous exposure to {company_name} strengthens your application")
+    
+    score = min(score + bonus, 92)  # Cap at 92, never show above 92%
+    
+    # ============================================================================
+    # DETERMINE MATCH LABEL, CONFIDENCE, RISK
+    # ============================================================================
+    
+    if score >= 85:
+        recommendation = "strong_match"
+        match_label = "Strong Match"
+    elif score >= 70:
+        recommendation = "good_match"
+        match_label = "Good Match"
+    elif score >= 55:
+        recommendation = "stretch"
+        match_label = "Stretch"
+    else:
+        recommendation = "not_recommended"
+        match_label = "Not Recommended"
+    
+    # Confidence level
+    if has_resume and len(all_skills) >= 3 and role_matched:
+        confidence = "high"
+    elif has_resume or (len(all_skills) >= 2 and role_matched):
+        confidence = "medium"
+    else:
+        confidence = "low"
+    
+    # Risk level
+    if auto_apply_blocked or seniority_gap >= 2 or auth_score == 0:
+        risk = "high"
+        risk_explanation = "Significant barriers or misalignment detected"
+    elif seniority_gap == 1 or len(all_skills) < 2:
+        risk = "moderate"
+        risk_explanation = "Some stretch or skill gaps present"
+    else:
+        risk = "low"
+        risk_explanation = "Strong alignment across key factors"
+    
+    # ============================================================================
+    # DECISION SUMMARY (REQUIRED)
+    # ============================================================================
+    
+    if recommendation == "strong_match":
+        decision_summary = f"Strong alignment with {company_name}'s needs. {risk_explanation}. Highly recommended to apply."
+    elif recommendation == "good_match":
+        decision_summary = f"Solid match with {company_name}. {risk_explanation}. Worth applying with tailored application."
+    elif recommendation == "stretch":
+        decision_summary = f"Stretch opportunity at {company_name}. {risk_explanation}. Apply if comfortable targeting higher-level role."
+    else:
+        decision_summary = f"Limited alignment with requirements. {risk_explanation}. Consider focusing on better-fit opportunities."
+    
+    # ============================================================================
+    # OPTIONAL VALUE ADD (for matches ≥70%)
+    # ============================================================================
+    
+    value_add = None
+    if score >= 70:
+        value_add = f"This role at {company_name} offers career leverage through {job_seniority_name}-level responsibilities and skill development in {', '.join(all_skills[:2]) if all_skills else 'key areas'}."
+    
+    # Match reasoning (user-facing explanation)
+    if score >= 70:
+        match_reasoning = f"{match_label}: Your background aligns well with this {job_title_display} position. {', '.join(strengths[:2]) if strengths else 'Core requirements match your profile'}."
+    else:
+        match_reasoning = f"{match_label}: {', '.join(risks[:2]) if risks else 'Significant gaps detected'}. {decision_summary}"
+    
+    return {
+        "score": score,
+        "recommendation": recommendation,
+        "match_label": match_label,
+        "confidence": confidence,
+        "risk": risk,
+        "decision_summary": decision_summary,
+        "strengths": strengths[:3],  # Max 3
+        "gaps": (risks + gaps)[:2],  # Max 2, prioritize risks
+        "match_reasoning": match_reasoning,
+        "value_add": value_add,
+        "skip_reason": None if score >= 55 else "Below recommended match threshold",
+        "auto_apply_blocked": auto_apply_blocked,
+        "auto_apply_reason": auto_apply_reason
+    }
+
+
     missing_skills = []
     resume_matched_skills = []
     
