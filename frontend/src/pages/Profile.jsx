@@ -405,7 +405,7 @@ export default function Profile({ user }) {
               <div className="flex gap-2">
                 <Input
                   data-testid="location-input"
-                  placeholder="Add a location (e.g., New York, Remote)"
+                  placeholder="Add a location (e.g., Toronto, Ontario)"
                   value={newLocation}
                   onChange={(e) => setNewLocation(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && addLocation()}
@@ -418,6 +418,28 @@ export default function Profile({ user }) {
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
+              </div>
+              
+              {/* Preferred Work Arrangement */}
+              <div className="pt-4 border-t border-white/10">
+                <Label className="text-foreground mb-2 block">Preferred Work Arrangement</Label>
+                <Select
+                  value={profile?.work_arrangement || ""}
+                  onValueChange={(value) => updateProfile({ work_arrangement: value })}
+                >
+                  <SelectTrigger className="bg-white/5 border-white/10" data-testid="work-arrangement-select">
+                    <SelectValue placeholder="Select your preference" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="remote">Remote</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="onsite">On-site</SelectItem>
+                    <SelectItem value="flexible">Flexible</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This helps us prioritize jobs that match your work style preferences
+                </p>
               </div>
             </CardContent>
           </Card>
