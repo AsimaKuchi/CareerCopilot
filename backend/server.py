@@ -103,16 +103,49 @@ GREENHOUSE_COMPANIES = [
 
 # Known Lever company boards
 LEVER_COMPANIES = [
+    # Original companies
     "netflix", "github", "robinhood", "grubhub", "strava", "canva",
     "attentive", "nextdoor", "thumbtack", "classpass", "benchling",
     "splice", "unity", "calm", "crossover", "greenhouse",
-    "lever", "greenhouse", "cockroachdb", "mux", "moveworks",
+    "lever", "cockroachdb", "mux", "moveworks",
     "postscript", "sourcegraph", "cameo", "hopin", "clubhouse",
     "superhuman", "airtable", "cloudflare", "segment", "twilio",
     "docker", "elastic", "hashicorp", "kong", "ngrok",
     "snyk", "temporal", "retool", "webflow", "zapier",
     "figma", "invision", "miro", "notion", "airtable",
-    "coda", "linear", "asana", "monday", "clickup"
+    "coda", "linear", "asana", "monday", "clickup",
+    
+    # Additional Major Companies
+    "box", "yelp", "soundcloud", "vimeo", "medium",
+    "behance", "dribbble", "unsplash", "stackoverflow", "reddit",
+    
+    # Enterprise
+    "servicenow", "workday", "salesforce", "oracle", "sap",
+    "atlassian", "jira", "confluence", "trello", "bitbucket",
+    
+    # Marketplaces
+    "airbnb", "booking", "expedia", "tripadvisor", "kayak",
+    "stubhub", "ticketmaster", "eventbrite", "meetup",
+    
+    # Fintech
+    "square", "paypal", "venmo", "cashapp", "zelle",
+    "stripe", "adyen", "checkout", "plaid", "finicity",
+    
+    # Social/Content
+    "tiktok", "snap", "pinterest", "tumblr", "wordpress",
+    "substack", "patreon", "onlyfans", "twitch", "mixer",
+    
+    # Gaming
+    "riot-games", "blizzard", "activision", "ea", "epic-games",
+    "discord", "steam", "playstation", "xbox", "nintendo",
+    
+    # Transportation
+    "uber", "lyft", "doordash", "postmates", "grubhub",
+    "instacart", "gopuff", "cornershop", "getir", "gorillas",
+    
+    # Real Estate/PropTech
+    "zillow", "redfin", "opendoor", "compass", "realtor",
+    "apartments", "rentpath", "costar", "buildium"
 ]
 
 # Known Ashby company boards  
