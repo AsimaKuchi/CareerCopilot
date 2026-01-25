@@ -307,6 +307,13 @@ async def get_jobs(
     # Format for UI
     formatted_jobs = []
     for job in jobs:
+        # Handle posted_at which might be string or datetime
+        posted_at = job.get("posted_at")
+        if posted_at:
+            if hasattr(posted_at, 'isoformat'):
+                posted_at = posted_at.isoformat()
+            # else it's already a string
+        
         formatted_jobs.append({
             "id": job.get("job_id"),
             "title": job.get("title"),
@@ -316,7 +323,7 @@ async def get_jobs(
             "apply_url": job.get("apply_link"),
             "source": job.get("source"),
             "is_remote": job.get("is_remote", False),
-            "posted_at": job.get("posted_at").isoformat() if job.get("posted_at") else None,
+            "posted_at": posted_at,
             "department": job.get("department"),
             "employment_type": job.get("employment_type")
         })
