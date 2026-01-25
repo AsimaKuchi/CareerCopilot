@@ -39,7 +39,7 @@ export default function Profile({ user }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingChanges, setPendingChanges] = useState({});
-  const debounceTimerRef = React.useRef(null);
+  const debounceTimerRef = useRef(null);
   
   const [newSkill, setNewSkill] = useState("");
   const [newTitle, setNewTitle] = useState("");
