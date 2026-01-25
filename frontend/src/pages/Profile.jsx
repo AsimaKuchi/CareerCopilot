@@ -911,7 +911,7 @@ export default function Profile({ user }) {
               </p>
               <Select
                 value={profile?.seniority_level || ""}
-                onValueChange={(value) => updateProfile({ seniority_level: value })}
+                onValueChange={(value) => updateProfile({ seniority_level: value }, true)}
               >
                 <SelectTrigger className="bg-white/5 border-white/10 w-full md:w-80" data-testid="seniority-select">
                   <SelectValue placeholder="Select your target seniority" />
