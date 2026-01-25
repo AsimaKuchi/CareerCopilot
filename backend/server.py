@@ -1036,6 +1036,33 @@ async def search_greenhouse(request: Request):
         }
     )
 
+@api_router.get("/jobs/saved")
+async def get_saved_jobs(request: Request):
+    """Get user's saved jobs from their last search (for dashboard display)."""
+    user = await get_current_user(request)
+    
+    saved = await db.user_saved_jobs.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not saved:
+        return {
+            "jobs": [],
+            "last_search_query": None,
+            "last_search_location": None,
+            "updated_at": None,
+            "total": 0
+        }
+    
+    return {
+        "jobs": saved.get("jobs", []),
+        "last_search_query": saved.get("last_search_query"),
+        "last_search_location": saved.get("last_search_location"),
+        "updated_at": saved.get("updated_at").isoformat() if saved.get("updated_at") else None,
+        "total": len(saved.get("jobs", []))
+    }
+
 @api_router.get("/jobs/greenhouse/companies")
 async def get_greenhouse_companies(request: Request):
     """Get list of known Greenhouse company boards."""
