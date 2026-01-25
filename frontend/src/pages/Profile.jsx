@@ -641,7 +641,7 @@ export default function Profile({ user }) {
                 </Label>
                 <Select
                   value={profile?.willing_to_relocate || ""}
-                  onValueChange={(value) => updateProfile({ willing_to_relocate: value })}
+                  onValueChange={(value) => updateProfile({ willing_to_relocate: value }, true)}
                 >
                   <SelectTrigger className="bg-white/5 border-white/10" data-testid="relocation-select">
                     <SelectValue placeholder="Select your preference" />
@@ -661,7 +661,7 @@ export default function Profile({ user }) {
                 </Label>
                 <Select
                   value={profile?.notice_period || ""}
-                  onValueChange={(value) => updateProfile({ notice_period: value })}
+                  onValueChange={(value) => updateProfile({ notice_period: value }, true)}
                 >
                   <SelectTrigger className="bg-white/5 border-white/10" data-testid="notice-period-select">
                     <SelectValue placeholder="Select your availability" />
