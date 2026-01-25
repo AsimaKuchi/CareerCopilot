@@ -1750,10 +1750,11 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         decision_summary = f"Strong alignment with {company_name}'s needs. {risk_explanation}. Highly recommended to apply."
     elif recommendation == "good_match":
         decision_summary = f"Solid match with {company_name}. {risk_explanation}. Worth applying with tailored application."
-    elif recommendation == "stretch":
-        decision_summary = f"Stretch opportunity at {company_name}. {risk_explanation}. Apply if comfortable targeting higher-level role."
+    elif recommendation == "review":
+        decision_summary = f"Potential fit at {company_name}. {risk_explanation}. Review carefully before applying."
     else:
-        decision_summary = f"Limited alignment with requirements. {risk_explanation}. Consider focusing on better-fit opportunities."
+        # not_recommended (65% or below)
+        decision_summary = f"Limited alignment with requirements. {risk_explanation}. Not recommended - consider focusing on better-fit opportunities."
     
     # ============================================================================
     # OPTIONAL VALUE ADD (for matches ≥70%)
