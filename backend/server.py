@@ -814,20 +814,31 @@ async def search_greenhouse(request: Request):
                     job_dept = job.get("department", "").lower()
                     job_location = job.get("location", "").lower()
                     
-                    # Query match: Smart multi-word search
-                    # For multi-word queries like "business analyst", we want flexible matching:
-                    # - "Data Analyst" should match "analyst" search
-                    # - "Business Analyst" should match "business analyst" search
-                    # - "Software Engineer" should match "software" or "engineer"
+                    # Query match: Smart phrase + keyword search
+                    # For multi-word queries like "business analyst":
+                    # - First try phrase match: "business analyst" in job title
+                    # - If no phrase match, fall back to keyword match (ANY word)
+                    # This prioritizes exact phrases while still allowing flexibility
                     
                     query_match = True
                     if query_words:
-                        # Check if ANY query word appears in title/company/dept
-                        # This allows "business analyst" to match "Data Analyst", "Business Systems Analyst", etc.
-                        query_match = any(
-                            word in job_title or word in job_company or word in job_dept
-                            for word in query_words
-                        )
+                        search_text = f"{job_title} {job_company} {job_dept}"
+                        
+                        # If it's a multi-word query (likely a job title), try phrase match first
+                        if len(query_words) >= 2:
+                            # Try exact phrase in title
+                            query_phrase = query.lower()
+                            if query_phrase in job_title:
+                                query_match = True
+                            # Try partial phrase (e.g., "senior business analyst" contains "business analyst")
+                            elif all(word in job_title for word in query_words):
+                                query_match = True
+                            # Fall back to keyword match (at least 1 word must match)
+                            else:
+                                query_match = any(word in search_text for word in query_words)
+                        else:
+                            # Single word search - simple keyword match
+                            query_match = any(word in search_text for word in query_words)
                     
                     # Location match: Smart matching for location searches
                     # Break down location search into individual words/cities
