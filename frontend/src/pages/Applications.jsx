@@ -199,6 +199,74 @@ export default function Applications({ user }) {
     }
   };
 
+  const handleAutoFill = async (applicationId, jobTitle, company, applyLink) => {
+    setActionLoading(applicationId);
+    try {
+      toast.info(`🔄 Auto-filling application for ${company}...`, { duration: 3000 });
+      
+      const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update application status
+        setApplications(apps => apps.map(app =>
+          app.application_id === applicationId
+            ? { ...app, status: "ready_to_submit", auto_fill_result: data }
+            : app
+        ));
+        
+        // Show success with fields filled
+        toast.success(
+          <div>
+            <div className="font-semibold">✅ Application auto-filled!</div>
+            <div className="text-sm mt-1">
+              {data.fields_filled?.length || 0} fields populated
+            </div>
+            <div className="text-sm mt-2 text-amber-300">
+              Click &quot;Open Application&quot; to review and submit
+            </div>
+          </div>,
+          { duration: 8000 }
+        );
+      } else {
+        // Auto-fill failed, provide fallback link
+        toast.error(
+          <div>
+            <div className="font-semibold">{data.message}</div>
+            {data.apply_link && (
+              <div className="mt-2">
+                <a 
+                  href={data.apply_link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-indigo-400 underline"
+                >
+                  Apply manually here
+                </a>
+              </div>
+            )}
+          </div>,
+          { duration: 8000 }
+        );
+      }
+    } catch (error) {
+      toast.error("Failed to auto-fill application");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Check if auto-fill is supported for this job
+  const isAutoFillSupported = (applyLink) => {
+    if (!applyLink) return false;
+    const link = applyLink.toLowerCase();
+    return link.includes('greenhouse.io') || link.includes('lever.co') || link.includes('jobs.lever') || link.includes('ashbyhq.com');
+  };
+
   const handleReject = async (applicationId) => {
     setActionLoading(applicationId);
     try {
