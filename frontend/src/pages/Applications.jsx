@@ -585,51 +585,18 @@ export default function Applications({ user }) {
                                       variant="outline"
                                       onClick={async () => {
                                         try {
-                                          toast.info('Preparing download...', { duration: 3000 });
-                                          
+                                          toast.info('Downloading resume...');
                                           const response = await fetch(`${API}/applications/${app.application_id}/download/resume`, {
-                                            method: 'GET',
                                             credentials: 'include',
                                           });
-                                          
-                                          if (!response.ok) {
-                                            throw new Error(`Download failed: ${response.status}`);
-                                          }
-                                          
-                                          // Get the blob
+                                          if (!response.ok) throw new Error('Download failed');
                                           const blob = await response.blob();
-                                          console.log('Downloaded blob:', blob.size, 'bytes, type:', blob.type);
-                                          
-                                          if (blob.size === 0) {
-                                            throw new Error('File is empty');
-                                          }
-                                          
-                                          // Create object URL and trigger download
-                                          const blobUrl = URL.createObjectURL(blob);
-                                          
-                                          // Create hidden iframe to trigger download
-                                          const iframe = document.createElement('iframe');
-                                          iframe.style.display = 'none';
-                                          document.body.appendChild(iframe);
-                                          
-                                          // Create link inside iframe
-                                          const link = document.createElement('a');
                                           const company = (app.company || 'Company').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
                                           const jobTitle = (app.job_title || 'Position').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          link.href = blobUrl;
-                                          link.download = `Resume_${company}_${jobTitle}.docx`;
-                                          link.click();
-                                          
-                                          // Cleanup after a delay
-                                          setTimeout(() => {
-                                            URL.revokeObjectURL(blobUrl);
-                                            document.body.removeChild(iframe);
-                                          }, 1000);
-                                          
-                                          toast.success('Resume downloaded! Check your Downloads folder.');
+                                          saveAs(blob, `Resume_${company}_${jobTitle}.docx`);
+                                          toast.success('Resume downloaded!');
                                         } catch (err) {
-                                          console.error('Download error:', err);
-                                          toast.error(`Download failed: ${err.message}`);
+                                          toast.error('Download failed: ' + err.message);
                                         }
                                       }}
                                       className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
@@ -655,51 +622,18 @@ export default function Applications({ user }) {
                                       variant="outline"
                                       onClick={async () => {
                                         try {
-                                          toast.info('Preparing download...', { duration: 3000 });
-                                          
+                                          toast.info('Downloading cover letter...');
                                           const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
-                                            method: 'GET',
                                             credentials: 'include',
                                           });
-                                          
-                                          if (!response.ok) {
-                                            throw new Error(`Download failed: ${response.status}`);
-                                          }
-                                          
-                                          // Get the blob
+                                          if (!response.ok) throw new Error('Download failed');
                                           const blob = await response.blob();
-                                          console.log('Downloaded blob:', blob.size, 'bytes, type:', blob.type);
-                                          
-                                          if (blob.size === 0) {
-                                            throw new Error('File is empty');
-                                          }
-                                          
-                                          // Create object URL and trigger download
-                                          const blobUrl = URL.createObjectURL(blob);
-                                          
-                                          // Create hidden iframe to trigger download
-                                          const iframe = document.createElement('iframe');
-                                          iframe.style.display = 'none';
-                                          document.body.appendChild(iframe);
-                                          
-                                          // Create link inside iframe
-                                          const link = document.createElement('a');
                                           const company = (app.company || 'Company').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
                                           const jobTitle = (app.job_title || 'Position').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          link.href = blobUrl;
-                                          link.download = `Cover_Letter_${company}_${jobTitle}.docx`;
-                                          link.click();
-                                          
-                                          // Cleanup after a delay
-                                          setTimeout(() => {
-                                            URL.revokeObjectURL(blobUrl);
-                                            document.body.removeChild(iframe);
-                                          }, 1000);
-                                          
-                                          toast.success('Cover letter downloaded! Check your Downloads folder.');
+                                          saveAs(blob, `Cover_Letter_${company}_${jobTitle}.docx`);
+                                          toast.success('Cover letter downloaded!');
                                         } catch (err) {
-                                          console.error('Download error:', err);
-                                          toast.error(`Download failed: ${err.message}`);
+                                          toast.error('Download failed: ' + err.message);
                                         }
                                       }}
                                       className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
