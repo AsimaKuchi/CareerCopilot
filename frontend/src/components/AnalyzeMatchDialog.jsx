@@ -158,15 +158,15 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/10">
           <DialogTitle className="text-2xl">
             Analyze Match: {job.title} at {job.company}
           </DialogTitle>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center flex-1">
             <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mb-4" />
             <p className="text-muted-foreground">Analyzing your fit for this role...</p>
             <p className="text-sm text-muted-foreground mt-2">
@@ -174,8 +174,8 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
             </p>
           </div>
         ) : analysis ? (
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="space-y-6 pb-6">
               {/* Decision Summary */}
               {analysis.decision_summary && (
                 <div className="space-y-3">
