@@ -3171,8 +3171,8 @@ async def delete_application(request: Request, application_id: str):
     
     return {"message": "Application deleted"}
 
-def create_docx_from_text(text: str, title: str = None) -> io.BytesIO:
-    """Create a DOCX file from text content."""
+def create_docx_from_text(text: str, title: str = None) -> bytes:
+    """Create a DOCX file from text content and return bytes."""
     doc = Document()
     
     # Add title if provided
@@ -3185,11 +3185,11 @@ def create_docx_from_text(text: str, title: str = None) -> io.BytesIO:
         if para.strip():
             doc.add_paragraph(para)
     
-    # Save to BytesIO
+    # Save to BytesIO and return bytes
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
-    return buffer
+    return buffer.getvalue()
 
 @api_router.get("/applications/{application_id}/download/resume")
 async def download_resume_docx(request: Request, application_id: str):
@@ -3213,18 +3213,15 @@ async def download_resume_docx(request: Request, application_id: str):
     job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
     filename = f"Resume_{company}_{job_title}.docx"
     
-    buffer = create_docx_from_text(app_doc["optimized_resume"])
+    # Create the DOCX content
+    docx_bytes = create_docx_from_text(app_doc["optimized_resume"])
     
-    # Use RFC 5987 encoding for filename to handle special characters
-    from urllib.parse import quote
-    encoded_filename = quote(filename)
-    
-    return StreamingResponse(
-        buffer,
+    return Response(
+        content=docx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}",
-            "Access-Control-Expose-Headers": "Content-Disposition"
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(docx_bytes))
         }
     )
 
@@ -3250,18 +3247,15 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
     filename = f"Cover_Letter_{company}_{job_title}.docx"
     
-    buffer = create_docx_from_text(app_doc["cover_letter"])
+    # Create the DOCX content
+    docx_bytes = create_docx_from_text(app_doc["cover_letter"])
     
-    # Use RFC 5987 encoding for filename to handle special characters
-    from urllib.parse import quote
-    encoded_filename = quote(filename)
-    
-    return StreamingResponse(
-        buffer,
+    return Response(
+        content=docx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}",
-            "Access-Control-Expose-Headers": "Content-Disposition"
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(docx_bytes))
         }
     )
 
