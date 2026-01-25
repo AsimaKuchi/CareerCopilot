@@ -837,7 +837,7 @@ export default function Profile({ user }) {
                   <input
                     type="checkbox"
                     checked={profile?.open_to_any_industry || false}
-                    onChange={(e) => updateProfile({ open_to_any_industry: e.target.checked })}
+                    onChange={(e) => updateProfile({ open_to_any_industry: e.target.checked }, true)}
                     className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500"
                     data-testid="open-to-any-industry-checkbox"
                   />
