@@ -2036,29 +2036,44 @@ JOB DESCRIPTION:
 <<<{req.job_description}>>>
 
 TASK:
-1) Identify 4–6 Strengths grouped by theme. Each must include:
+1) Generate a Decision Summary (2-3 sentences):
+   - decision_summary: Overall fit assessment
+   - primary_risk: Main gap or concern (if any)
+   - recommendation: "Apply with confidence" | "Apply with targeted changes" | "Stretch role - proceed with caution" | "Not recommended"
+   - readiness_level: "Ready to apply" | "Light tailoring needed" | "Moderate changes needed" | "Significant gaps"
+
+2) Identify 4–6 Strengths grouped by theme. Each must include:
    - title (short, e.g., "Technical Skills Match")
+   - summary (one-line summary for collapsed view)
    - why_it_matches (1 sentence explaining the alignment)
    - evidence (1–3 resume snippets or close paraphrases tied to resume content)
 
-2) Identify 4–6 Areas to Address (biggest gaps/weak signals). Each must include:
-   - gap (short description of the gap)
+3) Identify 4–6 Improvement Opportunities (biggest gaps/weak signals). Frame as opportunities, not deficiencies. Each must include:
+   - title (short, opportunity-focused, e.g., "Opportunity to Strengthen Cloud Skills")
+   - summary (one-line summary for collapsed view)
    - why_it_matters (1 sentence explaining impact)
    - fix (resume-safe suggestion using existing experience)
    - priority ("high"|"medium"|"low")
 
-3) Provide 6–12 keywords_to_include as short chips (1–3 words each) based on the job description, excluding ones already strongly evidenced in the resume.
+4) Provide 6–12 keywords_to_include as short chips (1–3 words each) based on the job description, excluding ones already strongly evidenced in the resume.
 
-4) Provide 3–6 suggested_resume_edits as before/after bullet rewrites using only existing experience. Keep "after" under 2 lines. Each edit must include:
+5) Provide 3–6 suggested_resume_edits as before/after bullet rewrites using only existing experience. Keep "after" under 2 lines. Each edit must include:
    - target_section (e.g., "Work Experience - Software Engineer at XYZ")
    - before (original bullet point from resume)
    - after (improved version tailored to job)
 
 JSON SCHEMA (respond with valid JSON only, no markdown):
 {{
+  "decision_summary": {{
+    "overall_fit": "Strong alignment with role requirements. Your background in data analysis and Python programming directly matches 80% of core responsibilities.",
+    "primary_risk": "Limited cloud platform experience may require highlighting transferable infrastructure skills",
+    "recommendation": "Apply with targeted changes",
+    "readiness_level": "Light tailoring needed"
+  }},
   "strengths": [
     {{
       "title": "Technical Skills Match",
+      "summary": "Python, SQL, and data analysis experience aligns with core requirements",
       "why_it_matches": "Your Python and SQL experience directly aligns with the role's core technical requirements",
       "evidence": [
         "Built data pipelines using Python and SQL",
@@ -2066,9 +2081,10 @@ JSON SCHEMA (respond with valid JSON only, no markdown):
       ]
     }}
   ],
-  "areas_to_address": [
+  "improvement_opportunities": [
     {{
-      "gap": "Limited cloud platform experience",
+      "title": "Opportunity to Strengthen Cloud Skills",
+      "summary": "Highlighting cloud exposure will strengthen your application",
       "why_it_matters": "Role requires AWS knowledge for deploying data solutions",
       "fix": "Highlight any cloud exposure or emphasize transferable skills in infrastructure",
       "priority": "high"
