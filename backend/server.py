@@ -139,7 +139,22 @@ class ProfileUpdate(BaseModel):
     seniority_level: Optional[str] = None
     phone_number: Optional[str] = None
     linkedin_url: Optional[str] = None
+    # New auto-application fields
+    current_company: Optional[str] = None
+    willing_to_relocate: Optional[str] = None
+    notice_period: Optional[str] = None
+    referral_source: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    # Address fields
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_postal_code: Optional[str] = None
+    address_country: Optional[str] = None
     application_intensity: Optional[str] = None
+    # Work arrangement
+    preferred_work_arrangement: Optional[str] = None
 
 class JobApplication(BaseModel):
     model_config = ConfigDict(extra="ignore")
