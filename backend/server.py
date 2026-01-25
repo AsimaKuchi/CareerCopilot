@@ -47,33 +47,18 @@ GREENHOUSE_COMPANIES = [
     "zocdoc", "alchemy"
 ]
 
-# VERIFIED Lever company boards (tested and working)
+# VERIFIED Lever company boards (tested and working Jan 2025)
 LEVER_COMPANIES = [
-    # Verified Working - Major Tech
-    "netflix", "canva", "attentive", "benchling", "unity",
-    "greenhouse", "lever", "mux", "sourcegraph", "superhuman",
-    "twilio", "docker", "kong", "ngrok", "temporal", 
-    "webflow", "zapier",
-    
-    # Verified Working - Enterprise
-    "box", "medium",
-    
-    # Verified Working - Fintech
-    "square",
-    
-    # Verified Working - Gaming
-    "riot-games", "epic-games"
+    # Verified Working
+    "lever", "attentive", "medium"
 ]
 
-# VERIFIED Ashby company boards (tested and working)
-ASHBY_COMPANIES = [
-    "linear", "vercel", "anthropic", "perplexity",
-    "together", "modal", "vanta", "merge", "census"
-]
+# VERIFIED Ashby company boards - SKIP for now (requires Playwright)
+ASHBY_COMPANIES = []
 
 # Job cache settings
 JOB_CACHE_TTL_MINUTES = 30  # Cache jobs for 30 minutes
-PARALLEL_BATCH_SIZE = 15    # Fetch 15 companies in parallel
+PARALLEL_BATCH_SIZE = 20    # Fetch 20 companies in parallel
 
 # Create the main app
 app = FastAPI()
