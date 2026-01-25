@@ -584,31 +584,36 @@ export default function Applications({ user }) {
                                       size="sm"
                                       variant="outline"
                                       onClick={async () => {
-                                        const loadingToast = toast.loading('Downloading resume...');
+                                        const loadingToast = toast.loading('Generating DOCX...');
                                         try {
-                                          const response = await fetch(`${API}/applications/${app.application_id}/download/resume`, {
+                                          // Step 1: Generate the DOCX on server
+                                          const genResponse = await fetch(`${API}/applications/${app.application_id}/generate-resume-docx`, {
+                                            method: 'POST',
                                             credentials: 'include',
                                           });
                                           
-                                          if (!response.ok) {
-                                            const errText = await response.text();
-                                            throw new Error(errText || 'Download failed');
+                                          if (!genResponse.ok) {
+                                            const err = await genResponse.json();
+                                            throw new Error(err.detail || 'Failed to generate file');
                                           }
                                           
-                                          const blob = await response.blob();
+                                          const { download_url, filename } = await genResponse.json();
                                           
-                                          // Use file-saver
-                                          const company = (app.company || 'Company').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const jobTitle = (app.job_title || 'Position').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const filename = `Resume_${company}_${jobTitle}.docx`;
-                                          
-                                          saveAs(blob, filename);
+                                          // Step 2: Trigger download by opening URL
                                           toast.dismiss(loadingToast);
-                                          toast.success(`Downloaded: ${filename}`);
+                                          
+                                          // Create a temporary link and click it
+                                          const link = document.createElement('a');
+                                          link.href = `${API}${download_url.replace('/api', '')}`;
+                                          link.download = filename;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          document.body.removeChild(link);
+                                          
+                                          toast.success(`Downloading: ${filename}`);
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
-                                          console.error('Download error:', err);
                                         }
                                       }}
                                       className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
@@ -633,31 +638,36 @@ export default function Applications({ user }) {
                                       size="sm"
                                       variant="outline"
                                       onClick={async () => {
-                                        const loadingToast = toast.loading('Downloading cover letter...');
+                                        const loadingToast = toast.loading('Generating DOCX...');
                                         try {
-                                          const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
+                                          // Step 1: Generate the DOCX on server
+                                          const genResponse = await fetch(`${API}/applications/${app.application_id}/generate-cover-letter-docx`, {
+                                            method: 'POST',
                                             credentials: 'include',
                                           });
                                           
-                                          if (!response.ok) {
-                                            const errText = await response.text();
-                                            throw new Error(errText || 'Download failed');
+                                          if (!genResponse.ok) {
+                                            const err = await genResponse.json();
+                                            throw new Error(err.detail || 'Failed to generate file');
                                           }
                                           
-                                          const blob = await response.blob();
+                                          const { download_url, filename } = await genResponse.json();
                                           
-                                          // Use file-saver
-                                          const company = (app.company || 'Company').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const jobTitle = (app.job_title || 'Position').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-                                          const filename = `CoverLetter_${company}_${jobTitle}.docx`;
-                                          
-                                          saveAs(blob, filename);
+                                          // Step 2: Trigger download by opening URL
                                           toast.dismiss(loadingToast);
-                                          toast.success(`Downloaded: ${filename}`);
+                                          
+                                          // Create a temporary link and click it
+                                          const link = document.createElement('a');
+                                          link.href = `${API}${download_url.replace('/api', '')}`;
+                                          link.download = filename;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          document.body.removeChild(link);
+                                          
+                                          toast.success(`Downloading: ${filename}`);
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
-                                          console.error('Download error:', err);
                                         }
                                       }}
                                       className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
