@@ -641,7 +641,7 @@ export default function Profile({ user }) {
           <Card className="glass-light" data-testid="seniority-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-violet-400" />
+                <Briefcase className="w-5 h-5 text-violet-400" />
                 Target Seniority Level
               </CardTitle>
             </CardHeader>
