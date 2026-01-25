@@ -1362,6 +1362,321 @@ CERTIFICATIONS
             # Try to reject (should still work)
             self.run_test("Reject Application", "PUT", f"applications/{app_id}/reject", 200)
 
+    def test_download_endpoints(self):
+        """Test resume and cover letter download endpoints as requested in review"""
+        print("\n" + "="*60)
+        print("🎯 TESTING DOWNLOAD ENDPOINTS (REVIEW REQUEST)")
+        print("="*60)
+        print("Testing resume and cover letter download functionality")
+        
+        # Step 1: Get list of applications
+        print("\n🔍 Step 1: Getting list of applications...")
+        success, apps_response = self.run_test("Get Applications List", "GET", "applications", 200)
+        
+        if not success or not apps_response:
+            print("❌ Cannot test downloads - no applications endpoint available")
+            return False
+        
+        applications = apps_response.get('applications', [])
+        if not applications:
+            print("❌ No applications found - creating test application with resume and cover letter...")
+            # Create a test application with optimized resume and cover letter
+            return self.create_test_application_and_test_downloads()
+        
+        print(f"✅ Found {len(applications)} applications")
+        
+        # Step 2: Find applications with optimized_resume and cover_letter
+        resume_app = None
+        cover_letter_app = None
+        
+        for app in applications:
+            if app.get('optimized_resume') and not resume_app:
+                resume_app = app
+                print(f"✅ Found application with optimized_resume: {app.get('application_id')}")
+            
+            if app.get('cover_letter') and not cover_letter_app:
+                cover_letter_app = app
+                print(f"✅ Found application with cover_letter: {app.get('application_id')}")
+            
+            if resume_app and cover_letter_app:
+                break
+        
+        # Step 3: Test resume download
+        resume_success = False
+        if resume_app:
+            resume_success = self.test_resume_download(resume_app['application_id'])
+        else:
+            print("⚠️  No application with optimized_resume found")
+        
+        # Step 4: Test cover letter download
+        cover_letter_success = False
+        if cover_letter_app:
+            cover_letter_success = self.test_cover_letter_download(cover_letter_app['application_id'])
+        else:
+            print("⚠️  No application with cover_letter found")
+        
+        # If no applications with required fields, create test data
+        if not resume_app and not cover_letter_app:
+            print("📝 Creating test application with resume and cover letter...")
+            return self.create_test_application_and_test_downloads()
+        
+        return resume_success or cover_letter_success
+
+    def create_test_application_and_test_downloads(self):
+        """Create a test application with resume and cover letter, then test downloads"""
+        print("\n🔧 Creating test application with optimized resume and cover letter...")
+        
+        # First ensure user has a profile and resume
+        self.ensure_user_has_resume()
+        
+        # Create application with job description to trigger AI generation
+        app_data = {
+            "job_id": "download_test_job_456",
+            "job_title": "Senior Data Analyst",
+            "company": "Download Test Corp",
+            "location": "Remote",
+            "job_description": """We are seeking a Senior Data Analyst with expertise in Python, SQL, and data visualization. 
+            The ideal candidate will have experience with ETL pipelines, business intelligence tools like Tableau, 
+            and strong analytical skills. You will work with cross-functional teams to drive data-driven decisions."""
+        }
+        
+        success, app = self.run_test("Create Test Application", "POST", "applications", 200, app_data)
+        
+        if not success or not app.get('application_id'):
+            print("❌ Failed to create test application")
+            return False
+        
+        app_id = app['application_id']
+        print(f"✅ Created test application: {app_id}")
+        
+        # The application should now have optimized_resume and cover_letter generated
+        # Let's verify by getting the application details
+        success, app_details = self.run_test("Get Application Details", "GET", f"applications", 200)
+        
+        if success:
+            # Find our test application
+            applications = app_details.get('applications', [])
+            test_app = None
+            for application in applications:
+                if application.get('application_id') == app_id:
+                    test_app = application
+                    break
+            
+            if test_app:
+                has_resume = bool(test_app.get('optimized_resume'))
+                has_cover_letter = bool(test_app.get('cover_letter'))
+                
+                print(f"   Has optimized_resume: {has_resume}")
+                print(f"   Has cover_letter: {has_cover_letter}")
+                
+                # Test downloads
+                resume_success = False
+                cover_letter_success = False
+                
+                if has_resume:
+                    resume_success = self.test_resume_download(app_id)
+                
+                if has_cover_letter:
+                    cover_letter_success = self.test_cover_letter_download(app_id)
+                
+                return resume_success or cover_letter_success
+        
+        print("⚠️  Could not verify application details, attempting downloads anyway...")
+        
+        # Try downloads even if we can't verify the fields
+        resume_success = self.test_resume_download(app_id)
+        cover_letter_success = self.test_cover_letter_download(app_id)
+        
+        return resume_success or cover_letter_success
+
+    def test_resume_download(self, application_id):
+        """Test resume download endpoint"""
+        print(f"\n📄 Testing Resume Download for application: {application_id}")
+        
+        url = f"{self.base_url}/api/applications/{application_id}/download/resume"
+        headers = {
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        self.tests_run += 1
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            # Check status code
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Resume Download',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            # Check Content-Type header
+            content_type = response.headers.get('Content-Type', '')
+            expected_content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            
+            if content_type != expected_content_type:
+                print(f"❌ FAILED - Wrong Content-Type")
+                print(f"   Expected: {expected_content_type}")
+                print(f"   Got: {content_type}")
+                self.failed_tests.append({
+                    'name': 'Resume Download Content-Type',
+                    'error': f'Wrong Content-Type: {content_type}'
+                })
+                return False
+            
+            # Check Content-Disposition header
+            content_disposition = response.headers.get('Content-Disposition', '')
+            if not content_disposition.startswith('attachment; filename=Resume_'):
+                print(f"❌ FAILED - Wrong Content-Disposition")
+                print(f"   Expected: attachment; filename=Resume_*.docx")
+                print(f"   Got: {content_disposition}")
+                self.failed_tests.append({
+                    'name': 'Resume Download Content-Disposition',
+                    'error': f'Wrong Content-Disposition: {content_disposition}'
+                })
+                return False
+            
+            # Check if file is valid DOCX (check file signature)
+            content = response.content
+            if len(content) < 4:
+                print(f"❌ FAILED - File too small: {len(content)} bytes")
+                self.failed_tests.append({
+                    'name': 'Resume Download File Size',
+                    'error': f'File too small: {len(content)} bytes'
+                })
+                return False
+            
+            # DOCX files are ZIP files, so they should start with PK signature
+            if not content.startswith(b'PK'):
+                print(f"❌ FAILED - Invalid DOCX file signature")
+                print(f"   Expected: PK (ZIP signature)")
+                print(f"   Got: {content[:4]}")
+                self.failed_tests.append({
+                    'name': 'Resume Download File Signature',
+                    'error': 'Invalid DOCX file signature'
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Resume Download")
+            print(f"   ✅ Status: 200 OK")
+            print(f"   ✅ Content-Type: {content_type}")
+            print(f"   ✅ Content-Disposition: {content_disposition}")
+            print(f"   ✅ File size: {len(content)} bytes")
+            print(f"   ✅ Valid DOCX signature: PK")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 30s")
+            self.failed_tests.append({'name': 'Resume Download', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Resume Download', 'error': str(e)})
+            return False
+
+    def test_cover_letter_download(self, application_id):
+        """Test cover letter download endpoint"""
+        print(f"\n📄 Testing Cover Letter Download for application: {application_id}")
+        
+        url = f"{self.base_url}/api/applications/{application_id}/download/cover-letter"
+        headers = {
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        self.tests_run += 1
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            # Check status code
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Cover Letter Download',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            # Check Content-Type header
+            content_type = response.headers.get('Content-Type', '')
+            expected_content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            
+            if content_type != expected_content_type:
+                print(f"❌ FAILED - Wrong Content-Type")
+                print(f"   Expected: {expected_content_type}")
+                print(f"   Got: {content_type}")
+                self.failed_tests.append({
+                    'name': 'Cover Letter Download Content-Type',
+                    'error': f'Wrong Content-Type: {content_type}'
+                })
+                return False
+            
+            # Check Content-Disposition header
+            content_disposition = response.headers.get('Content-Disposition', '')
+            if not content_disposition.startswith('attachment; filename=Cover_Letter_'):
+                print(f"❌ FAILED - Wrong Content-Disposition")
+                print(f"   Expected: attachment; filename=Cover_Letter_*.docx")
+                print(f"   Got: {content_disposition}")
+                self.failed_tests.append({
+                    'name': 'Cover Letter Download Content-Disposition',
+                    'error': f'Wrong Content-Disposition: {content_disposition}'
+                })
+                return False
+            
+            # Check if file is valid DOCX (check file signature)
+            content = response.content
+            if len(content) < 4:
+                print(f"❌ FAILED - File too small: {len(content)} bytes")
+                self.failed_tests.append({
+                    'name': 'Cover Letter Download File Size',
+                    'error': f'File too small: {len(content)} bytes'
+                })
+                return False
+            
+            # DOCX files are ZIP files, so they should start with PK signature
+            if not content.startswith(b'PK'):
+                print(f"❌ FAILED - Invalid DOCX file signature")
+                print(f"   Expected: PK (ZIP signature)")
+                print(f"   Got: {content[:4]}")
+                self.failed_tests.append({
+                    'name': 'Cover Letter Download File Signature',
+                    'error': 'Invalid DOCX file signature'
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Cover Letter Download")
+            print(f"   ✅ Status: 200 OK")
+            print(f"   ✅ Content-Type: {content_type}")
+            print(f"   ✅ Content-Disposition: {content_disposition}")
+            print(f"   ✅ File size: {len(content)} bytes")
+            print(f"   ✅ Valid DOCX signature: PK")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 30s")
+            self.failed_tests.append({'name': 'Cover Letter Download', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Cover Letter Download', 'error': str(e)})
+            return False
+
     def test_dashboard_endpoints(self):
         """Test dashboard statistics"""
         print("\n" + "="*50)
