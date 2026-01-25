@@ -808,7 +808,7 @@ export default function Profile({ user }) {
               </p>
               <Select
                 value={profile?.work_authorization || ""}
-                onValueChange={(value) => updateProfile({ work_authorization: value })}
+                onValueChange={(value) => updateProfile({ work_authorization: value }, true)}
               >
                 <SelectTrigger className="bg-white/5 border-white/10 w-full md:w-80" data-testid="work-authorization-select">
                   <SelectValue placeholder="Select your work authorization status" />
