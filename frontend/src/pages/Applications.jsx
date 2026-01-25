@@ -584,16 +584,11 @@ export default function Applications({ user }) {
                                       variant="outline"
                                       onClick={async () => {
                                         try {
-                                          console.log('Downloading resume for application:', app.application_id);
+                                          toast.info('Preparing download...', { duration: 2000 });
+                                          
                                           const response = await fetch(`${API}/applications/${app.application_id}/download/resume`, {
                                             credentials: 'include',
-                                            headers: {
-                                              'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                            }
                                           });
-                                          
-                                          console.log('Response status:', response.status);
-                                          console.log('Response headers:', response.headers);
                                           
                                           if (!response.ok) {
                                             const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -601,30 +596,32 @@ export default function Applications({ user }) {
                                           }
                                           
                                           const blob = await response.blob();
-                                          console.log('Blob size:', blob.size, 'type:', blob.type);
                                           
                                           if (blob.size === 0) {
                                             throw new Error('Downloaded file is empty');
                                           }
                                           
-                                          // Create download link
+                                          // Create filename
+                                          const company = app.company.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+                                          const jobTitle = app.job_title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+                                          const filename = `Resume_${company}_${jobTitle}.docx`;
+                                          
+                                          // Force browser download
                                           const url = window.URL.createObjectURL(blob);
-                                          const a = document.createElement('a');
-                                          a.style.display = 'none';
-                                          a.href = url;
-                                          a.download = `Resume_${app.company.replace(/\s+/g, '_')}_${app.job_title.replace(/\s+/g, '_')}.docx`;
+                                          const link = document.createElement('a');
+                                          link.href = url;
+                                          link.download = filename;
+                                          link.style.display = 'none';
+                                          document.body.appendChild(link);
+                                          link.click();
                                           
-                                          // Add to DOM and trigger download
-                                          document.body.appendChild(a);
-                                          a.click();
-                                          
-                                          // Cleanup after download completes
+                                          // Cleanup
                                           setTimeout(() => {
-                                            document.body.removeChild(a);
+                                            document.body.removeChild(link);
                                             window.URL.revokeObjectURL(url);
-                                          }, 250);
+                                          }, 100);
                                           
-                                          toast.success('Resume downloaded! Check your Downloads folder.');
+                                          toast.success(`Resume downloaded as "${filename}"! Check your Downloads folder.`);
                                         } catch (err) {
                                           console.error('Download error:', err);
                                           toast.error(`Failed to download resume: ${err.message}`);
@@ -653,15 +650,11 @@ export default function Applications({ user }) {
                                       variant="outline"
                                       onClick={async () => {
                                         try {
-                                          console.log('Downloading cover letter for application:', app.application_id);
+                                          toast.info('Preparing download...', { duration: 2000 });
+                                          
                                           const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
                                             credentials: 'include',
-                                            headers: {
-                                              'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                            }
                                           });
-                                          
-                                          console.log('Response status:', response.status);
                                           
                                           if (!response.ok) {
                                             const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -669,29 +662,32 @@ export default function Applications({ user }) {
                                           }
                                           
                                           const blob = await response.blob();
-                                          console.log('Blob size:', blob.size, 'type:', blob.type);
                                           
                                           if (blob.size === 0) {
                                             throw new Error('Downloaded file is empty');
                                           }
                                           
+                                          // Create filename
+                                          const company = app.company.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+                                          const jobTitle = app.job_title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+                                          const filename = `Cover_Letter_${company}_${jobTitle}.docx`;
+                                          
+                                          // Force browser download
                                           const url = window.URL.createObjectURL(blob);
-                                          const a = document.createElement('a');
-                                          a.style.display = 'none';
-                                          a.href = url;
-                                          a.download = `Cover_Letter_${app.company.replace(/\s+/g, '_')}_${app.job_title.replace(/\s+/g, '_')}.docx`;
+                                          const link = document.createElement('a');
+                                          link.href = url;
+                                          link.download = filename;
+                                          link.style.display = 'none';
+                                          document.body.appendChild(link);
+                                          link.click();
                                           
-                                          // Add to DOM and trigger download
-                                          document.body.appendChild(a);
-                                          a.click();
-                                          
-                                          // Cleanup after download completes
+                                          // Cleanup
                                           setTimeout(() => {
-                                            document.body.removeChild(a);
+                                            document.body.removeChild(link);
                                             window.URL.revokeObjectURL(url);
-                                          }, 250);
+                                          }, 100);
                                           
-                                          toast.success('Cover letter downloaded! Check your Downloads folder.');
+                                          toast.success(`Cover letter downloaded as "${filename}"! Check your Downloads folder.`);
                                         } catch (err) {
                                           console.error('Download error:', err);
                                           toast.error(`Failed to download cover letter: ${err.message}`);
