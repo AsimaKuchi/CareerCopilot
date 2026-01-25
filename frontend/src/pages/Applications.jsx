@@ -531,20 +531,24 @@ export default function Applications({ user }) {
                                             throw new Error('Downloaded file is empty');
                                           }
                                           
+                                          // Create download link
                                           const url = window.URL.createObjectURL(blob);
                                           const a = document.createElement('a');
+                                          a.style.display = 'none';
                                           a.href = url;
                                           a.download = `Resume_${app.company.replace(/\s+/g, '_')}_${app.job_title.replace(/\s+/g, '_')}.docx`;
+                                          
+                                          // Add to DOM and trigger download
                                           document.body.appendChild(a);
                                           a.click();
                                           
-                                          // Cleanup
+                                          // Cleanup after download completes
                                           setTimeout(() => {
+                                            document.body.removeChild(a);
                                             window.URL.revokeObjectURL(url);
-                                            a.remove();
-                                          }, 100);
+                                          }, 250);
                                           
-                                          toast.success('Resume downloaded successfully!');
+                                          toast.success('Resume downloaded! Check your Downloads folder.');
                                         } catch (err) {
                                           console.error('Download error:', err);
                                           toast.error(`Failed to download resume: ${err.message}`);
