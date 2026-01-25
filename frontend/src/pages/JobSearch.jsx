@@ -383,6 +383,8 @@ export default function JobSearch({ user }) {
         return { color: "bg-blue-500/20 text-blue-400 border-blue-500/30", label: "Good Match", icon: CheckCircle };
       case "review":
         return { color: "bg-amber-500/20 text-amber-400 border-amber-500/30", label: "Worth Reviewing", icon: AlertCircle };
+      case "not_recommended":
+        return { color: "bg-red-500/20 text-red-400 border-red-500/30", label: "Not Recommended", icon: XCircle };
       case "weak_match":
         return { color: "bg-gray-500/20 text-gray-400 border-gray-500/30", label: "Weak Match", icon: AlertCircle };
       case "skip":
