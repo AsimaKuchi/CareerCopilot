@@ -3938,19 +3938,28 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
-# Include the router
+# Include the routers
 app.include_router(api_router)
+app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
 
-# Get frontend URL for CORS - no hardcoded fallback for production safety
-FRONTEND_URL = os.environ.get('CORS_ORIGINS')
-if not FRONTEND_URL:
-    raise ValueError("CORS_ORIGINS environment variable is required")
-origins = [origin.strip() for origin in FRONTEND_URL.split(',')]
+# Get frontend URL for CORS - allow Lovable domains
+FRONTEND_URL = os.environ.get('CORS_ORIGINS', '')
+origins = [origin.strip() for origin in FRONTEND_URL.split(',') if origin.strip()]
+
+# Add common Lovable domains for Phase 1 integration
+lovable_origins = [
+    "https://*.lovable.app",
+    "https://*.lovableproject.com", 
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080"
+]
+origins.extend(lovable_origins)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins for public API
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
