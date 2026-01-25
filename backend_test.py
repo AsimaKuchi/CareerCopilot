@@ -518,6 +518,416 @@ class JobMatchAPITester:
         # Test interview prep with detailed validation
         self.test_interview_prep_detailed()
 
+    def test_analyze_match_feature(self):
+        """Test the new Analyze Match feature end-to-end as requested in review"""
+        print("\n" + "="*60)
+        print("🎯 TESTING ANALYZE MATCH FEATURE (REVIEW REQUEST)")
+        print("="*60)
+        print("Testing POST /api/jobs/{job_id}/compare - Generate analysis")
+        print("Testing GET /api/jobs/{job_id}/compare - Fetch cached analysis")
+        print("Testing PUT /api/jobs/{job_id}/compare/notes - Update notes")
+        
+        # First ensure user has a resume uploaded
+        self.ensure_user_has_resume()
+        
+        # Test 1: POST /api/jobs/{job_id}/compare - Generate analysis
+        job_id = "test_job_123"
+        payload = {
+            "job_id": job_id,
+            "job_title": "Senior Data Analyst",
+            "company": "Stripe",
+            "job_description": "We're looking for a Senior Data Analyst with 5+ years of experience in SQL, Python, Tableau. Must have experience with data warehousing, ETL pipelines, and business intelligence. Strong communication skills required."
+        }
+        
+        success, analysis_response = self.test_job_analysis_generation(job_id, payload)
+        
+        if success:
+            # Test 2: GET /api/jobs/{job_id}/compare - Fetch cached analysis
+            self.test_cached_analysis_fetch(job_id)
+            
+            # Test 3: PUT /api/jobs/{job_id}/compare/notes - Update notes
+            self.test_notes_update(job_id)
+        
+        return success
+
+    def ensure_user_has_resume(self):
+        """Ensure the test user has a resume uploaded for analysis"""
+        print("\n🔍 Ensuring user has resume for analysis...")
+        
+        # Check if user already has resume
+        success, profile = self.run_test("Check Profile for Resume", "GET", "profile", 200)
+        
+        if success and profile.get("resume_text") and len(profile.get("resume_text", "")) > 100:
+            print("✅ User already has resume uploaded")
+            return True
+        
+        # Upload a sample resume for testing
+        print("📄 Uploading sample resume for testing...")
+        
+        # Create a realistic resume text for a data analyst
+        sample_resume = """
+JOHN DOE
+Senior Data Analyst
+Email: john.doe@email.com | Phone: (555) 123-4567
+
+PROFESSIONAL SUMMARY
+Experienced Data Analyst with 6+ years of expertise in SQL, Python, and business intelligence. 
+Proven track record of building ETL pipelines, creating executive dashboards, and driving data-driven decisions.
+
+TECHNICAL SKILLS
+• Programming: Python, SQL, R, JavaScript
+• Databases: PostgreSQL, MySQL, MongoDB, Snowflake
+• Visualization: Tableau, Power BI, Matplotlib, Seaborn
+• Cloud: AWS (S3, Redshift, Lambda), Azure
+• Tools: Git, Docker, Airflow, dbt
+
+WORK EXPERIENCE
+
+Senior Data Analyst | TechCorp Inc. | 2020 - Present
+• Built automated ETL pipelines processing 10M+ records daily using Python and SQL
+• Created executive dashboards in Tableau reducing reporting time by 75%
+• Collaborated with product teams to define KPIs and track business metrics
+• Implemented A/B testing framework increasing conversion rates by 12%
+
+Data Analyst | StartupXYZ | 2018 - 2020
+• Analyzed customer behavior data using SQL and Python to identify retention patterns
+• Developed predictive models improving customer lifetime value predictions by 25%
+• Built real-time monitoring dashboards for key business metrics
+• Worked with cross-functional teams to translate business requirements into technical solutions
+
+Junior Analyst | DataCorp | 2017 - 2018
+• Performed data quality assessments and cleansing for large datasets
+• Created automated reports using SQL and Excel reducing manual work by 60%
+• Supported senior analysts in building machine learning models
+
+EDUCATION
+Bachelor of Science in Statistics | University of Technology | 2017
+
+CERTIFICATIONS
+• AWS Certified Data Analytics - Specialty
+• Tableau Desktop Certified Professional
+• Google Analytics Certified
+        """
+        
+        # Update profile with resume text
+        update_data = {
+            "resume_text": sample_resume.strip(),
+            "resume_filename": "sample_resume.txt",
+            "resume_format": "text",
+            "skills": ["Python", "SQL", "Tableau", "ETL", "Data Analysis", "AWS"],
+            "experience_years": 6,
+            "job_titles": ["Senior Data Analyst", "Data Analyst"],
+            "preferred_locations": ["New York", "Remote"],
+            "salary_min": 90000,
+            "salary_max": 130000
+        }
+        
+        success, updated_profile = self.run_test("Upload Sample Resume", "PUT", "profile", 200, update_data)
+        
+        if success:
+            print("✅ Sample resume uploaded successfully")
+            return True
+        else:
+            print("❌ Failed to upload sample resume")
+            return False
+
+    def test_job_analysis_generation(self, job_id, payload):
+        """Test POST /api/jobs/{job_id}/compare - Generate analysis"""
+        print(f"\n🔍 Testing Job Analysis Generation for job_id: {job_id}")
+        
+        url = f"{self.base_url}/api/jobs/{job_id}/compare"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        self.tests_run += 1
+        print(f"   URL: {url}")
+        print(f"   Job: {payload['job_title']} at {payload['company']}")
+        
+        start_time = time.time()
+        
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=90)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:300]}...")
+                self.failed_tests.append({
+                    'name': 'Job Analysis Generation',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:300]
+                })
+                return False, {}
+            
+            data = response.json()
+            elapsed = time.time() - start_time
+            
+            # Validation checks
+            validation_errors = []
+            
+            # Check required top-level fields
+            required_fields = ['comparison_id', 'user_id', 'job_id', 'job_title', 'company', 'comparison_json', 'status']
+            for field in required_fields:
+                if field not in data:
+                    validation_errors.append(f"Missing top-level field: {field}")
+            
+            # Check status is complete
+            if data.get('status') != 'complete':
+                validation_errors.append(f"Expected status 'complete', got '{data.get('status')}'")
+            
+            # Check comparison_json structure
+            comparison_json = data.get('comparison_json', {})
+            if not isinstance(comparison_json, dict):
+                validation_errors.append("comparison_json should be a dictionary")
+            else:
+                # Check required analysis fields
+                required_analysis_fields = ['strengths', 'areas_to_address', 'keywords_to_include', 'suggested_resume_edits']
+                for field in required_analysis_fields:
+                    if field not in comparison_json:
+                        validation_errors.append(f"Missing analysis field: {field}")
+                
+                # Validate strengths structure
+                strengths = comparison_json.get('strengths', [])
+                if not isinstance(strengths, list) or len(strengths) == 0:
+                    validation_errors.append("strengths should be non-empty array")
+                else:
+                    for i, strength in enumerate(strengths[:2]):  # Check first 2
+                        if not isinstance(strength, dict):
+                            validation_errors.append(f"strength {i+1} should be object")
+                        else:
+                            strength_fields = ['title', 'why_it_matches', 'evidence']
+                            for field in strength_fields:
+                                if field not in strength:
+                                    validation_errors.append(f"strength {i+1} missing field: {field}")
+                
+                # Validate areas_to_address structure
+                areas = comparison_json.get('areas_to_address', [])
+                if not isinstance(areas, list) or len(areas) == 0:
+                    validation_errors.append("areas_to_address should be non-empty array")
+                else:
+                    for i, area in enumerate(areas[:2]):  # Check first 2
+                        if not isinstance(area, dict):
+                            validation_errors.append(f"area {i+1} should be object")
+                        else:
+                            area_fields = ['gap', 'why_it_matters', 'fix', 'priority']
+                            for field in area_fields:
+                                if field not in area:
+                                    validation_errors.append(f"area {i+1} missing field: {field}")
+                
+                # Validate keywords_to_include
+                keywords = comparison_json.get('keywords_to_include', [])
+                if not isinstance(keywords, list) or len(keywords) == 0:
+                    validation_errors.append("keywords_to_include should be non-empty array")
+                
+                # Validate suggested_resume_edits
+                edits = comparison_json.get('suggested_resume_edits', [])
+                if not isinstance(edits, list) or len(edits) == 0:
+                    validation_errors.append("suggested_resume_edits should be non-empty array")
+                else:
+                    for i, edit in enumerate(edits[:2]):  # Check first 2
+                        if not isinstance(edit, dict):
+                            validation_errors.append(f"edit {i+1} should be object")
+                        else:
+                            edit_fields = ['target_section', 'before', 'after']
+                            for field in edit_fields:
+                                if field not in edit:
+                                    validation_errors.append(f"edit {i+1} missing field: {field}")
+            
+            # Check if analysis is grounded (uses resume content, not hallucinated)
+            resume_keywords = ['python', 'sql', 'tableau', 'etl', 'data', 'analyst', 'techcorp', 'startupxyz']
+            analysis_text = str(comparison_json).lower()
+            grounded_evidence = sum(1 for keyword in resume_keywords if keyword in analysis_text)
+            
+            if grounded_evidence < 3:
+                validation_errors.append("Analysis appears to lack grounding in resume content")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Analysis validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Job Analysis Validation',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                return False, {}
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Job Analysis Generation")
+            print(f"   ✅ Analysis generated in {elapsed:.2f}s")
+            print(f"   ✅ Status: {data.get('status')}")
+            print(f"   ✅ Comparison ID: {data.get('comparison_id')}")
+            
+            # Show analysis summary
+            strengths_count = len(comparison_json.get('strengths', []))
+            areas_count = len(comparison_json.get('areas_to_address', []))
+            keywords_count = len(comparison_json.get('keywords_to_include', []))
+            edits_count = len(comparison_json.get('suggested_resume_edits', []))
+            
+            print(f"   ✅ Analysis contains: {strengths_count} strengths, {areas_count} areas to address")
+            print(f"   ✅ Keywords: {keywords_count}, Resume edits: {edits_count}")
+            
+            # Show sample content
+            if strengths_count > 0:
+                first_strength = comparison_json['strengths'][0]
+                print(f"   Sample strength: '{first_strength.get('title', 'N/A')}'")
+            
+            return True, data
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 90s")
+            self.failed_tests.append({'name': 'Job Analysis Generation', 'error': 'Timeout'})
+            return False, {}
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Job Analysis Generation', 'error': str(e)})
+            return False, {}
+
+    def test_cached_analysis_fetch(self, job_id):
+        """Test GET /api/jobs/{job_id}/compare - Fetch cached analysis"""
+        print(f"\n🔍 Testing Cached Analysis Fetch for job_id: {job_id}")
+        
+        url = f"{self.base_url}/api/jobs/{job_id}/compare"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        self.tests_run += 1
+        print(f"   URL: {url}")
+        
+        start_time = time.time()
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Cached Analysis Fetch',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            data = response.json()
+            elapsed = time.time() - start_time
+            
+            # Validation checks
+            validation_errors = []
+            
+            # Should return the same structure as POST
+            if 'comparison_json' not in data:
+                validation_errors.append("Missing comparison_json in cached response")
+            
+            if data.get('status') != 'complete':
+                validation_errors.append(f"Expected cached status 'complete', got '{data.get('status')}'")
+            
+            # Should be fast (cached)
+            if elapsed > 2.0:
+                validation_errors.append(f"Cached fetch took {elapsed:.2f}s (should be instant)")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Cached analysis validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Cached Analysis Validation',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Cached Analysis Fetch")
+            print(f"   ✅ Retrieved cached analysis in {elapsed:.3f}s (instant)")
+            print(f"   ✅ Same comparison_id: {data.get('comparison_id')}")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 30s")
+            self.failed_tests.append({'name': 'Cached Analysis Fetch', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Cached Analysis Fetch', 'error': str(e)})
+            return False
+
+    def test_notes_update(self, job_id):
+        """Test PUT /api/jobs/{job_id}/compare/notes - Update notes"""
+        print(f"\n🔍 Testing Notes Update for job_id: {job_id}")
+        
+        url = f"{self.base_url}/api/jobs/{job_id}/compare/notes"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}'
+        }
+        
+        notes_payload = {
+            "notes": "Interesting role, reach out to hiring manager John. Strong match for SQL and Python skills. Need to highlight ETL experience more."
+        }
+        
+        self.tests_run += 1
+        print(f"   URL: {url}")
+        print(f"   Notes: {notes_payload['notes'][:50]}...")
+        
+        try:
+            response = requests.put(url, json=notes_payload, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Notes Update',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            data = response.json()
+            
+            # Validation checks
+            validation_errors = []
+            
+            if not data.get('success'):
+                validation_errors.append("Expected success: true in response")
+            
+            if data.get('notes') != notes_payload['notes']:
+                validation_errors.append("Returned notes don't match submitted notes")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Notes update validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Notes Update Validation',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Notes Update")
+            print(f"   ✅ Notes saved successfully")
+            print(f"   ✅ Response: {data}")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 30s")
+            self.failed_tests.append({'name': 'Notes Update', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Notes Update', 'error': str(e)})
+            return False
+
     def test_interview_prep_detailed(self):
         """Test Interview Prep generation endpoint with detailed validation"""
         print("\n🔍 Testing Interview Prep Generation (Detailed)...")
