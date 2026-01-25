@@ -293,6 +293,300 @@ class JobMatchAPITester:
         
         return self.test_single_greenhouse_scenario(scenario)
 
+    def test_business_analyst_phrase_matching(self):
+        """Test improved 'business analyst' search with strict phrase matching as requested in review"""
+        print("\n" + "="*70)
+        print("🎯 TESTING BUSINESS ANALYST PHRASE MATCHING (REVIEW REQUEST)")
+        print("="*70)
+        print("Testing improved phrase matching for multi-word queries")
+        print("Focus: Ensure 'business analyst' requires BOTH words, not just any word")
+        
+        # Test Case 1: "business analyst" in Toronto - should be strict
+        print("\n📋 TEST CASE 1: 'business analyst' in Toronto (Strict Phrase Matching)")
+        case1_success = self.test_business_analyst_strict_matching()
+        
+        # Test Case 2: "analyst" (single word) - should be broad  
+        print("\n📋 TEST CASE 2: 'analyst' in Toronto (Broad Keyword Matching)")
+        case2_success = self.test_analyst_broad_matching()
+        
+        return case1_success and case2_success
+
+    def test_business_analyst_strict_matching(self):
+        """Test Case 1: 'business analyst' should require BOTH words"""
+        print("🔍 Testing strict phrase matching for 'business analyst'...")
+        
+        url = f"{self.base_url}/api/jobs/greenhouse/search"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}',
+            'Accept': 'text/event-stream'
+        }
+        
+        search_data = {
+            "query": "business analyst",
+            "location": "greater toronto area, ontario"
+        }
+        
+        self.tests_run += 1
+        print(f"   Query: '{search_data['query']}', Location: '{search_data['location']}'")
+        print("   Expected: Jobs with BOTH 'business' AND 'analyst' in title")
+        print("   Should match: 'Business Analyst', 'Senior Business Analyst', 'Business Systems Analyst'")
+        print("   Should NOT match: 'Data Analyst', 'Business Operations Manager', 'Account Executive, Business'")
+        
+        start_time = time.time()
+        jobs_received = 0
+        job_titles = []
+        valid_matches = []
+        invalid_matches = []
+        
+        try:
+            response = requests.post(url, json=search_data, headers=headers, stream=True, timeout=70)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    'name': 'Business Analyst Strict Matching',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                return False
+            
+            # Process streaming response
+            for line in response.iter_lines(decode_unicode=True):
+                if line.startswith('data: '):
+                    data_str = line[6:]  # Remove 'data: ' prefix
+                    try:
+                        data = json.loads(data_str)
+                        
+                        # Skip heartbeat/progress messages
+                        if data.get('heartbeat') or data.get('progress'):
+                            continue
+                        
+                        if data.get('done'):
+                            total_jobs = data.get('total', 0)
+                            elapsed = time.time() - start_time
+                            print(f"✅ Completion message received: {total_jobs} jobs in {elapsed:.2f}s")
+                            break
+                        else:
+                            jobs_received += 1
+                            title = data.get('title', '').lower()
+                            job_titles.append(data.get('title', 'N/A'))
+                            
+                            # Validate strict phrase matching logic
+                            has_business = 'business' in title
+                            has_analyst = 'analyst' in title
+                            
+                            if has_business and has_analyst:
+                                valid_matches.append(data.get('title', 'N/A'))
+                            elif has_business or has_analyst:
+                                # This should NOT happen with strict matching
+                                invalid_matches.append({
+                                    'title': data.get('title', 'N/A'),
+                                    'reason': f"Has {'business' if has_business else 'analyst'} but not both words"
+                                })
+                            else:
+                                # This should definitely NOT happen
+                                invalid_matches.append({
+                                    'title': data.get('title', 'N/A'),
+                                    'reason': "Has neither 'business' nor 'analyst'"
+                                })
+                    
+                    except json.JSONDecodeError:
+                        continue
+            
+            elapsed_total = time.time() - start_time
+            
+            # Validation checks
+            validation_errors = []
+            
+            if jobs_received < 2:
+                validation_errors.append(f"Too few jobs found: {jobs_received} (expected at least 2 business analyst jobs)")
+            
+            # Critical: Check for invalid matches (jobs that don't have both words)
+            if invalid_matches:
+                validation_errors.append(f"Found {len(invalid_matches)} jobs that don't match strict criteria")
+                for invalid in invalid_matches[:3]:  # Show first 3
+                    validation_errors.append(f"  Invalid: '{invalid['title']}' - {invalid['reason']}")
+            
+            # Check that we have some valid matches
+            if len(valid_matches) == 0:
+                validation_errors.append("No jobs found with both 'business' AND 'analyst' in title")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Strict matching validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Business Analyst Strict Matching',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                
+                # Still show the job titles found for debugging
+                print(f"\n📋 Job titles found ({len(job_titles)}):")
+                for i, title in enumerate(job_titles[:10]):
+                    print(f"   {i+1}. {title}")
+                
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Business Analyst Strict Matching")
+            print(f"   ✅ Jobs found: {jobs_received}")
+            print(f"   ✅ Valid matches (both words): {len(valid_matches)}")
+            print(f"   ✅ Invalid matches: {len(invalid_matches)} (should be 0)")
+            print(f"   ✅ Response time: {elapsed_total:.2f}s")
+            
+            # Show job titles found
+            print(f"\n📋 Valid 'Business Analyst' job titles found ({len(valid_matches)}):")
+            for i, title in enumerate(valid_matches[:10]):
+                print(f"   {i+1}. {title}")
+            
+            if len(valid_matches) > 10:
+                print(f"   ... and {len(valid_matches) - 10} more")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 70s")
+            self.failed_tests.append({'name': 'Business Analyst Strict Matching', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Business Analyst Strict Matching', 'error': str(e)})
+            return False
+
+    def test_analyst_broad_matching(self):
+        """Test Case 2: 'analyst' should return ALL analyst jobs (broad matching)"""
+        print("🔍 Testing broad keyword matching for 'analyst'...")
+        
+        url = f"{self.base_url}/api/jobs/greenhouse/search"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.session_token}',
+            'Accept': 'text/event-stream'
+        }
+        
+        search_data = {
+            "query": "analyst",
+            "location": "toronto"
+        }
+        
+        self.tests_run += 1
+        print(f"   Query: '{search_data['query']}', Location: '{search_data['location']}'")
+        print("   Expected: ALL analyst jobs (Data Analyst, Business Analyst, Financial Analyst, etc.)")
+        
+        start_time = time.time()
+        jobs_received = 0
+        job_titles = []
+        analyst_types = set()
+        
+        try:
+            response = requests.post(url, json=search_data, headers=headers, stream=True, timeout=70)
+            
+            if response.status_code != 200:
+                print(f"❌ FAILED - Status: {response.status_code}")
+                self.failed_tests.append({
+                    'name': 'Analyst Broad Matching',
+                    'expected': 200,
+                    'actual': response.status_code
+                })
+                return False
+            
+            # Process streaming response
+            for line in response.iter_lines(decode_unicode=True):
+                if line.startswith('data: '):
+                    data_str = line[6:]
+                    try:
+                        data = json.loads(data_str)
+                        
+                        if data.get('heartbeat') or data.get('progress'):
+                            continue
+                        
+                        if data.get('done'):
+                            total_jobs = data.get('total', 0)
+                            elapsed = time.time() - start_time
+                            print(f"✅ Completion message received: {total_jobs} jobs in {elapsed:.2f}s")
+                            break
+                        else:
+                            jobs_received += 1
+                            title = data.get('title', '')
+                            job_titles.append(title)
+                            
+                            # Categorize analyst types
+                            title_lower = title.lower()
+                            if 'business analyst' in title_lower:
+                                analyst_types.add('Business Analyst')
+                            elif 'data analyst' in title_lower:
+                                analyst_types.add('Data Analyst')
+                            elif 'financial analyst' in title_lower:
+                                analyst_types.add('Financial Analyst')
+                            elif 'systems analyst' in title_lower:
+                                analyst_types.add('Systems Analyst')
+                            elif 'research analyst' in title_lower:
+                                analyst_types.add('Research Analyst')
+                            elif 'analyst' in title_lower:
+                                analyst_types.add('Other Analyst')
+                    
+                    except json.JSONDecodeError:
+                        continue
+            
+            elapsed_total = time.time() - start_time
+            
+            # Validation checks
+            validation_errors = []
+            
+            if jobs_received < 5:
+                validation_errors.append(f"Too few analyst jobs found: {jobs_received} (expected at least 5)")
+            
+            # Check that we have variety in analyst types
+            if len(analyst_types) < 2:
+                validation_errors.append(f"Limited analyst variety: {analyst_types} (expected multiple types)")
+            
+            # Verify all jobs contain 'analyst'
+            non_analyst_jobs = [title for title in job_titles if 'analyst' not in title.lower()]
+            if non_analyst_jobs:
+                validation_errors.append(f"Found {len(non_analyst_jobs)} jobs without 'analyst': {non_analyst_jobs[:3]}")
+            
+            if validation_errors:
+                print(f"❌ FAILED - Broad matching validation errors:")
+                for error in validation_errors:
+                    print(f"   • {error}")
+                self.failed_tests.append({
+                    'name': 'Analyst Broad Matching',
+                    'error': f"Validation errors: {', '.join(validation_errors)}"
+                })
+                return False
+            
+            # Success
+            self.tests_passed += 1
+            print(f"✅ PASSED - Analyst Broad Matching")
+            print(f"   ✅ Total analyst jobs found: {jobs_received}")
+            print(f"   ✅ Analyst types found: {', '.join(sorted(analyst_types))}")
+            print(f"   ✅ Response time: {elapsed_total:.2f}s")
+            
+            # Show sample job titles by type
+            print(f"\n📋 Sample analyst job titles found:")
+            shown_count = 0
+            for title in job_titles[:15]:
+                print(f"   {shown_count+1}. {title}")
+                shown_count += 1
+            
+            if len(job_titles) > 15:
+                print(f"   ... and {len(job_titles) - 15} more analyst jobs")
+            
+            return True
+            
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timed out after 70s")
+            self.failed_tests.append({'name': 'Analyst Broad Matching', 'error': 'Timeout'})
+            return False
+        except Exception as e:
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({'name': 'Analyst Broad Matching', 'error': str(e)})
+            return False
+
     def test_single_greenhouse_scenario(self, scenario):
         """Test a single Greenhouse streaming scenario"""
         print(f"\n🔍 Testing: {scenario['name']}")
