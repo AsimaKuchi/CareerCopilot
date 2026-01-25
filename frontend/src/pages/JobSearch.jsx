@@ -846,39 +846,51 @@ export default function JobSearch({ user }) {
                           Quick Apply
                         </Button>
                         {job.apply_link && (
-                          <Button
-                            variant="outline"
-                            className="border-white/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('Opening job link:', job.apply_link);
-                              
-                              if (!job.apply_link) {
-                                toast.error('Job link not available');
-                                return;
-                              }
-                              
-                              try {
-                                const opened = window.open(job.apply_link, '_blank', 'noopener,noreferrer');
-                                if (!opened || opened.closed || typeof opened.closed === 'undefined') {
-                                  // Popup was blocked
-                                  toast.error('Popup blocked! Please allow popups for this site or copy the link below.');
-                                  console.log('Popup blocked. Job URL:', job.apply_link);
-                                  
-                                  // Fallback: try to navigate directly
-                                  window.location.href = job.apply_link;
-                                } else {
-                                  toast.success('Opening job page in new tab...');
+                          <>
+                            <Button
+                              variant="outline"
+                              className="border-white/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Opening job link:', job.apply_link);
+                                
+                                if (!job.apply_link) {
+                                  toast.error('Job link not available');
+                                  return;
                                 }
-                              } catch (err) {
-                                console.error('Error opening link:', err);
-                                toast.error('Failed to open job page. Try copying the link.');
-                              }
-                            }}
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View Original
-                          </Button>
+                                
+                                try {
+                                  const opened = window.open(job.apply_link, '_blank', 'noopener,noreferrer');
+                                  if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+                                    // Popup was blocked
+                                    toast.error('Popup blocked! Click "Copy Link" to open manually.');
+                                    console.log('Popup blocked. Job URL:', job.apply_link);
+                                  } else {
+                                    toast.success('Opening job page in new tab...');
+                                  }
+                                } catch (err) {
+                                  console.error('Error opening link:', err);
+                                  toast.error('Failed to open. Click "Copy Link" instead.');
+                                }
+                              }}
+                            >
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              View Original
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-white/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(job.apply_link);
+                                toast.success('Link copied! Paste in your browser to open.');
+                              }}
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy Link
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
