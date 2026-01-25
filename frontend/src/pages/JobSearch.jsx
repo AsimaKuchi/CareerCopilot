@@ -729,6 +729,16 @@ export default function JobSearch({ user }) {
 
                       <div className="flex flex-wrap gap-3">
                         <Button
+                          onClick={() => {
+                            setJobToAnalyze(job);
+                            setShowAnalyzeDialog(true);
+                          }}
+                          className="bg-purple-500 hover:bg-purple-600"
+                        >
+                          <Target className="w-4 h-4 mr-2" />
+                          Analyze Match
+                        </Button>
+                        <Button
                           data-testid={`apply-btn-${i}`}
                           onClick={() => handleApplyClick(job)}
                           className="bg-indigo-500 hover:bg-indigo-600"
