@@ -597,20 +597,15 @@ export default function Applications({ user }) {
                                             throw new Error(err.detail || 'Failed to generate file');
                                           }
                                           
-                                          const { download_url, filename } = await genResponse.json();
+                                          const { download_url } = await genResponse.json();
                                           
-                                          // Step 2: Trigger download by opening URL
                                           toast.dismiss(loadingToast);
                                           
-                                          // Create a temporary link and click it
-                                          const link = document.createElement('a');
-                                          link.href = `${API}${download_url.replace('/api', '')}`;
-                                          link.download = filename;
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          document.body.removeChild(link);
+                                          // Step 2: Open download URL in new tab
+                                          const fullUrl = `${API}${download_url.replace('/api', '')}`;
+                                          window.open(fullUrl, '_blank');
                                           
-                                          toast.success(`Downloading: ${filename}`);
+                                          toast.success('Download started! Check your Downloads folder.');
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
@@ -651,20 +646,15 @@ export default function Applications({ user }) {
                                             throw new Error(err.detail || 'Failed to generate file');
                                           }
                                           
-                                          const { download_url, filename } = await genResponse.json();
+                                          const { download_url } = await genResponse.json();
                                           
-                                          // Step 2: Trigger download by opening URL
                                           toast.dismiss(loadingToast);
                                           
-                                          // Create a temporary link and click it
-                                          const link = document.createElement('a');
-                                          link.href = `${API}${download_url.replace('/api', '')}`;
-                                          link.download = filename;
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          document.body.removeChild(link);
+                                          // Step 2: Open download URL in new tab
+                                          const fullUrl = `${API}${download_url.replace('/api', '')}`;
+                                          window.open(fullUrl, '_blank');
                                           
-                                          toast.success(`Downloading: ${filename}`);
+                                          toast.success('Download started! Check your Downloads folder.');
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
