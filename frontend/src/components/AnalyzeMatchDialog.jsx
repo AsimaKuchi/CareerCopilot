@@ -436,7 +436,7 @@ export default function AnalyzeMatchDialog({ job, open, onOpenChange }) {
                 Always review and customize recommendations before applying.
               </p>
             </div>
-          </ScrollArea>
+          </div>
         ) : (
           <div className="py-20 text-center">
             <p className="text-muted-foreground">No analysis available</p>
