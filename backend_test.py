@@ -1093,6 +1093,10 @@ CERTIFICATIONS
         print("🎯 PRIORITY TESTS - REVIEW REQUEST FOCUS")
         print("="*60)
         
+        # NEW: Test Analyze Match feature end-to-end (MAIN REVIEW REQUEST)
+        print("\n🎯 Testing NEW Analyze Match Feature (MAIN REVIEW REQUEST)")
+        analyze_match_success = self.test_analyze_match_feature()
+        
         # Test Interview Prep generation endpoint
         print("\n📋 Testing Interview Prep Generation (/api/ai/interview-prep)")
         self.test_interview_prep_detailed()
@@ -1131,6 +1135,13 @@ CERTIFICATIONS
         print("="*60)
         print(f"✅ Tests passed: {self.tests_passed}/{self.tests_run}")
         print(f"⏱️  Duration: {duration:.2f} seconds")
+        
+        # Highlight key results
+        print(f"\n🎯 KEY REVIEW REQUEST RESULTS:")
+        if analyze_match_success:
+            print(f"   ✅ Analyze Match Feature: WORKING")
+        else:
+            print(f"   ❌ Analyze Match Feature: FAILED")
         
         if self.failed_tests:
             print(f"\n❌ Failed tests ({len(self.failed_tests)}):")
