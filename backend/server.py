@@ -179,6 +179,27 @@ class InterviewPrepRequest(BaseModel):
     company: str
     job_description: str
 
+class JobComparisonRequest(BaseModel):
+    job_id: str
+    job_title: str
+    company: str
+    job_description: str
+    apply_link: Optional[str] = None
+
+class JobComparison(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    comparison_id: str = Field(default_factory=lambda: f"cmp_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    job_id: str
+    job_title: str
+    company: str
+    comparison_json: Dict[str, Any]  # The full analysis result
+    personal_notes: Optional[str] = None
+    status: str = "complete"  # pending, complete, error
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class JobSearchQuery(BaseModel):
     query: str
     location: Optional[str] = None
