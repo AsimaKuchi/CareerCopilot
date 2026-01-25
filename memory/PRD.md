@@ -95,14 +95,17 @@ The job matching evaluates candidates against jobs using:
 - ✅ Quality-First job matching with detailed evaluation
 - ✅ Work authorization filter
 - ✅ Industry and seniority matching
+- ✅ Fallback search mechanism for multi-word queries (fixed Jan 25, 2025)
 
 ### P1 - High Priority (Next)
-- [ ] Greenhouse job sourcing (scrape job-boards.greenhouse.io)
+- [ ] Add Google Jobs as a search source (user approved)
 - [ ] Interview Tips & Prep feature completion
 - [ ] Email notifications for new job matches
 
 ### P2 - Medium Priority
-- [ ] Auto-apply integration (submit to Greenhouse after approval)
+- [ ] Implement Playwright-based Ashby scraper (currently non-functional)
+- [ ] Expand Auto-Submit to support Lever/Ashby boards
+- [ ] Fetch full job descriptions for better AI analysis
 - [ ] Saved job searches
 - [ ] Multiple resume versions
 - [ ] Application notes and reminders
