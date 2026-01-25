@@ -963,18 +963,21 @@ export default function Applications({ user }) {
                             
                             const url = window.URL.createObjectURL(blob);
                             const a = document.createElement('a');
+                            a.style.display = 'none';
                             a.href = url;
                             a.download = `Cover_Letter_${reviewApp.company.replace(/\s+/g, '_')}.docx`;
+                            
+                            // Add to DOM and trigger download
                             document.body.appendChild(a);
                             a.click();
                             
-                            // Cleanup
+                            // Cleanup after download completes
                             setTimeout(() => {
+                              document.body.removeChild(a);
                               window.URL.revokeObjectURL(url);
-                              a.remove();
-                            }, 100);
+                            }, 250);
                             
-                            toast.success('Cover letter downloaded successfully!');
+                            toast.success('Cover letter downloaded! Check your Downloads folder.');
                           } catch (err) {
                             console.error('Download error:', err);
                             toast.error(`Failed to download cover letter: ${err.message}`);
