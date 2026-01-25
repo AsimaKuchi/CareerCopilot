@@ -138,6 +138,18 @@ backend:
         agent: "testing"
         comment: "🎯 BUSINESS ANALYST PHRASE MATCHING VERIFIED (Jan 25, 2026): Conducted comprehensive testing of improved phrase matching logic as requested in review. CRITICAL FINDINGS: 1) ✅ PHRASE MATCHING WORKING PERFECTLY: Multi-word queries like 'business analyst' now require ALL words present in job title, single-word queries use broad keyword matching 2) ✅ TEST CASE 1 - 'business analyst' in Toronto: Returns 0 jobs (CORRECT) because no Greenhouse jobs have both 'business' AND 'analyst' in title in Toronto area 3) ✅ TEST CASE 2 - 'analyst' in Toronto: Returns 19 jobs (CORRECT) including Data Analyst, Financial Analyst, etc. using broad matching 4) ✅ GLOBAL VERIFICATION: Found 15 true business analyst jobs globally (Singapore, Paris, Bangalore, US) but NONE in Toronto/Canada 5) ✅ STRICT VALIDATION: System correctly rejects jobs with only 'business' OR 'analyst' - requires BOTH words for multi-word queries 6) ✅ LOCATION ACCURACY: Toronto search correctly excludes international positions. The phrase matching implementation is working exactly as designed - 0 Toronto results reflect actual job availability, not system malfunction."
 
+  - task: "Resume and Cover Letter Download Endpoints"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ DOWNLOAD ENDPOINTS COMPREHENSIVE TESTING COMPLETE (Jan 25, 2026): Tested resume and cover letter download endpoints as requested in review. CRITICAL FINDINGS: 1) ✅ GET /api/applications/{application_id}/download/resume - WORKING PERFECTLY: Returns valid DOCX file with correct Content-Type (application/vnd.openxmlformats-officedocument.wordprocessingml.document) and Content-Disposition (attachment; filename=Resume_*.docx) headers 2) ✅ GET /api/applications/{application_id}/download/cover-letter - WORKING PERFECTLY: Returns valid DOCX file with correct headers and filename format 3) ✅ DOCX FILE VALIDATION: Both endpoints generate valid DOCX files with proper PK signature (ZIP format), tested files are 37KB+ in size 4) ✅ ERROR HANDLING: Correctly returns 400 for missing resume/cover letter fields, 404 for non-existent applications, 401 for invalid authentication 5) ✅ create_docx_from_text FUNCTION: Working correctly, converts text content to proper DOCX format using python-docx library 6) ✅ FILENAME GENERATION: Proper filename format with company and job title (Resume_Company_JobTitle.docx, Cover_Letter_Company_JobTitle.docx) 7) ✅ STREAMING RESPONSE: Uses FastAPI StreamingResponse for efficient file delivery. All download functionality is production-ready and working as expected."
+
   - task: "Playwright Auto-Submit for Approved Applications"
     implemented: true
     working: "NA"
