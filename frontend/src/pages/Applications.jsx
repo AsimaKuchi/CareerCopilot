@@ -752,23 +752,25 @@ export default function Applications({ user }) {
                                 </>
                               )}
                             </Button>
-                            <Button
-                              data-testid={`auto-submit-btn-${i}`}
-                              size="sm"
-                              onClick={() => handleAutoSubmit(app.application_id, app.job_title, app.company)}
-                              disabled={actionLoading === app.application_id || !app.apply_link?.includes('greenhouse')}
-                              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50"
-                              title={!app.apply_link?.includes('greenhouse') ? 'Auto-submit only available for Greenhouse jobs' : 'Approve & Auto-Submit'}
-                            >
-                              {actionLoading === app.application_id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Rocket className="w-4 h-4 mr-1" />
-                                  Auto-Submit
-                                </>
-                              )}
-                            </Button>
+                            {isAutoFillSupported(app.apply_link) && (
+                              <Button
+                                data-testid={`auto-fill-btn-${i}`}
+                                size="sm"
+                                onClick={() => handleAutoFill(app.application_id, app.job_title, app.company, app.apply_link)}
+                                disabled={actionLoading === app.application_id}
+                                className="bg-purple-500 hover:bg-purple-600"
+                                title="Auto-fill the application form with your profile data"
+                              >
+                                {actionLoading === app.application_id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Rocket className="w-4 h-4 mr-1" />
+                                    Auto-Fill
+                                  </>
+                                )}
+                              </Button>
+                            )}
                             <Button
                               data-testid={`reject-btn-${i}`}
                               size="sm"
@@ -781,16 +783,57 @@ export default function Applications({ user }) {
                             </Button>
                           </>
                         )}
+                        {app.status === "ready_to_submit" && (
+                          <>
+                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 px-3 py-1">
+                              ✓ Form Ready
+                            </Badge>
+                            <Button
+                              data-testid={`open-to-submit-btn-${i}`}
+                              size="sm"
+                              onClick={() => window.open(app.apply_link, '_blank')}
+                              className="bg-emerald-500 hover:bg-emerald-600"
+                            >
+                              <ExternalLink className="w-4 h-4 mr-1" />
+                              Open & Submit
+                            </Button>
+                          </>
+                        )}
+                        {app.status === "approved" && (
+                          <>
+                            {isAutoFillSupported(app.apply_link) && (
+                              <Button
+                                data-testid={`auto-fill-approved-btn-${i}`}
+                                size="sm"
+                                onClick={() => handleAutoFill(app.application_id, app.job_title, app.company, app.apply_link)}
+                                disabled={actionLoading === app.application_id}
+                                className="bg-purple-500 hover:bg-purple-600"
+                              >
+                                {actionLoading === app.application_id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Rocket className="w-4 h-4 mr-1" />
+                                    Auto-Fill
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                            <Button
+                              data-testid={`submit-now-btn-${i}`}
+                              size="sm"
+                              onClick={() => handleSubmitNow(app)}
+                              className="bg-indigo-500 hover:bg-indigo-600"
+                            >
+                              <Send className="w-4 h-4 mr-1" />
+                              Submit Manually
+                            </Button>
+                          </>
+                        )}
                         {app.status === "applied" && (
-                          <Button
-                            data-testid={`submit-now-btn-${i}`}
-                            size="sm"
-                            onClick={() => handleSubmitNow(app)}
-                            className="bg-indigo-500 hover:bg-indigo-600"
-                          >
-                            <Rocket className="w-4 h-4 mr-1" />
-                            Submit Now
-                          </Button>
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 px-3 py-1">
+                            ✓ Applied
+                          </Badge>
                         )}
                         <Button
                           data-testid={`delete-btn-${i}`}
