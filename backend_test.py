@@ -1755,6 +1755,11 @@ CERTIFICATIONS
         
         # Highlight key results
         print(f"\n🎯 KEY REVIEW REQUEST RESULTS:")
+        if download_success:
+            print(f"   ✅ Download Endpoints: WORKING")
+        else:
+            print(f"   ❌ Download Endpoints: FAILED")
+        
         if analyze_match_success:
             print(f"   ✅ Analyze Match Feature: WORKING")
         else:
