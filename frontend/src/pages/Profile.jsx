@@ -38,6 +38,8 @@ export default function Profile({ user }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState({});
+  const debounceTimerRef = React.useRef(null);
   
   const [newSkill, setNewSkill] = useState("");
   const [newTitle, setNewTitle] = useState("");
@@ -46,6 +48,15 @@ export default function Profile({ user }) {
 
   useEffect(() => {
     fetchProfile();
+  }, []);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, []);
 
   const fetchProfile = async () => {
@@ -63,7 +74,8 @@ export default function Profile({ user }) {
     }
   };
 
-  const updateProfile = async (updates) => {
+  // Immediate save for dropdowns/toggles (no debounce needed)
+  const updateProfileImmediate = async (updates) => {
     setSaving(true);
     try {
       const response = await fetch(`${API}/profile`, {
@@ -75,11 +87,57 @@ export default function Profile({ user }) {
       if (!response.ok) throw new Error("Failed to update profile");
       const data = await response.json();
       setProfile(data);
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated");
     } catch (error) {
       toast.error("Failed to update profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Debounced save for text inputs (waits 1 second after user stops typing)
+  const updateProfileDebounced = (updates) => {
+    // Update local state immediately for responsive UI
+    setProfile(prev => ({ ...prev, ...updates }));
+    setPendingChanges(prev => ({ ...prev, ...updates }));
+    
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Set new timer to save after 1 second of no typing
+    debounceTimerRef.current = setTimeout(async () => {
+      const allPendingChanges = { ...pendingChanges, ...updates };
+      if (Object.keys(allPendingChanges).length === 0) return;
+      
+      setSaving(true);
+      try {
+        const response = await fetch(`${API}/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(allPendingChanges),
+        });
+        if (!response.ok) throw new Error("Failed to update profile");
+        const data = await response.json();
+        setProfile(data);
+        setPendingChanges({});
+        toast.success("Profile updated");
+      } catch (error) {
+        toast.error("Failed to update profile");
+      } finally {
+        setSaving(false);
+      }
+    }, 1000);
+  };
+
+  // Wrapper that decides which update method to use
+  const updateProfile = (updates, immediate = false) => {
+    if (immediate) {
+      updateProfileImmediate(updates);
+    } else {
+      updateProfileDebounced(updates);
     }
   };
 
