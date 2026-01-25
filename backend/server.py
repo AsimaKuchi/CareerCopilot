@@ -814,35 +814,47 @@ async def search_greenhouse(request: Request):
                     job_dept = job.get("department", "").lower()
                     job_location = job.get("location", "").lower()
                     
-                    # Query match: Smart phrase + keyword search
-                    # For multi-word queries like "business analyst":
-                    # - First try phrase match: "business analyst" in job title
-                    # - Require ALL words present (not just any)
-                    # This ensures "business analyst" doesn't match just "business" roles
+                    # Query match: Smart phrase search with intelligent fallback
+                    # Strategy:
+                    # 1. Multi-word queries (e.g., "business analyst"): Try phrase matching first
+                    # 2. If the full search returns 0 results, the frontend will trigger a fallback
+                    # 3. Fallback: Show related jobs with ANY of the keywords + resume matching in SAME location
+                    # 4. Single-word queries: Always use broad keyword matching
                     
                     query_match = True
                     if query_words:
                         search_text = f"{job_title} {job_company} {job_dept}"
                         
-                        # If it's a multi-word query (likely a job title), require more precision
+                        # Check if this is a fallback search (indicated by a special parameter)
+                        # This will be set when frontend detects 0 results from phrase search
+                        is_fallback_search = body.get("fallback_search", False)
+                        
+                        # If it's a multi-word query (likely a job title)
                         if len(query_words) >= 2:
-                            # Try exact phrase in title (best match)
-                            query_phrase = query.lower()
-                            if query_phrase in job_title:
-                                query_match = True
-                            # Require ALL words to be present in title (e.g., "senior business analyst" has both "business" AND "analyst")
-                            elif all(word in job_title for word in query_words):
-                                query_match = True
-                            # If not all in title, check if phrase exists anywhere in search text
-                            elif query_phrase in search_text:
-                                query_match = True
-                            # Otherwise, require at least 2 words to match for multi-word queries
-                            elif sum(1 for word in query_words if word in search_text) >= 2:
-                                query_match = True
+                            if is_fallback_search:
+                                # FALLBACK MODE: Show related jobs with shared keywords
+                                # Example: "business analyst" with 0 results → show "data analyst", "systems analyst"
+                                # Require at least 1 keyword match (will be ranked by resume match)
+                                query_match = any(word in search_text for word in query_words)
                             else:
-                                query_match = False
+                                # STRICT PHRASE MODE: Require high precision
+                                query_phrase = query.lower()
+                                if query_phrase in job_title:
+                                    # Exact phrase in title (best match)
+                                    query_match = True
+                                elif all(word in job_title for word in query_words):
+                                    # All words present in title
+                                    query_match = True
+                                elif query_phrase in search_text:
+                                    # Phrase exists anywhere in search text
+                                    query_match = True
+                                elif sum(1 for word in query_words if word in search_text) >= 2:
+                                    # At least 2 words match
+                                    query_match = True
+                                else:
+                                    query_match = False
                         else:
-                            # Single word search - simple keyword match
+                            # Single word search - always use broad keyword matching
                             query_match = any(word in search_text for word in query_words)
                     
                     # Location match: Smart matching for location searches
