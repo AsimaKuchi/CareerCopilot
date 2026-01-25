@@ -869,214 +869,158 @@ async def search_greenhouse(request: Request):
     applied_job_ids = set(app.get("job_id") for app in existing_applications if app.get("job_id"))
     
     async def stream_multi_platform_jobs():
-        """Generator function that streams jobs from all platforms as they're found."""
-        logger.info("=== STREAMING FUNCTION STARTED ===")
+        """Generator function that streams jobs from all platforms using parallel fetching."""
+        logger.info("=== STREAMING FUNCTION STARTED (PARALLEL MODE) ===")
         import json
         
         # Send immediate heartbeat so frontend knows we're alive
-        yield f"data: {json.dumps({'heartbeat': True, 'message': 'Search started'})}\n\n"
+        yield f"data: {json.dumps({'heartbeat': True, 'message': 'Search started - fetching from quality sources...'})}\n\n"
         
         query_words = query.lower().split() if query else []
         location_lower = location.lower() if location else ""
+        is_fallback_search = body.get("fallback_search", False)
         
         jobs_found = 0
-        companies_checked = 0
+        matched_jobs = []
         
-        # Combine all company lists - PRIORITIZE quality platforms first
-        quality_companies = [
-            ("greenhouse", company) for company in GREENHOUSE_COMPANIES
-        ] + [
-            ("lever", company) for company in LEVER_COMPANIES
-        ] + [
-            ("ashby", company) for company in ASHBY_COMPANIES
-        ]
+        # PARALLEL FETCH: Get all jobs at once (much faster than sequential)
+        total_companies = len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES)
+        yield f"data: {json.dumps({'progress': True, 'message': f'Scanning {total_companies} companies...', 'checked': 0, 'found': 0})}\n\n"
         
-        all_companies = quality_companies  # Only quality platforms for now
+        # Fetch all jobs in parallel batches
+        all_raw_jobs = await fetch_all_jobs_parallel()
         
-        logger.info(f"Searching {len(all_companies)} quality platform companies")
+        yield f"data: {json.dumps({'progress': True, 'message': f'Found {len(all_raw_jobs)} total jobs, filtering...', 'checked': total_companies, 'found': len(all_raw_jobs)})}\n\n"
         
-        # Process companies from all platforms
-        for platform, company in all_companies:
-            companies_checked += 1
-            
-            # Send progress update every 10 companies
-            if companies_checked % 10 == 0:
-                yield f"data: {json.dumps({'progress': True, 'checked': companies_checked, 'found': jobs_found})}\n\n"
-            
-            try:
-                # Fetch jobs based on platform
-                logger.info(f"Fetching from {platform}: {company}")
-                if platform == "greenhouse":
-                    company_jobs = await fetch_greenhouse_company_jobs(company)
-                elif platform == "lever":
-                    company_jobs = await fetch_lever_company_jobs(company)
-                elif platform == "ashby":
-                    company_jobs = await fetch_ashby_company_jobs(company)
-                else:
-                    continue
-                
-                if not company_jobs:
-                    logger.info(f"  No jobs found from {company}")
-                    continue
-                
-                logger.info(f"  Found {len(company_jobs)} jobs from {company}")
-                
-                # Filter and enrich jobs from this company
-                for job in company_jobs:
-                    # Skip already applied jobs
-                    if job.get("job_id") in applied_job_ids:
-                        logger.debug(f"  Skipping already applied: {job.get('title')}")
-                        continue
-                    
-                    # ONLY filter by query and location - NO profile-based filtering
-                    job_title = job.get("title", "").lower()
-                    job_company = job.get("company", "").lower()
-                    job_dept = job.get("department", "").lower()
-                    job_location = job.get("location", "").lower()
-                    
-                    # Query match: Smart phrase search with intelligent fallback
-                    # Strategy:
-                    # 1. Multi-word queries (e.g., "business analyst"): Try phrase matching first
-                    # 2. If the full search returns 0 results, the frontend will trigger a fallback
-                    # 3. Fallback: Show related jobs with ANY of the keywords + resume matching in SAME location
-                    # 4. Single-word queries: Always use broad keyword matching
-                    
-                    query_match = True
-                    if query_words:
-                        search_text = f"{job_title} {job_company} {job_dept}"
-                        
-                        # Check if this is a fallback search (indicated by a special parameter)
-                        # This will be set when frontend detects 0 results from phrase search
-                        is_fallback_search = body.get("fallback_search", False)
-                        
-                        # If it's a multi-word query (likely a job title)
-                        if len(query_words) >= 2:
-                            if is_fallback_search:
-                                # FALLBACK MODE: Show related jobs with shared keywords
-                                # Example: "business analyst" with 0 results → show "data analyst", "systems analyst"
-                                # Require at least 1 keyword match (will be ranked by resume match)
-                                query_match = any(word in search_text for word in query_words)
-                            else:
-                                # STRICT PHRASE MODE: Require high precision
-                                query_phrase = query.lower()
-                                if query_phrase in job_title:
-                                    # Exact phrase in title (best match)
-                                    query_match = True
-                                elif all(word in job_title for word in query_words):
-                                    # All words present in title
-                                    query_match = True
-                                elif query_phrase in search_text:
-                                    # Phrase exists anywhere in search text
-                                    query_match = True
-                                elif sum(1 for word in query_words if word in search_text) >= 2:
-                                    # At least 2 words match
-                                    query_match = True
-                                else:
-                                    query_match = False
-                        else:
-                            # Single word search - always use broad keyword matching
-                            query_match = any(word in search_text for word in query_words)
-                    
-                    # Location match: Smart matching for location searches
-                    # Break down location search into individual words/cities
-                    # e.g., "greater toronto area, ontario" → check for "toronto" OR "ontario" OR "canada"
-                    location_match = True
-                    if location_lower:
-                        # Extract key location terms from user's search
-                        # Remove common filler words
-                        location_words = location_lower.replace(",", " ").split()
-                        location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
-                        
-                        # For Canadian city searches, also include "canada" and "remote" as valid matches
-                        # This helps match jobs that say "Remote" or "Canada" without specifying the city
-                        canadian_cities = ["toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton"]
-                        if any(city in location_keywords for city in canadian_cities) and "canada" not in location_keywords:
-                            location_keywords.append("canada")
-                        
-                        # Match if ANY location keyword appears in job location
-                        # This allows "greater toronto area" to match jobs in "Toronto", "Ontario", "Canada", or "Remote"
-                        if location_keywords:
-                            location_match = any(keyword in job_location for keyword in location_keywords)
-                            # Also accept jobs that are explicitly "Remote" (no location specified)
-                            if not location_match and job_location in ["remote", ""]:
-                                location_match = True
-                        else:
-                            # If no keywords after filtering, treat as no location filter
-                            location_match = True
-                    
-                    # Skip ONLY if title/location don't match search - NO OTHER FILTERING
-                    if not (query_match and location_match):
-                        continue
-                    
-                    # Calculate match score for ranking/display (but don't filter based on it)
-                    if profile:
-                        job_for_match = {
-                            "job_title": job.get("title"),
-                            "employer_name": job.get("company"),
-                            "job_description": job.get("title", "") + " " + job.get("department", ""),
-                            "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
-                            "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
-                            "job_is_remote": "remote" in job.get("location", "").lower(),
-                            "job_min_salary": None,
-                            "job_max_salary": None
-                        }
-                        match_eval = evaluate_job_match(job_for_match, profile)
-                        
-                        job.update({
-                            "match_score": match_eval["score"],
-                            "match_recommendation": match_eval["recommendation"],
-                            "match_strengths": match_eval["strengths"],
-                            "match_gaps": match_eval["gaps"],
-                            "match_reasoning": match_eval["match_reasoning"],
-                            "skip_reason": match_eval["skip_reason"]
-                        })
-                    else:
-                        job.update({
-                            "match_score": 50,
-                            "match_recommendation": "review",
-                            "match_strengths": [],
-                            "match_gaps": ["Complete your profile for better matching"],
-                            "match_reasoning": "Profile incomplete",
-                            "skip_reason": None
-                        })
-                    
-                    # Add description
-                    job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
-                    job["full_description"] = ""
-                    
-                    # Mark as new if posted in last 24 hours
-                    job_posted_date = job.get("posted_at")
-                    is_new = False
-                    if job_posted_date:
-                        try:
-                            posted_dt = datetime.fromisoformat(job_posted_date.replace('Z', '+00:00'))
-                            hours_ago = (datetime.now(timezone.utc) - posted_dt).total_seconds() / 3600
-                            is_new = hours_ago <= 24
-                        except:
-                            is_new = False
-                    job["is_new"] = is_new
-                    
-                    # Stream this job immediately
-                    jobs_found += 1
-                    logger.info(f"Streaming job {jobs_found}: {job.get('title')} at {job.get('company')} ({platform})")
-                    yield f"data: {json.dumps(job)}\n\n"
-                    
-                    # Limit to 100 jobs (increased from 30)
-                    if jobs_found >= 100:
-                        break
-                
-                if jobs_found >= 100:
-                    break
-                    
-            except Exception as e:
-                logger.debug(f"Error fetching from {platform}/{company}: {e}")
+        # Get existing job IDs from user's previous search (to mark new jobs)
+        existing_cache = await db.job_cache.find_one({"user_id": user.user_id})
+        existing_job_ids = set()
+        if existing_cache:
+            existing_job_ids = set(j.get("job_id") for j in existing_cache.get("jobs", []))
+        
+        # Filter and process jobs
+        for job in all_raw_jobs:
+            # Skip already applied jobs
+            if job.get("job_id") in applied_job_ids:
                 continue
+            
+            job_title = job.get("title", "").lower()
+            job_company = job.get("company", "").lower()
+            job_dept = job.get("department", "").lower()
+            job_location = job.get("location", "").lower()
+            search_text = f"{job_title} {job_company} {job_dept}"
+            
+            # Query match logic
+            query_match = True
+            if query_words:
+                if len(query_words) >= 2:
+                    if is_fallback_search:
+                        # FALLBACK MODE: Any keyword match
+                        query_match = any(word in search_text for word in query_words)
+                    else:
+                        # STRICT MODE: Phrase matching
+                        query_phrase = query.lower()
+                        query_match = (
+                            query_phrase in job_title or
+                            all(word in job_title for word in query_words) or
+                            query_phrase in search_text or
+                            sum(1 for word in query_words if word in search_text) >= 2
+                        )
+                else:
+                    # Single word - broad matching
+                    query_match = any(word in search_text for word in query_words)
+            
+            # Location match logic
+            location_match = True
+            if location_lower:
+                location_words = location_lower.replace(",", " ").split()
+                location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
+                
+                canadian_cities = ["toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton"]
+                if any(city in location_keywords for city in canadian_cities) and "canada" not in location_keywords:
+                    location_keywords.append("canada")
+                
+                if location_keywords:
+                    location_match = any(keyword in job_location for keyword in location_keywords)
+                    if not location_match and job_location in ["remote", ""]:
+                        location_match = True
+            
+            if not (query_match and location_match):
+                continue
+            
+            # Mark if this is a NEW job for the user
+            job["is_new_for_user"] = job.get("job_id") not in existing_job_ids
+            
+            # Calculate match score
+            if profile:
+                job_for_match = {
+                    "job_title": job.get("title"),
+                    "employer_name": job.get("company"),
+                    "job_description": job.get("title", "") + " " + job.get("department", ""),
+                    "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
+                    "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
+                    "job_is_remote": "remote" in job.get("location", "").lower(),
+                    "job_min_salary": None,
+                    "job_max_salary": None
+                }
+                match_eval = evaluate_job_match(job_for_match, profile)
+                job.update({
+                    "match_score": match_eval["score"],
+                    "match_recommendation": match_eval["recommendation"],
+                    "match_strengths": match_eval["strengths"],
+                    "match_gaps": match_eval["gaps"],
+                    "match_reasoning": match_eval["match_reasoning"],
+                    "skip_reason": match_eval["skip_reason"]
+                })
+            else:
+                job.update({
+                    "match_score": 50,
+                    "match_recommendation": "review",
+                    "match_strengths": [],
+                    "match_gaps": ["Complete your profile for better matching"],
+                    "match_reasoning": "Profile incomplete",
+                    "skip_reason": None
+                })
+            
+            # Add description
+            job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
+            job["full_description"] = ""
+            
+            # Mark as new if posted in last 24 hours
+            job_posted_date = job.get("posted_at")
+            is_new = False
+            if job_posted_date:
+                try:
+                    posted_dt = datetime.fromisoformat(job_posted_date.replace('Z', '+00:00'))
+                    hours_ago = (datetime.now(timezone.utc) - posted_dt).total_seconds() / 3600
+                    is_new = hours_ago <= 24
+                except:
+                    is_new = False
+            job["is_new"] = is_new
+            
+            matched_jobs.append(job)
+            jobs_found += 1
+            
+            # Stream job immediately
+            yield f"data: {json.dumps(job)}\n\n"
+            
+            # Limit to 100 jobs
+            if jobs_found >= 100:
+                break
         
-        # Send completion message with smart fallback suggestion
+        # Save jobs to cache for dashboard
+        if matched_jobs:
+            await save_jobs_to_cache(user.user_id, matched_jobs, query, location)
+        
+        # Send completion message
         completion_data = {'done': True, 'total': jobs_found}
         
+        # Count new jobs
+        new_jobs_count = sum(1 for j in matched_jobs if j.get("is_new_for_user"))
+        completion_data['new_jobs_count'] = new_jobs_count
+        
         # If 0 results for a multi-word query, suggest fallback
-        if jobs_found == 0 and len(query_words) >= 2 and not body.get("fallback_search", False):
+        if jobs_found == 0 and len(query_words) >= 2 and not is_fallback_search:
             completion_data['suggest_fallback'] = True
             completion_data['fallback_message'] = f"No exact '{query}' jobs found in {location or 'your area'}. Try showing related roles?"
             completion_data['original_query'] = query
