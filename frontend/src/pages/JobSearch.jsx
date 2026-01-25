@@ -253,10 +253,10 @@ export default function JobSearch({ user }) {
       setLoading(true);
       let allJobs = [];
 
-      // Quality sources with fallback flag
+      // Quality sources with fallback flag - use the STREAMING endpoint, not JSearch
       if (source === "quality" || source === "all") {
         try {
-          const response = await fetch(`${API}/jobs/search`, {
+          const response = await fetch(`${API}/jobs/greenhouse/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
