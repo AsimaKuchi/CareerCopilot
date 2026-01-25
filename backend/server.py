@@ -952,8 +952,16 @@ async def search_greenhouse(request: Request):
                 logger.debug(f"Error fetching from {platform}/{company}: {e}")
                 continue
         
-        # Send completion message
-        yield f"data: {json.dumps({'done': True, 'total': jobs_found})}\n\n"
+        # Send completion message with smart fallback suggestion
+        completion_data = {'done': True, 'total': jobs_found}
+        
+        # If 0 results for a multi-word query, suggest fallback
+        if jobs_found == 0 and len(query_words) >= 2 and not body.get("fallback_search", False):
+            completion_data['suggest_fallback'] = True
+            completion_data['fallback_message'] = f"No exact '{query}' jobs found in {location or 'your area'}. Try showing related roles?"
+            completion_data['original_query'] = query
+        
+        yield f"data: {json.dumps(completion_data)}\n\n"
     
     return StreamingResponse(
         stream_multi_platform_jobs(),
