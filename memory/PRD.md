@@ -113,10 +113,13 @@ The job matching evaluates candidates against jobs using:
 - [ ] Salary negotiation tips
 - [ ] Video interview practice
 
-## Test Results (Latest: iteration_2.json)
-- **Backend**: 100% success rate (26/26 tests passed)
-- **Frontend**: All UI elements verified
-- **Fixed Bug**: NoneType concatenation in job search when job_city/job_state is None
+## Test Results (Latest: iteration_3.json - January 25, 2025)
+- **Backend**: 100% success rate (8/8 tests passed)
+- **Frontend**: All UI flows verified
+- **Fixed P0 Bug**: "Business analyst" in "Toronto" search returning 0 results on Quality Sources
+  - Root cause: `performFallbackSearch` function in JobSearch.jsx was calling `/api/jobs/search` (JSearch aggregator) instead of `/api/jobs/greenhouse/search` (streaming Greenhouse/Lever endpoint)
+  - Fix: Changed line 259 in JobSearch.jsx to use correct endpoint
+  - Verification: Fallback now correctly returns 16+ related analyst jobs when strict search returns 0
 
 ## Database Schema
 
