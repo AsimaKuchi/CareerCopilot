@@ -611,13 +611,6 @@ export default function Applications({ user }) {
                                       onClick={() => {
                                         // Direct navigation - browser handles download natively
                                         window.location.href = `${API}/applications/${app.application_id}/download/cover-letter`;
-                                          
-                                          toast.dismiss(loadingToast);
-                                          toast.success('Cover letter downloaded!');
-                                        } catch (err) {
-                                          toast.dismiss(loadingToast);
-                                          toast.error('Download failed: ' + err.message);
-                                        }
                                       }}
                                       className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                                     >
