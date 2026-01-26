@@ -583,46 +583,9 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={async () => {
-                                        const loadingToast = toast.loading('Preparing resume download...');
-                                        try {
-                                          // Fetch the file directly as a blob
-                                          const response = await fetch(`${API}/applications/${app.application_id}/download/resume`, {
-                                            method: 'GET',
-                                            credentials: 'include',
-                                          });
-                                          
-                                          if (!response.ok) {
-                                            const err = await response.json().catch(() => ({ detail: 'Download failed' }));
-                                            throw new Error(err.detail || 'Failed to download file');
-                                          }
-                                          
-                                          // Get the blob from response
-                                          const blob = await response.blob();
-                                          
-                                          // Create filename from company/job title
-                                          const filename = `Resume_${(app.company || 'Company').replace(/[^a-zA-Z0-9]/g, '_')}_${(app.job_title || 'Position').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
-                                          
-                                          // Create object URL and trigger download
-                                          const url = window.URL.createObjectURL(blob);
-                                          const link = document.createElement('a');
-                                          link.href = url;
-                                          link.download = filename;
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          
-                                          // Cleanup
-                                          setTimeout(() => {
-                                            window.URL.revokeObjectURL(url);
-                                            document.body.removeChild(link);
-                                          }, 100);
-                                          
-                                          toast.dismiss(loadingToast);
-                                          toast.success('Resume downloaded!');
-                                        } catch (err) {
-                                          toast.dismiss(loadingToast);
-                                          toast.error('Download failed: ' + err.message);
-                                        }
+                                      onClick={() => {
+                                        // Direct navigation - browser handles download natively
+                                        window.location.href = `${API}/applications/${app.application_id}/download/resume`;
                                       }}
                                       className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                                     >
@@ -645,39 +608,9 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={async () => {
-                                        const loadingToast = toast.loading('Preparing cover letter download...');
-                                        try {
-                                          // Fetch the file directly as a blob
-                                          const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
-                                            method: 'GET',
-                                            credentials: 'include',
-                                          });
-                                          
-                                          if (!response.ok) {
-                                            const err = await response.json().catch(() => ({ detail: 'Download failed' }));
-                                            throw new Error(err.detail || 'Failed to download file');
-                                          }
-                                          
-                                          // Get the blob from response
-                                          const blob = await response.blob();
-                                          
-                                          // Create filename from company/job title
-                                          const filename = `CoverLetter_${(app.company || 'Company').replace(/[^a-zA-Z0-9]/g, '_')}_${(app.job_title || 'Position').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
-                                          
-                                          // Create object URL and trigger download
-                                          const url = window.URL.createObjectURL(blob);
-                                          const link = document.createElement('a');
-                                          link.href = url;
-                                          link.download = filename;
-                                          document.body.appendChild(link);
-                                          link.click();
-                                          
-                                          // Cleanup
-                                          setTimeout(() => {
-                                            window.URL.revokeObjectURL(url);
-                                            document.body.removeChild(link);
-                                          }, 100);
+                                      onClick={() => {
+                                        // Direct navigation - browser handles download natively
+                                        window.location.href = `${API}/applications/${app.application_id}/download/cover-letter`;
                                           
                                           toast.dismiss(loadingToast);
                                           toast.success('Cover letter downloaded!');
