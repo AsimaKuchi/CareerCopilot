@@ -895,47 +895,9 @@ export default function Applications({ user }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={async () => {
-                          try {
-                            console.log('Downloading resume from review dialog:', reviewApp.application_id);
-                            const response = await fetch(`${API}/applications/${reviewApp.application_id}/download/resume`, {
-                              credentials: 'include',
-                              headers: {
-                                'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                              }
-                            });
-                            
-                            if (!response.ok) {
-                              const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                              throw new Error(error.detail || 'Download failed');
-                            }
-                            
-                            const blob = await response.blob();
-                            if (blob.size === 0) {
-                              throw new Error('Downloaded file is empty');
-                            }
-                            
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.style.display = 'none';
-                            a.href = url;
-                            a.download = `Resume_${reviewApp.company.replace(/\s+/g, '_')}.docx`;
-                            
-                            // Add to DOM and trigger download
-                            document.body.appendChild(a);
-                            a.click();
-                            
-                            // Cleanup after download completes
-                            setTimeout(() => {
-                              document.body.removeChild(a);
-                              window.URL.revokeObjectURL(url);
-                            }, 250);
-                            
-                            toast.success('Resume downloaded! Check your Downloads folder.');
-                          } catch (err) {
-                            console.error('Download error:', err);
-                            toast.error(`Failed to download: ${err.message}`);
-                          }
+                        onClick={() => {
+                          // Direct navigation - browser handles download natively
+                          window.location.href = `${API}/applications/${reviewApp.application_id}/download/resume`;
                         }}
                         className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                       >
@@ -971,51 +933,9 @@ export default function Applications({ user }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={async () => {
-                          try {
-                            console.log('Downloading cover letter for application:', reviewApp.application_id);
-                            const response = await fetch(`${API}/applications/${reviewApp.application_id}/download/cover-letter`, {
-                              credentials: 'include',
-                              headers: {
-                                'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                              }
-                            });
-                            
-                            console.log('Response status:', response.status);
-                            
-                            if (!response.ok) {
-                              const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-                              throw new Error(error.detail || 'Download failed');
-                            }
-                            
-                            const blob = await response.blob();
-                            console.log('Blob size:', blob.size, 'type:', blob.type);
-                            
-                            if (blob.size === 0) {
-                              throw new Error('Downloaded file is empty');
-                            }
-                            
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.style.display = 'none';
-                            a.href = url;
-                            a.download = `Cover_Letter_${reviewApp.company.replace(/\s+/g, '_')}.docx`;
-                            
-                            // Add to DOM and trigger download
-                            document.body.appendChild(a);
-                            a.click();
-                            
-                            // Cleanup after download completes
-                            setTimeout(() => {
-                              document.body.removeChild(a);
-                              window.URL.revokeObjectURL(url);
-                            }, 250);
-                            
-                            toast.success('Cover letter downloaded! Check your Downloads folder.');
-                          } catch (err) {
-                            console.error('Download error:', err);
-                            toast.error(`Failed to download cover letter: ${err.message}`);
-                          }
+                        onClick={() => {
+                          // Direct navigation - browser handles download natively
+                          window.location.href = `${API}/applications/${reviewApp.application_id}/download/cover-letter`;
                         }}
                         className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                       >
