@@ -236,11 +236,23 @@ public_router = APIRouter(prefix="/public", tags=["Public Jobs API"])
 async def public_health():
     """Health check endpoint."""
     job_count = await db.stored_jobs.count_documents({})
+    
+    # Get next scheduled run time
+    next_run = None
+    job = scheduler.get_job("job_ingestion")
+    if job and job.next_run_time:
+        next_run = job.next_run_time.isoformat()
+    
     return {
         "status": "healthy",
         "service": "JobMatch API",
         "version": "1.0.0",
         "jobs_in_database": job_count,
+        "auto_refresh": {
+            "enabled": True,
+            "interval": "every 6 hours",
+            "next_refresh": next_run
+        },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
