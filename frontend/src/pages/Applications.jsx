@@ -584,9 +584,8 @@ export default function Applications({ user }) {
                                       size="sm"
                                       variant="outline"
                                       onClick={async () => {
-                                        const loadingToast = toast.loading('Generating DOCX...');
+                                        const loadingToast = toast.loading('Preparing download...');
                                         try {
-                                          // Step 1: Generate the DOCX on server
                                           const genResponse = await fetch(`${API}/applications/${app.application_id}/generate-resume-docx`, {
                                             method: 'POST',
                                             credentials: 'include',
@@ -597,15 +596,11 @@ export default function Applications({ user }) {
                                             throw new Error(err.detail || 'Failed to generate file');
                                           }
                                           
-                                          const { download_url } = await genResponse.json();
-                                          
+                                          const { file_id } = await genResponse.json();
                                           toast.dismiss(loadingToast);
                                           
-                                          // Step 2: Open download URL in new tab
-                                          const fullUrl = `${API}${download_url.replace('/api', '')}`;
-                                          window.open(fullUrl, '_blank');
-                                          
-                                          toast.success('Download started! Check your Downloads folder.');
+                                          // Open download page in new tab
+                                          window.open(`${API}/download-page/${file_id}`, '_blank');
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
@@ -633,9 +628,8 @@ export default function Applications({ user }) {
                                       size="sm"
                                       variant="outline"
                                       onClick={async () => {
-                                        const loadingToast = toast.loading('Generating DOCX...');
+                                        const loadingToast = toast.loading('Preparing download...');
                                         try {
-                                          // Step 1: Generate the DOCX on server
                                           const genResponse = await fetch(`${API}/applications/${app.application_id}/generate-cover-letter-docx`, {
                                             method: 'POST',
                                             credentials: 'include',
@@ -646,15 +640,11 @@ export default function Applications({ user }) {
                                             throw new Error(err.detail || 'Failed to generate file');
                                           }
                                           
-                                          const { download_url } = await genResponse.json();
-                                          
+                                          const { file_id } = await genResponse.json();
                                           toast.dismiss(loadingToast);
                                           
-                                          // Step 2: Open download URL in new tab
-                                          const fullUrl = `${API}${download_url.replace('/api', '')}`;
-                                          window.open(fullUrl, '_blank');
-                                          
-                                          toast.success('Download started! Check your Downloads folder.');
+                                          // Open download page in new tab
+                                          window.open(`${API}/download-page/${file_id}`, '_blank');
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
