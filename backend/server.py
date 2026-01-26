@@ -3513,18 +3513,115 @@ async def download_file(file_id: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     # Determine friendly filename
-    parts = file_id.split('_', 2)
+    parts = file_id.split('_', 1)
     doc_type = parts[0] if parts else "document"
     friendly_name = f"{doc_type}.docx"
     
-    return FileResponse(
-        path=filepath,
+    # Read file content
+    with open(filepath, 'rb') as f:
+        content = f.read()
+    
+    # Return as downloadable response
+    return Response(
+        content=content,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename=friendly_name,
         headers={
-            "Content-Disposition": f'attachment; filename="{friendly_name}"'
+            "Content-Disposition": f'attachment; filename="{friendly_name}"',
+            "Content-Length": str(len(content)),
+            "Cache-Control": "no-cache"
         }
     )
+
+@api_router.get("/download-page/{file_id}")
+async def download_page(file_id: str):
+    """
+    Returns an HTML page that auto-triggers download.
+    This is a fallback for browsers that block direct downloads.
+    """
+    filename = f"{file_id}.docx"
+    filepath = os.path.join(DOWNLOADS_DIR, filename)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Read file and convert to base64
+    import base64
+    with open(filepath, 'rb') as f:
+        content = f.read()
+    
+    b64_content = base64.b64encode(content).decode('utf-8')
+    
+    parts = file_id.split('_', 1)
+    doc_type = parts[0] if parts else "document"
+    friendly_name = f"{doc_type}.docx"
+    
+    # Return HTML page that triggers download
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Downloading {friendly_name}...</title>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #1a1a2e; color: white; }}
+            .container {{ text-align: center; }}
+            .spinner {{ width: 50px; height: 50px; border: 3px solid #333; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }}
+            @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+            a {{ color: #6366f1; text-decoration: none; padding: 10px 20px; border: 1px solid #6366f1; border-radius: 5px; display: inline-block; margin-top: 20px; }}
+            a:hover {{ background: #6366f1; color: white; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="spinner"></div>
+            <h2>Downloading {friendly_name}...</h2>
+            <p>Your download should start automatically.</p>
+            <p id="status"></p>
+            <a href="#" id="manual-link" style="display:none;">Click here if download doesn't start</a>
+        </div>
+        <script>
+            (function() {{
+                var b64 = "{b64_content}";
+                var filename = "{friendly_name}";
+                
+                // Convert base64 to blob
+                var byteCharacters = atob(b64);
+                var byteNumbers = new Array(byteCharacters.length);
+                for (var i = 0; i < byteCharacters.length; i++) {{
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }}
+                var byteArray = new Uint8Array(byteNumbers);
+                var blob = new Blob([byteArray], {{type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}});
+                
+                // Create download link
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                
+                // Try to trigger download
+                document.body.appendChild(a);
+                a.click();
+                
+                // Show manual link after 2 seconds
+                setTimeout(function() {{
+                    var manualLink = document.getElementById('manual-link');
+                    manualLink.href = url;
+                    manualLink.download = filename;
+                    manualLink.style.display = 'inline-block';
+                    document.getElementById('status').textContent = 'If the download did not start, click the button below.';
+                }}, 2000);
+                
+                // Cleanup
+                setTimeout(function() {{
+                    document.body.removeChild(a);
+                }}, 100);
+            }})();
+        </script>
+    </body>
+    </html>
+    """
+    
+    return Response(content=html, media_type="text/html")
 
 @api_router.post("/applications/{application_id}/generate-resume-docx")
 async def generate_resume_docx(request: Request, application_id: str):
