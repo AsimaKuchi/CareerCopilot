@@ -3982,6 +3982,45 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# ========================
+# SCHEDULED JOB INGESTION
+# Automatically refresh jobs every 6 hours
+# ========================
+
+scheduler = AsyncIOScheduler()
+
+async def scheduled_job_ingestion():
+    """Background task to refresh jobs every 6 hours."""
+    logger.info("🔄 Starting scheduled job ingestion...")
+    try:
+        result = await ingest_all_jobs()
+        logger.info(f"✅ Scheduled ingestion complete: {result.get('jobs_ingested', 0)} jobs")
+    except Exception as e:
+        logger.error(f"❌ Scheduled ingestion failed: {e}")
+
+@app.on_event("startup")
+async def start_scheduler():
+    """Start the job scheduler on app startup."""
+    # Run job ingestion every 6 hours
+    scheduler.add_job(
+        scheduled_job_ingestion,
+        trigger=IntervalTrigger(hours=6),
+        id="job_ingestion",
+        name="Refresh jobs from Greenhouse/Lever",
+        replace_existing=True
+    )
+    scheduler.start()
+    logger.info("📅 Job scheduler started - jobs will refresh every 6 hours")
+    
+    # Run initial ingestion if database is empty
+    job_count = await db.stored_jobs.count_documents({})
+    if job_count == 0:
+        logger.info("Database empty - running initial job ingestion...")
+        asyncio.create_task(ingest_all_jobs())
+
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_scheduler():
+    """Shutdown scheduler and database on app shutdown."""
+    scheduler.shutdown()
     client.close()
+    logger.info("Scheduler and database connection closed")
