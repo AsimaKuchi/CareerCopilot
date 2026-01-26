@@ -584,23 +584,41 @@ export default function Applications({ user }) {
                                       size="sm"
                                       variant="outline"
                                       onClick={async () => {
-                                        const loadingToast = toast.loading('Preparing download...');
+                                        const loadingToast = toast.loading('Preparing resume download...');
                                         try {
-                                          const genResponse = await fetch(`${API}/applications/${app.application_id}/generate-resume-docx`, {
-                                            method: 'POST',
+                                          // Fetch the file directly as a blob
+                                          const response = await fetch(`${API}/applications/${app.application_id}/download/resume`, {
+                                            method: 'GET',
                                             credentials: 'include',
                                           });
                                           
-                                          if (!genResponse.ok) {
-                                            const err = await genResponse.json();
-                                            throw new Error(err.detail || 'Failed to generate file');
+                                          if (!response.ok) {
+                                            const err = await response.json().catch(() => ({ detail: 'Download failed' }));
+                                            throw new Error(err.detail || 'Failed to download file');
                                           }
                                           
-                                          const { file_id } = await genResponse.json();
-                                          toast.dismiss(loadingToast);
+                                          // Get the blob from response
+                                          const blob = await response.blob();
                                           
-                                          // Open download page in new tab
-                                          window.open(`${API}/download-page/${file_id}`, '_blank');
+                                          // Create filename from company/job title
+                                          const filename = `Resume_${(app.company || 'Company').replace(/[^a-zA-Z0-9]/g, '_')}_${(app.job_title || 'Position').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+                                          
+                                          // Create object URL and trigger download
+                                          const url = window.URL.createObjectURL(blob);
+                                          const link = document.createElement('a');
+                                          link.href = url;
+                                          link.download = filename;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          
+                                          // Cleanup
+                                          setTimeout(() => {
+                                            window.URL.revokeObjectURL(url);
+                                            document.body.removeChild(link);
+                                          }, 100);
+                                          
+                                          toast.dismiss(loadingToast);
+                                          toast.success('Resume downloaded!');
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
@@ -628,23 +646,41 @@ export default function Applications({ user }) {
                                       size="sm"
                                       variant="outline"
                                       onClick={async () => {
-                                        const loadingToast = toast.loading('Preparing download...');
+                                        const loadingToast = toast.loading('Preparing cover letter download...');
                                         try {
-                                          const genResponse = await fetch(`${API}/applications/${app.application_id}/generate-cover-letter-docx`, {
-                                            method: 'POST',
+                                          // Fetch the file directly as a blob
+                                          const response = await fetch(`${API}/applications/${app.application_id}/download/cover-letter`, {
+                                            method: 'GET',
                                             credentials: 'include',
                                           });
                                           
-                                          if (!genResponse.ok) {
-                                            const err = await genResponse.json();
-                                            throw new Error(err.detail || 'Failed to generate file');
+                                          if (!response.ok) {
+                                            const err = await response.json().catch(() => ({ detail: 'Download failed' }));
+                                            throw new Error(err.detail || 'Failed to download file');
                                           }
                                           
-                                          const { file_id } = await genResponse.json();
-                                          toast.dismiss(loadingToast);
+                                          // Get the blob from response
+                                          const blob = await response.blob();
                                           
-                                          // Open download page in new tab
-                                          window.open(`${API}/download-page/${file_id}`, '_blank');
+                                          // Create filename from company/job title
+                                          const filename = `CoverLetter_${(app.company || 'Company').replace(/[^a-zA-Z0-9]/g, '_')}_${(app.job_title || 'Position').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+                                          
+                                          // Create object URL and trigger download
+                                          const url = window.URL.createObjectURL(blob);
+                                          const link = document.createElement('a');
+                                          link.href = url;
+                                          link.download = filename;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          
+                                          // Cleanup
+                                          setTimeout(() => {
+                                            window.URL.revokeObjectURL(url);
+                                            document.body.removeChild(link);
+                                          }, 100);
+                                          
+                                          toast.dismiss(loadingToast);
+                                          toast.success('Cover letter downloaded!');
                                         } catch (err) {
                                           toast.dismiss(loadingToast);
                                           toast.error('Download failed: ' + err.message);
