@@ -5,7 +5,7 @@ import json
 import time
 
 def test_and_check_logs():
-    base_url = "https://careerwise-7.preview.emergentagent.com"
+    base_url = "https://careerfit-30.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     print("🔍 Testing Greenhouse endpoint and checking logs...")

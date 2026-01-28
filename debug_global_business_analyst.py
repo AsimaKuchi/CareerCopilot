@@ -7,7 +7,7 @@ import time
 def test_global_business_analyst_search():
     """Search for business analyst jobs globally to see if any exist"""
     
-    base_url = "https://careerwise-7.preview.emergentagent.com"
+    base_url = "https://careerfit-30.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"

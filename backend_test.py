@@ -8,7 +8,7 @@ import time
 import threading
 
 class JobMatchAPITester:
-    def __init__(self, base_url="https://careerwise-7.preview.emergentagent.com"):
+    def __init__(self, base_url="https://careerfit-30.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = "test_session_1768797070346"  # From auth setup
         self.tests_run = 0

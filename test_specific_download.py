@@ -5,7 +5,7 @@ import sys
 
 def test_specific_application():
     """Test download endpoints with a specific application ID from logs"""
-    base_url = "https://careerwise-7.preview.emergentagent.com"
+    base_url = "https://careerfit-30.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     # Application ID from the logs that had successful downloads
