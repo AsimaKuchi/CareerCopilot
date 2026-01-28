@@ -382,7 +382,7 @@ export default function Applications({ user }) {
   const handleAutoFill = async (applicationId, jobTitle, company, applyLink) => {
     setActionLoading(applicationId);
     try {
-      toast.info(`🔄 Auto-filling application for ${company}...`, { duration: 3000 });
+      toast.info(`🔄 Preparing auto-fill data for ${company}...`, { duration: 2000 });
 
       const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
         method: "POST",
@@ -392,46 +392,28 @@ export default function Applications({ user }) {
       const data = await response.json();
 
       if (data.success) {
-        setApplications((apps) =>
-          apps.map((app) =>
-            app.application_id === applicationId
-              ? { ...app, status: "ready_to_submit", auto_fill_result: data }
-              : app
-          )
-        );
+        // Show the auto-fill data modal
+        setAutoFillData({
+          company,
+          jobTitle,
+          applyLink: data.apply_link || applyLink,
+          data: data.auto_fill_data,
+          fieldsFilled: data.fields_filled,
+          fieldsEmpty: data.fields_empty,
+        });
 
         toast.success(
           <div>
-            <div className="font-semibold">✅ Application auto-filled!</div>
-            <div className="text-sm mt-1">{data.fields_filled?.length || 0} fields populated</div>
-            <div className="text-sm mt-2 text-amber-300">
-              Click &quot;Open Application&quot; to review and submit
-            </div>
+            <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields ready!</div>
+            <div className="text-sm mt-1">Review your data and fill the application</div>
           </div>,
-          { duration: 8000 }
+          { duration: 4000 }
         );
       } else {
-        toast.error(
-          <div>
-            <div className="font-semibold">{data.message}</div>
-            {data.apply_link && (
-              <div className="mt-2">
-                <a
-                  href={data.apply_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-400 underline"
-                >
-                  Apply manually here
-                </a>
-              </div>
-            )}
-          </div>,
-          { duration: 8000 }
-        );
+        toast.error(data.message || "Failed to prepare auto-fill data");
       }
     } catch (error) {
-      toast.error("Failed to auto-fill application");
+      toast.error("Failed to prepare auto-fill data");
     } finally {
       setActionLoading(null);
     }
