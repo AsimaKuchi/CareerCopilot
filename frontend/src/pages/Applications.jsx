@@ -965,10 +965,7 @@ export default function Applications({ user }) {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          downloadDocx(
-                            `${API}/applications/${reviewApp.application_id}/download/cover-letter`,
-                            `CoverLetter_${reviewApp.company || "Company"}_${reviewApp.job_title || "Role"}.docx`
-                          )
+                          downloadFile(`${API}/applications/${reviewApp.application_id}/download/cover-letter`)
                         }
                         className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                       >
