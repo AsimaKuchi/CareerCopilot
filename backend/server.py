@@ -3714,6 +3714,72 @@ async def generate_cover_letter_docx(request: Request, application_id: str):
         logger.error(f"Failed to generate cover letter DOCX: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate file: {str(e)}")
 
+@api_router.post("/applications/{application_id}/prepare-download/resume")
+async def prepare_resume_download(request: Request, application_id: str):
+    """
+    Prepare resume download - generates file and returns public download URL.
+    """
+    user = await get_current_user(request)
+    
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not app_doc.get("optimized_resume"):
+        raise HTTPException(status_code=400, detail="No optimized resume found")
+    
+    # Create filename
+    company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
+    job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
+    unique_id = uuid.uuid4().hex[:8]
+    filename = f"Resume_{company}_{job_title}_{unique_id}.docx"
+    
+    # Create and save DOCX
+    docx_bytes = create_docx_from_text(app_doc["optimized_resume"])
+    filepath = os.path.join(STATIC_DOWNLOADS_DIR, filename)
+    with open(filepath, 'wb') as f:
+        f.write(docx_bytes)
+    
+    # Return the public download URL
+    return {"download_url": f"/api/static-downloads/{filename}", "filename": filename}
+
+@api_router.post("/applications/{application_id}/prepare-download/cover-letter")
+async def prepare_cover_letter_download(request: Request, application_id: str):
+    """
+    Prepare cover letter download - generates file and returns public download URL.
+    """
+    user = await get_current_user(request)
+    
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not app_doc.get("cover_letter"):
+        raise HTTPException(status_code=400, detail="No cover letter found")
+    
+    # Create filename
+    company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
+    job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
+    unique_id = uuid.uuid4().hex[:8]
+    filename = f"CoverLetter_{company}_{job_title}_{unique_id}.docx"
+    
+    # Create and save DOCX
+    docx_bytes = create_docx_from_text(app_doc["cover_letter"])
+    filepath = os.path.join(STATIC_DOWNLOADS_DIR, filename)
+    with open(filepath, 'wb') as f:
+        f.write(docx_bytes)
+    
+    # Return the public download URL
+    return {"download_url": f"/api/static-downloads/{filename}", "filename": filename}
+
 @api_router.get("/applications/{application_id}/download/resume")
 async def download_resume_docx(request: Request, application_id: str):
     """
