@@ -310,6 +310,105 @@ async def public_health():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
+@public_router.post("/support")
+async def submit_support_request(request: SupportRequest):
+    """Submit a support request - sends email to support team."""
+    try:
+        # Create HTML email content
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 20px; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0;">New Support Request</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+                <h2 style="color: #374151; margin-top: 0;">Contact Information</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280; width: 120px;"><strong>Name:</strong></td>
+                        <td style="padding: 8px 0; color: #111827;">{request.first_name} {request.last_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280;"><strong>Email:</strong></td>
+                        <td style="padding: 8px 0; color: #111827;"><a href="mailto:{request.email}" style="color: #6366f1;">{request.email}</a></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280;"><strong>Reason:</strong></td>
+                        <td style="padding: 8px 0; color: #111827;">{request.reason}</td>
+                    </tr>
+                </table>
+                
+                <h2 style="color: #374151; margin-top: 24px;">Description</h2>
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <p style="color: #374151; margin: 0; white-space: pre-wrap; line-height: 1.6;">{request.description}</p>
+                </div>
+                
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        Sent from JobMatch AI Support Form • {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send email via Resend
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [SUPPORT_EMAIL],
+            "subject": f"[Support] {request.reason} - {request.first_name} {request.last_name}",
+            "html": html_content,
+            "reply_to": request.email
+        }
+        
+        # Run sync SDK in thread to keep FastAPI non-blocking
+        email_result = await asyncio.to_thread(resend.Emails.send, params)
+        
+        # Store in database for tracking
+        support_doc = {
+            "support_id": str(uuid.uuid4()),
+            "first_name": request.first_name,
+            "last_name": request.last_name,
+            "email": request.email,
+            "reason": request.reason,
+            "description": request.description,
+            "email_id": email_result.get("id") if email_result else None,
+            "status": "sent",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.support_requests.insert_one(support_doc)
+        
+        logger.info(f"Support request submitted by {request.email}: {request.reason}")
+        
+        return {
+            "success": True,
+            "message": "Your support request has been submitted. We'll get back to you soon!"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to submit support request: {str(e)}")
+        
+        # Still store it even if email fails
+        support_doc = {
+            "support_id": str(uuid.uuid4()),
+            "first_name": request.first_name,
+            "last_name": request.last_name,
+            "email": request.email,
+            "reason": request.reason,
+            "description": request.description,
+            "email_id": None,
+            "status": "email_failed",
+            "error": str(e),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.support_requests.insert_one(support_doc)
+        
+        return {
+            "success": True,
+            "message": "Your request has been received. We'll get back to you soon!"
+        }
+
 @public_router.get("/jobs")
 async def get_jobs(
     page: int = 1,
