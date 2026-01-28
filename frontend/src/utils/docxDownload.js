@@ -4,7 +4,8 @@ import { jsPDF } from "jspdf";
 
 const safeFilename = (name, ext = "docx") => {
   const cleaned = (name || "document")
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+    .replace(/[<>:"/\\|?*]/g, "_")
+    .replace(/[\x00-\x1F]/g, "")
     .trim();
 
   return cleaned.toLowerCase().endsWith(`.${ext}`) ? cleaned : `${cleaned}.${ext}`;
@@ -20,12 +21,12 @@ export function downloadPdfFromText(text, filename) {
   }
 
   try {
+    console.log("[downloadPdfFromText] Starting PDF generation...");
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     const maxWidth = pageWidth - margin * 2;
     
-    // Split text into lines that fit the page width
     const lines = doc.splitTextToSize(text, maxWidth);
     
     let y = margin;
@@ -45,6 +46,7 @@ export function downloadPdfFromText(text, filename) {
     console.log("[downloadPdfFromText] PDF downloaded successfully");
   } catch (error) {
     console.error("[downloadPdfFromText] Error:", error);
+    alert("Failed to download PDF: " + error.message);
   }
 }
 
@@ -54,10 +56,12 @@ export function downloadPdfFromText(text, filename) {
 export async function downloadDocxFromText(text, filename) {
   if (!text) {
     console.error("[downloadDocxFromText] No text provided");
+    alert("No content to download");
     return;
   }
 
   try {
+    console.log("[downloadDocxFromText] Starting DOCX generation...");
     const paragraphs = text
       .split(/\n\s*\n/)
       .map(
@@ -66,7 +70,7 @@ export async function downloadDocxFromText(text, filename) {
             children: [
               new TextRun({
                 text: block,
-                size: 24, // 12pt (docx uses half-points)
+                size: 24,
                 font: "Calibri",
               }),
             ],
@@ -79,11 +83,11 @@ export async function downloadDocxFromText(text, filename) {
     });
 
     const blob = await Packer.toBlob(doc);
+    console.log("[downloadDocxFromText] Blob created, size:", blob.size);
     saveAs(blob, safeFilename(filename, "docx"));
     console.log("[downloadDocxFromText] DOCX downloaded successfully");
   } catch (error) {
     console.error("[downloadDocxFromText] Error:", error);
-    // Fallback to PDF if DOCX fails
     console.log("[downloadDocxFromText] Falling back to PDF...");
     downloadPdfFromText(text, filename.replace(/\.docx$/i, ""));
   }
