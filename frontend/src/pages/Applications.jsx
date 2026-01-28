@@ -97,7 +97,7 @@ export default function Applications({ user }) {
    * - Forces browser to save blob as .docx
    * - Extracts filename from Content-Disposition if provided
    */
-  const downloadDocx = async (url: string, fallbackFilename = "document.docx") => {
+  const downloadDocx = async (url, fallbackFilename = "document.docx") => {
   try {
     console.log("[downloadDocx] starting:", url);
 
