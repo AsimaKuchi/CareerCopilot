@@ -3331,9 +3331,8 @@ async def auto_submit_greenhouse(app_data: Dict, user_data: Dict, profile_data: 
 @api_router.post("/applications/{application_id}/auto-fill")
 async def auto_fill_application_endpoint(request: Request, application_id: str):
     """
-    Generate auto-fill data for a job application.
-    Returns all available user data that can be used to fill the form.
-    User reviews and submits manually.
+    Auto-fill a job application using Playwright automation.
+    Fills all available fields and returns status for user to review.
     """
     user = await get_current_user(request)
     
@@ -3346,6 +3345,13 @@ async def auto_fill_application_endpoint(request: Request, application_id: str):
     if not app_doc:
         raise HTTPException(status_code=404, detail="Application not found")
     
+    apply_link = app_doc.get("apply_link", "")
+    if not apply_link:
+        return {
+            "success": False,
+            "message": "No application link found for this job"
+        }
+    
     # Get user profile and data
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
@@ -3355,28 +3361,33 @@ async def auto_fill_application_endpoint(request: Request, application_id: str):
     # Decrypt sensitive data
     if profile:
         profile = decrypt_sensitive_data(profile)
+    else:
+        profile = {}
     
     user_doc = await db.users.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
     )
     
-    if not profile:
-        profile = {}
+    if not user_doc:
+        return {
+            "success": False,
+            "message": "User data not found"
+        }
     
-    # Parse user data
-    full_name = user_doc.get("name", "") if user_doc else ""
+    # Run Playwright auto-fill
+    logger.info(f"Starting Playwright auto-fill for {apply_link}")
+    result = await auto_fill_application(app_doc, user_doc, profile)
+    
+    # Build response with all available data for manual fallback
+    full_name = user_doc.get("name", "")
     name_parts = full_name.split(" ", 1)
-    first_name = name_parts[0] if name_parts else ""
-    last_name = name_parts[1] if len(name_parts) > 1 else ""
-    email = user_doc.get("email", "") if user_doc else ""
     
-    # Build auto-fill data - include whatever is available
     auto_fill_data = {
-        "first_name": first_name,
-        "last_name": last_name,
+        "first_name": name_parts[0] if name_parts else "",
+        "last_name": name_parts[1] if len(name_parts) > 1 else "",
         "full_name": full_name,
-        "email": email,
+        "email": user_doc.get("email", ""),
         "phone": profile.get("phone_number", ""),
         "linkedin": profile.get("linkedin_url", ""),
         "github": profile.get("github_url", ""),
@@ -3387,39 +3398,31 @@ async def auto_fill_application_endpoint(request: Request, application_id: str):
         "address_state": profile.get("address_state", ""),
         "address_postal": profile.get("address_postal_code", ""),
         "address_country": profile.get("address_country", ""),
-        "willing_to_relocate": profile.get("willing_to_relocate", ""),
-        "notice_period": profile.get("notice_period", ""),
-        "referral_source": profile.get("referral_source", "LinkedIn"),
-        "salary_expectation": profile.get("salary_min", ""),
-        "work_authorization": profile.get("work_authorization", ""),
         "resume_text": app_doc.get("optimized_resume") or profile.get("resume_text", ""),
         "cover_letter": app_doc.get("cover_letter", ""),
     }
     
-    # Count filled fields
-    fields_filled = [k for k, v in auto_fill_data.items() if v and k not in ["resume_text", "cover_letter"]]
-    fields_empty = [k for k, v in auto_fill_data.items() if not v and k not in ["resume_text", "cover_letter"]]
-    
-    # Update application with prepared data
+    # Update application with auto-fill result
     await db.applications.update_one(
         {"application_id": application_id},
         {
             "$set": {
+                "auto_fill_result": result,
                 "auto_fill_data": auto_fill_data,
                 "prepared_at": datetime.now(timezone.utc).isoformat()
             }
         }
     )
     
-    return {
-        "success": True,
-        "message": f"Ready to fill! {len(fields_filled)} fields available.",
-        "fields_filled": fields_filled,
-        "fields_empty": fields_empty,
-        "auto_fill_data": auto_fill_data,
-        "apply_link": app_doc.get("apply_link", ""),
-        "instructions": "Open the application link, then use the data below to fill the form. Review all fields before submitting."
-    }
+    # Add the manual data to result for fallback
+    result["auto_fill_data"] = auto_fill_data
+    result["apply_link"] = apply_link
+    
+    # Count fields for response
+    fields_available = [k for k, v in auto_fill_data.items() if v and k not in ["resume_text", "cover_letter"]]
+    result["fields_available"] = fields_available
+    
+    return result
     
     return result
 
