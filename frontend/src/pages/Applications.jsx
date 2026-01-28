@@ -92,14 +92,6 @@ export default function Applications({ user }) {
     }
   };
 
-  /**
-   * Direct navigation download - backend returns 302 redirect to Supabase signed URL
-   * No fetch, no blob, no async - just direct browser navigation
-   */
-  const downloadFile = (url) => {
-    window.location.assign(url);
-  };
-
   const handleSubmitNow = async (app) => {
     setSubmitApp(app);
     setAutoFillScript(null);
