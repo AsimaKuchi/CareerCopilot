@@ -1330,12 +1330,26 @@ async def search_greenhouse(request: Request):
             matched_jobs.append(job)
             jobs_found += 1
             
-            # Stream job immediately
-            yield f"data: {json.dumps(job)}\n\n"
-            
             # Limit to 100 jobs
             if jobs_found >= 100:
                 break
+        
+        # Sort jobs: new jobs (is_new_for_user) first, then by posted date
+        matched_jobs.sort(key=lambda x: (
+            not x.get("is_new_for_user", False),  # New jobs first (False sorts before True, so we negate)
+            not x.get("is_new", False),            # Recently posted second
+            x.get("posted_at", "") or ""           # Then by date
+        ), reverse=False)
+        
+        # Re-sort the first group by posted_at descending
+        matched_jobs.sort(key=lambda x: (
+            0 if x.get("is_new_for_user", False) else 1,  # New for user first
+            x.get("posted_at", "") or ""
+        ), reverse=True)
+        
+        # Now stream the sorted jobs
+        for job in matched_jobs:
+            yield f"data: {json.dumps(job)}\n\n"
         
         # Save jobs to cache for dashboard
         if matched_jobs:
