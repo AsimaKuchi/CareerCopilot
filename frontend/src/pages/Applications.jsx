@@ -959,11 +959,6 @@ export default function Applications({ user }) {
                         <Download className="w-3 h-3 mr-1" />
                         .docx
                       </a>
-                        className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
-                      >
-                        <Download className="w-3 h-3 mr-1" />
-                        .docx
-                      </Button>
                     </div>
                   </div>
                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-48 overflow-auto bg-black/20 p-3 rounded">
