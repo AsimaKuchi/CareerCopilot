@@ -122,6 +122,7 @@ const AppRouter = () => {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
+      <Route path="/support" element={<Support />} />
       <Route
         path="/dashboard"
         element={
