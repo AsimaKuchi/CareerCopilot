@@ -4277,7 +4277,7 @@ app.add_middleware(
 
 # ========================
 # SCHEDULED JOB INGESTION
-# Automatically refresh jobs every 6 hours
+# Automatically refresh jobs every 2 hours
 # ========================
 
 scheduler = AsyncIOScheduler()
