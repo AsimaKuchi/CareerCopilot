@@ -1215,13 +1215,18 @@ export default function Applications({ user }) {
             </Button>
           </div>
 
-          <div className="flex-1 overflow-auto bg-white rounded-lg p-6 min-h-[400px]">
+          <div className="flex-1 overflow-auto bg-white rounded-lg p-8 min-h-[400px] shadow-inner">
             <textarea
               id="document-content"
               readOnly
               value={viewDocument?.content || ''}
-              className="w-full h-full min-h-[400px] text-black text-sm leading-relaxed font-sans resize-none border-none outline-none bg-transparent"
-              style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: '12pt', lineHeight: '1.5' }}
+              className="w-full h-full min-h-[500px] text-black leading-relaxed font-sans resize-none border-none outline-none bg-transparent"
+              style={{ 
+                fontFamily: 'Calibri, "Segoe UI", Arial, sans-serif', 
+                fontSize: '11pt', 
+                lineHeight: '1.6',
+                whiteSpace: 'pre-wrap'
+              }}
             />
           </div>
 
