@@ -916,20 +916,13 @@ export default function Applications({ user }) {
                         )}
                         {copiedField === "resume" ? "Copied!" : "Copy"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          downloadDocxFromText(
-                            reviewApp.optimized_resume,
-                            `Resume_${reviewApp.company || "Company"}_${reviewApp.job_title || "Role"}.docx`
-                          )
-                        }
-                        className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                      <a
+                        href={`${API}/applications/${reviewApp.application_id}/download/resume`}
+                        className="inline-flex items-center h-7 px-3 text-xs border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 rounded-md"
                       >
                         <Download className="w-3 h-3 mr-1" />
                         .docx
-                      </Button>
+                      </a>
                     </div>
                   </div>
                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-48 overflow-auto bg-black/20 p-3 rounded">
@@ -959,15 +952,13 @@ export default function Applications({ user }) {
                         )}
                         {copiedField === "cover" ? "Copied!" : "Copy"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          downloadDocxFromText(
-                            reviewApp.cover_letter,
-                            `CoverLetter_${reviewApp.company || "Company"}_${reviewApp.job_title || "Role"}.docx`
-                          )
-                        }
+                      <a
+                        href={`${API}/applications/${reviewApp.application_id}/download/cover-letter`}
+                        className="inline-flex items-center h-7 px-3 text-xs border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 rounded-md"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        .docx
+                      </a>
                         className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                       >
                         <Download className="w-3 h-3 mr-1" />
