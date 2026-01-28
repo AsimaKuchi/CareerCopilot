@@ -664,18 +664,6 @@ export default function Applications({ user }) {
                                 </div>
                               )}
                             </div>
-                                      className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
-                                    >
-                                      <Download className="w-3 h-3 mr-1" />
-                                      Download .docx
-                                    </Button>
-                                  </div>
-                                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
-                                    {app.cover_letter}
-                                  </pre>
-                                </div>
-                              )}
-                            </div>
                           )}
                         </div>
                       )}
