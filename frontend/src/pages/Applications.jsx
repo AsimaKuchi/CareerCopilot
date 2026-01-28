@@ -45,6 +45,8 @@ import {
   Copy,
   CheckCheck,
   Rocket,
+  Lightbulb,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
