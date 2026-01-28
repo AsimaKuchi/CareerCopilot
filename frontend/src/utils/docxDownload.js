@@ -1,14 +1,56 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
+import { jsPDF } from "jspdf";
 
-const safeFilename = (name) => {
-  const cleaned = (name || "document.docx")
+const safeFilename = (name, ext = "docx") => {
+  const cleaned = (name || "document")
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
     .trim();
 
-  return cleaned.toLowerCase().endsWith(".docx") ? cleaned : `${cleaned}.docx`;
+  return cleaned.toLowerCase().endsWith(`.${ext}`) ? cleaned : `${cleaned}.${ext}`;
 };
 
+/**
+ * Download text content as a PDF file
+ */
+export function downloadPdfFromText(text, filename) {
+  if (!text) {
+    console.error("[downloadPdfFromText] No text provided");
+    return;
+  }
+
+  try {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+    
+    // Split text into lines that fit the page width
+    const lines = doc.splitTextToSize(text, maxWidth);
+    
+    let y = margin;
+    const lineHeight = 7;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    lines.forEach((line) => {
+      if (y + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += lineHeight;
+    });
+    
+    doc.save(safeFilename(filename, "pdf"));
+    console.log("[downloadPdfFromText] PDF downloaded successfully");
+  } catch (error) {
+    console.error("[downloadPdfFromText] Error:", error);
+  }
+}
+
+/**
+ * Download text content as a DOCX file
+ */
 export async function downloadDocxFromText(text, filename) {
   if (!text) {
     console.error("[downloadDocxFromText] No text provided");
@@ -37,8 +79,12 @@ export async function downloadDocxFromText(text, filename) {
     });
 
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, safeFilename(filename));
+    saveAs(blob, safeFilename(filename, "docx"));
+    console.log("[downloadDocxFromText] DOCX downloaded successfully");
   } catch (error) {
     console.error("[downloadDocxFromText] Error:", error);
+    // Fallback to PDF if DOCX fails
+    console.log("[downloadDocxFromText] Falling back to PDF...");
+    downloadPdfFromText(text, filename.replace(/\.docx$/i, ""));
   }
 }
