@@ -88,7 +88,14 @@ export default function Applications({ user }) {
 
   // Download document as .docx with formatting preserved
   const downloadDocument = async (text, companyName, type = 'resume') => {
+    if (!text) {
+      toast.error("No content to download");
+      return;
+    }
+    
     try {
+      console.log("Starting download...", { companyName, type, textLength: text.length });
+      
       const lines = text.split('\n');
       const paragraphs = [];
       
@@ -160,6 +167,8 @@ export default function Applications({ user }) {
         }
       }
       
+      console.log("Creating document with", paragraphs.length, "paragraphs");
+      
       const doc = new Document({
         sections: [{
           properties: {
@@ -176,25 +185,39 @@ export default function Applications({ user }) {
         }],
       });
       
+      console.log("Generating blob...");
       const blob = await Packer.toBlob(doc);
-      const filename = type === 'resume' 
-        ? `Resume_${companyName.replace(/\s+/g, '_')}.docx`
-        : `Cover_Letter_${companyName.replace(/\s+/g, '_')}.docx`;
+      console.log("Blob created:", blob.size, "bytes");
       
-      // Direct download using anchor element (more reliable than saveAs)
-      const url = URL.createObjectURL(blob);
+      const filename = type === 'resume' 
+        ? `Resume_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}.docx`
+        : `Cover_Letter_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+      
+      // Method 1: Create object URL and trigger download
+      const url = window.URL.createObjectURL(blob);
+      console.log("Blob URL created:", url);
+      
       const link = document.createElement('a');
+      link.style.display = 'none';
       link.href = url;
       link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      link.setAttribute('download', filename);
       
-      toast.success(`${type === 'resume' ? 'Resume' : 'Cover Letter'} downloaded!`);
+      document.body.appendChild(link);
+      console.log("Clicking download link...");
+      link.click();
+      
+      // Cleanup after a delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        console.log("Cleanup complete");
+      }, 1000);
+      
+      toast.success(`Downloading ${filename}...`);
     } catch (err) {
       console.error('Download error:', err);
-      toast.error(`Failed to download: ${err.message}`);
+      toast.error(`Download failed: ${err.message}`);
     }
   };
 
