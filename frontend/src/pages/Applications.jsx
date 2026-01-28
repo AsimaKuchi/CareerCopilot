@@ -1178,6 +1178,58 @@ export default function Applications({ user }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* View Document Modal - Full page copy-paste view */}
+      <Dialog open={!!viewDocument} onOpenChange={() => setViewDocument(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className={viewDocument?.type === 'resume' ? 'text-emerald-400' : 'text-indigo-400'}>
+              {viewDocument?.type === 'resume' ? 'Optimized Resume' : 'Cover Letter'} - {viewDocument?.company}
+            </DialogTitle>
+            <DialogDescription>
+              Copy the text below and paste into Word, Google Docs, or any text editor
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex gap-2 mb-4">
+            <Button
+              onClick={copyDocument}
+              className={viewDocument?.type === 'resume' 
+                ? 'bg-emerald-500 hover:bg-emerald-600' 
+                : 'bg-indigo-500 hover:bg-indigo-600'}
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy All Text
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const textArea = document.getElementById('document-content');
+                if (textArea) {
+                  textArea.select();
+                  toast.info("Text selected! Press Ctrl+C (or Cmd+C) to copy");
+                }
+              }}
+            >
+              Select All
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-auto bg-white rounded-lg p-6 min-h-[400px]">
+            <textarea
+              id="document-content"
+              readOnly
+              value={viewDocument?.content || ''}
+              className="w-full h-full min-h-[400px] text-black text-sm leading-relaxed font-sans resize-none border-none outline-none bg-transparent"
+              style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: '12pt', lineHeight: '1.5' }}
+            />
+          </div>
+
+          <div className="mt-4 text-center text-muted-foreground text-sm">
+            Tip: After copying, paste into Microsoft Word or Google Docs and save as .docx
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
