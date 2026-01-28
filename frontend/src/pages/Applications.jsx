@@ -600,23 +600,13 @@ export default function Applications({ user }) {
                                       <FileText className="w-4 h-4" />
                                       Optimized Resume
                                     </h5>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      data-testid="download-resume-btn"
-                                      onClick={() => {
-                                        alert("Download started for: " + app.company);
-                                        downloadDocxFromText(
-                                          app.optimized_resume,
-                                          `Resume_${app.company || "Company"}_${app.job_title || "Role"}.docx`
-                                        );
-                                      }}
-                                      className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                    <a
+                                      href={`${API}/applications/${app.application_id}/download/resume`}
+                                      className="inline-flex items-center h-7 px-3 text-xs border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 rounded-md"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Download .docx
-                                    </Button>
-
+                                    </a>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.optimized_resume}
@@ -631,20 +621,13 @@ export default function Applications({ user }) {
                                       <MessageSquare className="w-4 h-4" />
                                       Cover Letter
                                     </h5>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        downloadDocxFromText(
-                                          app.cover_letter,
-                                          `CoverLetter_${app.company || "Company"}_${app.job_title || "Role"}.docx`
-                                        )
-                                      }
-                                      className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+                                    <a
+                                      href={`${API}/applications/${app.application_id}/download/cover-letter`}
+                                      className="inline-flex items-center h-7 px-3 text-xs border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 rounded-md"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Download .docx
-                                    </Button>
+                                    </a>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.cover_letter}
