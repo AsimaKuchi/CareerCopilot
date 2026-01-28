@@ -1398,12 +1398,19 @@ async def get_saved_jobs(request: Request):
             "total": 0
         }
     
+    # Sort jobs with new ones first
+    jobs = saved.get("jobs", [])
+    jobs.sort(key=lambda x: (
+        0 if x.get("is_new_for_user", False) else 1,
+        x.get("posted_at", "") or ""
+    ), reverse=True)
+    
     return {
-        "jobs": saved.get("jobs", []),
+        "jobs": jobs,
         "last_search_query": saved.get("last_search_query"),
         "last_search_location": saved.get("last_search_location"),
         "updated_at": saved.get("updated_at").isoformat() if saved.get("updated_at") else None,
-        "total": len(saved.get("jobs", []))
+        "total": len(jobs)
     }
 
 @api_router.get("/jobs/greenhouse/companies")
