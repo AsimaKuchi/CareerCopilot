@@ -3331,9 +3331,9 @@ async def auto_submit_greenhouse(app_data: Dict, user_data: Dict, profile_data: 
 @api_router.post("/applications/{application_id}/auto-fill")
 async def auto_fill_application_endpoint(request: Request, application_id: str):
     """
-    Auto-fill a job application form using Playwright.
-    Fills all fields from user profile but does NOT submit.
-    Returns status for user to review and submit manually.
+    Generate auto-fill data for a job application.
+    Returns all available user data that can be used to fill the form.
+    User reviews and submits manually.
     """
     user = await get_current_user(request)
     
@@ -3346,18 +3346,15 @@ async def auto_fill_application_endpoint(request: Request, application_id: str):
     if not app_doc:
         raise HTTPException(status_code=404, detail="Application not found")
     
-    # Check if already applied
-    if app_doc.get("status") == "applied":
-        return {
-            "success": False,
-            "message": "You have already applied to this job"
-        }
-    
     # Get user profile and data
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
     )
+    
+    # Decrypt sensitive data
+    if profile:
+        profile = decrypt_sensitive_data(profile)
     
     user_doc = await db.users.find_one(
         {"user_id": user.user_id},
@@ -3365,39 +3362,64 @@ async def auto_fill_application_endpoint(request: Request, application_id: str):
     )
     
     if not profile:
-        return {
-            "success": False,
-            "message": "Please complete your profile before auto-filling applications"
-        }
+        profile = {}
     
-    # Check required fields
-    missing_fields = []
-    if not profile.get("phone_number"):
-        missing_fields.append("Phone Number")
-    if not user_doc.get("email"):
-        missing_fields.append("Email")
+    # Parse user data
+    full_name = user_doc.get("name", "") if user_doc else ""
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    email = user_doc.get("email", "") if user_doc else ""
     
-    if missing_fields:
-        return {
-            "success": False,
-            "message": f"Missing required fields: {', '.join(missing_fields)}. Please update your profile."
-        }
+    # Build auto-fill data - include whatever is available
+    auto_fill_data = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "full_name": full_name,
+        "email": email,
+        "phone": profile.get("phone_number", ""),
+        "linkedin": profile.get("linkedin_url", ""),
+        "github": profile.get("github_url", ""),
+        "portfolio": profile.get("portfolio_url", ""),
+        "current_company": profile.get("current_company", ""),
+        "address_street": profile.get("address_street", ""),
+        "address_city": profile.get("address_city", ""),
+        "address_state": profile.get("address_state", ""),
+        "address_postal": profile.get("address_postal_code", ""),
+        "address_country": profile.get("address_country", ""),
+        "willing_to_relocate": profile.get("willing_to_relocate", ""),
+        "notice_period": profile.get("notice_period", ""),
+        "referral_source": profile.get("referral_source", "LinkedIn"),
+        "salary_expectation": profile.get("salary_min", ""),
+        "work_authorization": profile.get("work_authorization", ""),
+        "resume_text": app_doc.get("optimized_resume") or profile.get("resume_text", ""),
+        "cover_letter": app_doc.get("cover_letter", ""),
+    }
     
-    # Run the auto-fill
-    result = await auto_fill_application(app_doc, user_doc, profile)
+    # Count filled fields
+    fields_filled = [k for k, v in auto_fill_data.items() if v and k not in ["resume_text", "cover_letter"]]
+    fields_empty = [k for k, v in auto_fill_data.items() if not v and k not in ["resume_text", "cover_letter"]]
     
-    # Update application status to show it's been prepared
-    if result.get("success"):
-        await db.applications.update_one(
-            {"application_id": application_id},
-            {
-                "$set": {
-                    "status": "ready_to_submit",
-                    "auto_fill_result": result,
-                    "prepared_at": datetime.now(timezone.utc).isoformat()
-                }
+    # Update application with prepared data
+    await db.applications.update_one(
+        {"application_id": application_id},
+        {
+            "$set": {
+                "auto_fill_data": auto_fill_data,
+                "prepared_at": datetime.now(timezone.utc).isoformat()
             }
-        )
+        }
+    )
+    
+    return {
+        "success": True,
+        "message": f"Ready to fill! {len(fields_filled)} fields available.",
+        "fields_filled": fields_filled,
+        "fields_empty": fields_empty,
+        "auto_fill_data": auto_fill_data,
+        "apply_link": app_doc.get("apply_link", ""),
+        "instructions": "Open the application link, then use the data below to fill the form. Review all fields before submitting."
+    }
     
     return result
 
