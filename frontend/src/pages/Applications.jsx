@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const forceDownload = (url: string) => {
+const forceDownload = (url) => {
   const a = document.createElement("a");
   a.href = url;
   a.download = "";
@@ -591,19 +591,21 @@ export default function Applications({ user }) {
                                       Optimized Resume
                                     </h5>
                                     <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        downloadDocxFromText(
-                                          app.optimized_resume,
-                                          `Resume_${app.company || "Company"}_${app.job_title || "Role"}.docx`
-                                        )
-                                      }
-                                      className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                                    >
-                                      <Download className="w-3 h-3 mr-1" />
-                                      Download .docx
-                                    </Button>
+                                     size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      console.log("DOWNLOAD CLICKED", app.application_id);
+                                      downloadDocxFromText(
+                                        app.optimized_resume,
+                                       `Resume_${app.company || "Company"}_${app.job_title || "Role"}.docx`
+                                      );
+                                    }}
+                                    className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                  >
+                                    <Download className="w-3 h-3 mr-1" />
+                                     Download .docx
+                                 </Button>
+
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
                                     {app.optimized_resume}

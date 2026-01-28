@@ -1,6 +1,14 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
 
+const safeFilename = (name) => {
+  const cleaned = (name || "document.docx")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+    .trim();
+
+  return cleaned.toLowerCase().endsWith(".docx") ? cleaned : `${cleaned}.docx`;
+};
+
 export async function downloadDocxFromText(text, filename) {
   if (!text) return;
 
@@ -12,7 +20,7 @@ export async function downloadDocxFromText(text, filename) {
           children: [
             new TextRun({
               text: block,
-              size: 24, // 12pt
+              size: 24, // 12pt (docx uses half-points)
               font: "Calibri",
             }),
           ],
@@ -25,5 +33,5 @@ export async function downloadDocxFromText(text, filename) {
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, filename);
+  saveAs(blob, safeFilename(filename));
 }
