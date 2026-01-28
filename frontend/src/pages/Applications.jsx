@@ -181,8 +181,18 @@ export default function Applications({ user }) {
       const filename = type === 'resume' 
         ? `Resume_${companyName.replace(/\s+/g, '_')}.docx`
         : `Cover_Letter_${companyName.replace(/\s+/g, '_')}.docx`;
-      saveAs(blob, filename);
-      toast.success(`${type === 'resume' ? 'Resume' : 'Cover Letter'} downloaded successfully!`);
+      
+      // Direct download using anchor element (more reliable than saveAs)
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`${type === 'resume' ? 'Resume' : 'Cover Letter'} downloaded!`);
     } catch (err) {
       console.error('Download error:', err);
       toast.error(`Failed to download: ${err.message}`);
