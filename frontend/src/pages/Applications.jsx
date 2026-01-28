@@ -382,7 +382,7 @@ export default function Applications({ user }) {
   const handleAutoFill = async (applicationId, jobTitle, company, applyLink) => {
     setActionLoading(applicationId);
     try {
-      toast.info(`🔄 Preparing auto-fill data for ${company}...`, { duration: 2000 });
+      toast.info(`🔄 Auto-filling application for ${company}...`, { duration: 5000 });
 
       const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
         method: "POST",
@@ -392,28 +392,54 @@ export default function Applications({ user }) {
       const data = await response.json();
 
       if (data.success) {
-        // Show the auto-fill data modal
+        // Playwright successfully filled the form
+        toast.success(
+          <div>
+            <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields auto-filled!</div>
+            <div className="text-sm mt-1">
+              {data.fields_failed?.length > 0 && (
+                <span className="text-amber-300">{data.fields_failed.length} fields need manual entry</span>
+              )}
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        
+        // Show the data modal for any remaining fields
         setAutoFillData({
           company,
           jobTitle,
           applyLink: data.apply_link || applyLink,
           data: data.auto_fill_data,
-          fieldsFilled: data.fields_filled,
-          fieldsEmpty: data.fields_empty,
+          fieldsFilled: data.fields_filled || [],
+          fieldsFailed: data.fields_failed || [],
+          playwrightSuccess: true,
+          message: data.message,
         });
-
-        toast.success(
-          <div>
-            <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields ready!</div>
-            <div className="text-sm mt-1">Review your data and fill the application</div>
-          </div>,
-          { duration: 4000 }
-        );
       } else {
-        toast.error(data.message || "Failed to prepare auto-fill data");
+        // Playwright failed - show manual copy modal
+        toast.warning(
+          <div>
+            <div className="font-semibold">⚠️ {data.message}</div>
+            <div className="text-sm mt-1">Use the copy buttons to fill manually</div>
+          </div>,
+          { duration: 5000 }
+        );
+        
+        setAutoFillData({
+          company,
+          jobTitle,
+          applyLink: data.apply_link || applyLink,
+          data: data.auto_fill_data,
+          fieldsFilled: [],
+          fieldsFailed: [],
+          playwrightSuccess: false,
+          message: data.message,
+        });
       }
     } catch (error) {
-      toast.error("Failed to prepare auto-fill data");
+      console.error("Auto-fill error:", error);
+      toast.error("Failed to auto-fill application");
     } finally {
       setActionLoading(null);
     }
