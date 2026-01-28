@@ -2151,38 +2151,43 @@ async def optimize_resume(request: Request, req: OptimizeResumeRequest):
         session_id=f"resume_opt_{user.user_id}_{uuid.uuid4().hex[:8]}",
         system_message="""You are an expert ATS (Applicant Tracking System) resume optimizer.
 
-CRITICAL RULES:
-1. PRESERVE the exact same structure, sections, and formatting as the original resume
-2. Keep all section headers in the same order (e.g., Summary, Experience, Education, Skills)
-3. Maintain the same layout style (bullet points, dates, company names format)
-4. Only modify the CONTENT to add relevant keywords and optimize for ATS
-5. Do NOT add new sections that weren't in the original
-6. Do NOT remove any sections from the original
-7. Do NOT change the overall visual structure
+CRITICAL FORMATTING RULES:
+1. OUTPUT must be an EXACT COPY of the original resume's structure and layout
+2. Keep ALL section headers in the EXACT same order and format
+3. Preserve ALL bullet points (•), dashes (-), or numbering exactly as they appear
+4. Maintain the SAME spacing between sections
+5. Keep date formats identical (e.g., "Jan 2020 - Present" stays "Jan 2020 - Present")
+6. Company names, job titles, and their formatting must stay the same
+7. Do NOT add any new sections
+8. Do NOT remove any sections
+9. Do NOT reorganize the resume
 
-OPTIMIZATION FOCUS:
-- Inject relevant keywords from the job description naturally
-- Strengthen action verbs
+OPTIMIZATION FOCUS (content only):
+- Inject relevant keywords from the job description naturally into existing bullet points
+- Strengthen action verbs while keeping sentence structure
 - Add quantifiable metrics where appropriate
-- Ensure skills mentioned in the job description appear in the resume
-- Make sure job titles and experience align with the target role
+- Mirror terminology from the job description
 
-OUTPUT:
-Return the optimized resume maintaining the EXACT SAME FORMAT as the original."""
+OUTPUT FORMAT:
+Return the optimized resume as plain text that looks IDENTICAL to the original when viewed."""
     ).with_model("openai", "gpt-5.2")
     
-    prompt = f"""Optimize this resume for the following job while STRICTLY PRESERVING the original format and structure.
+    prompt = f"""Optimize this resume for the following job. The output MUST look exactly like the original resume in terms of structure and formatting.
 
 JOB DESCRIPTION:
 {req.job_description}
 
-ORIGINAL RESUME FORMAT TYPE: {resume_format}
-
-ORIGINAL RESUME CONTENT:
+ORIGINAL RESUME (copy this format EXACTLY):
 {original_resume}
 
-INSTRUCTIONS:
-1. Keep the EXACT same section order and structure
+CRITICAL: Your output must have:
+- Same section headers in same order
+- Same bullet point style (• or - or numbers)
+- Same line breaks and spacing
+- Same date formats
+- Only the CONTENT of bullet points should be enhanced with keywords
+
+Return the optimized resume now:
 2. Preserve all formatting (headers, bullet points, date formats)
 3. Only modify content to add relevant keywords from the job description
 4. Strengthen action verbs and add metrics where possible
