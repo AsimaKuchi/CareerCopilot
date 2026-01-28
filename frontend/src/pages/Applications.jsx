@@ -87,39 +87,111 @@ export default function Applications({ user }) {
     }
   };
 
-  // Download resume as .docx (same as Lovable)
-  const downloadResume = async (resumeText, companyName) => {
-    const paragraphs = resumeText.split('\n\n').map(
-      (text) => new Paragraph({
-        children: [new TextRun({ text, size: 24 })],
-        spacing: { after: 200 },
-      })
-    );
-    
-    const doc = new Document({
-      sections: [{ children: paragraphs }],
-    });
-    
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `Resume_${companyName.replace(/\s+/g, '_')}.docx`);
+  // Download document as .docx with formatting preserved
+  const downloadDocument = async (text, companyName, type = 'resume') => {
+    try {
+      const lines = text.split('\n');
+      const paragraphs = [];
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        // Skip completely empty lines but add spacing
+        if (!trimmedLine) {
+          paragraphs.push(new Paragraph({ spacing: { after: 100 } }));
+          continue;
+        }
+        
+        // Detect headings (ALL CAPS lines or lines ending with :)
+        const isHeading = /^[A-Z\s&]+$/.test(trimmedLine) || 
+                          (trimmedLine.endsWith(':') && trimmedLine.length < 50) ||
+                          ['EXPERIENCE', 'EDUCATION', 'SKILLS', 'SUMMARY', 'OBJECTIVE', 'PROJECTS', 
+                           'CERTIFICATIONS', 'WORK HISTORY', 'PROFESSIONAL EXPERIENCE', 'CONTACT',
+                           'TECHNICAL SKILLS', 'ACHIEVEMENTS', 'AWARDS'].some(h => 
+                             trimmedLine.toUpperCase().includes(h));
+        
+        // Detect bullet points
+        const isBullet = /^[•\-\*\>]\s/.test(trimmedLine) || /^\d+[\.\)]\s/.test(trimmedLine);
+        
+        // Detect contact info line (contains email, phone, or multiple separators)
+        const isContactLine = trimmedLine.includes('@') || 
+                              /\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(trimmedLine) ||
+                              (trimmedLine.includes('|') && trimmedLine.split('|').length >= 2);
+        
+        if (isHeading) {
+          paragraphs.push(new Paragraph({
+            children: [new TextRun({ 
+              text: trimmedLine, 
+              bold: true, 
+              size: 24,  // 12pt
+              font: 'Calibri'
+            })],
+            spacing: { before: 200, after: 100 },
+          }));
+        } else if (isBullet) {
+          // Clean bullet character and format consistently
+          const bulletText = trimmedLine.replace(/^[•\-\*\>]\s*/, '').replace(/^\d+[\.\)]\s*/, '');
+          paragraphs.push(new Paragraph({
+            children: [new TextRun({ 
+              text: `• ${bulletText}`, 
+              size: 22,  // 11pt
+              font: 'Calibri'
+            })],
+            spacing: { after: 60 },
+            indent: { left: 360 },  // Indent bullets
+          }));
+        } else if (isContactLine) {
+          paragraphs.push(new Paragraph({
+            children: [new TextRun({ 
+              text: trimmedLine, 
+              size: 20,  // 10pt
+              font: 'Calibri'
+            })],
+            spacing: { after: 60 },
+          }));
+        } else {
+          paragraphs.push(new Paragraph({
+            children: [new TextRun({ 
+              text: trimmedLine, 
+              size: 22,  // 11pt
+              font: 'Calibri'
+            })],
+            spacing: { after: 80 },
+          }));
+        }
+      }
+      
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 720,    // 0.5 inch
+                bottom: 720,
+                left: 720,
+                right: 720,
+              },
+            },
+          },
+          children: paragraphs,
+        }],
+      });
+      
+      const blob = await Packer.toBlob(doc);
+      const filename = type === 'resume' 
+        ? `Resume_${companyName.replace(/\s+/g, '_')}.docx`
+        : `Cover_Letter_${companyName.replace(/\s+/g, '_')}.docx`;
+      saveAs(blob, filename);
+      toast.success(`${type === 'resume' ? 'Resume' : 'Cover Letter'} downloaded successfully!`);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error(`Failed to download: ${err.message}`);
+    }
   };
 
-  // Download cover letter as .docx (same as Lovable)
-  const downloadCoverLetter = async (coverLetterText, companyName) => {
-    const paragraphs = coverLetterText.split('\n\n').map(
-      (text) => new Paragraph({
-        children: [new TextRun({ text, size: 24 })],
-        spacing: { after: 200 },
-      })
-    );
-    
-    const doc = new Document({
-      sections: [{ children: paragraphs }],
-    });
-    
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `Cover_Letter_${companyName.replace(/\s+/g, '_')}.docx`);
-  };
+  // Legacy functions for backwards compatibility
+  const downloadResume = (resumeText, companyName) => downloadDocument(resumeText, companyName, 'resume');
+  const downloadCoverLetter = (coverLetterText, companyName) => downloadDocument(coverLetterText, companyName, 'cover');
 
   const copyToClipboard = async (text, field) => {
     try {
