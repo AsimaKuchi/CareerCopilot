@@ -3751,12 +3751,8 @@ async def download_resume_docx(request: Request, application_id: str):
     
     logger.info(f"Saved resume to static: {filepath}")
     
-    # Return file directly with proper download headers
-    return FileResponse(
-        path=filepath,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
+    # Return 302 redirect to static file (same approach as test-download which works)
+    return RedirectResponse(url=f"/api/static-downloads/{filename}", status_code=302)
 
 @api_router.get("/applications/{application_id}/download/cover-letter")
 async def download_cover_letter_docx(request: Request, application_id: str):
@@ -3794,10 +3790,8 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     
     logger.info(f"Saved cover letter to static: {filepath}")
     
-    # Return file directly with proper download headers
-    return FileResponse(
-        path=filepath,
-        filename=filename,
+    # Return 302 redirect to static file (same approach as test-download which works)
+    return RedirectResponse(url=f"/api/static-downloads/{filename}", status_code=302)
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
