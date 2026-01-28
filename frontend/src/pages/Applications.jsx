@@ -641,11 +641,11 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => downloadResume(app.optimized_resume, app.company || 'Company')}
+                                      onClick={() => setViewDocument({type: 'resume', content: app.optimized_resume, company: app.company || 'Company'})}
                                       className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                                     >
-                                      <Download className="w-3 h-3 mr-1" />
-                                      Download .docx
+                                      <FileText className="w-3 h-3 mr-1" />
+                                      View & Copy
                                     </Button>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
@@ -664,11 +664,11 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => downloadCoverLetter(app.cover_letter, app.company || 'Company')}
+                                      onClick={() => setViewDocument({type: 'cover', content: app.cover_letter, company: app.company || 'Company'})}
                                       className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                                     >
-                                      <Download className="w-3 h-3 mr-1" />
-                                      Download .docx
+                                      <FileText className="w-3 h-3 mr-1" />
+                                      View & Copy
                                     </Button>
                                   </div>
                                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-60 overflow-auto">
