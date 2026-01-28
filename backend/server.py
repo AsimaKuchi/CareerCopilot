@@ -288,7 +288,7 @@ async def public_health():
         "jobs_in_database": job_count,
         "auto_refresh": {
             "enabled": True,
-            "interval": "every 6 hours",
+            "interval": "every 2 hours",
             "next_refresh": next_run
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
