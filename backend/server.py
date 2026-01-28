@@ -707,7 +707,7 @@ async def logout(request: Request, response: Response):
 
 @api_router.get("/profile")
 async def get_profile(request: Request):
-    """Get user profile."""
+    """Get user profile with decrypted sensitive data."""
     user = await get_current_user(request)
     
     profile = await db.user_profiles.find_one(
@@ -732,6 +732,9 @@ async def get_profile(request: Request):
         }
         await db.user_profiles.insert_one(profile)
         profile.pop("_id", None)
+    
+    # Decrypt sensitive fields before returning
+    profile = decrypt_sensitive_data(profile)
     
     return profile
 
