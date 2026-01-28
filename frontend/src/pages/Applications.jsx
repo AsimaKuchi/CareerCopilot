@@ -447,16 +447,6 @@ export default function Applications({ user }) {
       <div className="hero-glow opacity-30" />
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 py-8">
-        {/* TEST BUTTON - REMOVE AFTER TESTING */}
-        <div className="mb-4 p-4 bg-red-500 rounded">
-          <button 
-            onClick={() => window.alert('BUTTON WORKS!')}
-            className="px-4 py-2 bg-white text-black font-bold rounded"
-          >
-            TEST CLICK ME
-          </button>
-        </div>
-
         <div className="mb-8 animate-fade-in">
           <h1 className="text-3xl font-bold text-foreground mb-2">My Applications</h1>
           <p className="text-muted-foreground">Track and manage your job applications</p>
