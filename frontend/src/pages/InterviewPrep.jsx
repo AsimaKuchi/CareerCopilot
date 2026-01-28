@@ -274,8 +274,8 @@ export default function InterviewPrep({ user }) {
                         // If no sections parsed, show as simple text
                         if (sections.length === 0) {
                           return (
-                            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            <div className="bg-white rounded-xl p-6 border border-gray-200">
+                              <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
                                 {cleanText}
                               </p>
                             </div>
@@ -286,10 +286,10 @@ export default function InterviewPrep({ user }) {
                           <div key={sIdx} className="space-y-4">
                             {/* Section Title */}
                             <div className="flex items-center gap-3 mb-4">
-                              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                                <span className="text-indigo-400 font-bold text-sm">{sIdx + 1}</span>
+                              <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                                <span className="text-white font-bold text-sm">{sIdx + 1}</span>
                               </div>
-                              <h2 className="text-xl font-bold text-indigo-400 uppercase tracking-wide">
+                              <h2 className="text-xl font-bold text-indigo-600 uppercase tracking-wide">
                                 {section.title}
                               </h2>
                             </div>
@@ -301,34 +301,34 @@ export default function InterviewPrep({ user }) {
                                   // Q&A Box
                                   <div 
                                     key={qIdx} 
-                                    className="bg-white/5 rounded-xl border border-white/10 overflow-hidden"
+                                    className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
                                   >
                                     {/* Question */}
-                                    <div className="bg-indigo-500/10 px-5 py-4 border-b border-white/10">
+                                    <div className="bg-indigo-50 px-5 py-4 border-b border-gray-200">
                                       <div className="flex items-start gap-3">
                                         <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
                                           Q
                                         </span>
-                                        <p className="text-foreground font-semibold text-base leading-relaxed">
+                                        <p className="text-gray-900 font-semibold text-base leading-relaxed">
                                           {item.question}
                                         </p>
                                       </div>
                                     </div>
                                     
                                     {/* Answer */}
-                                    <div className="px-5 py-4">
+                                    <div className="px-5 py-4 bg-white">
                                       <div className="flex items-start gap-3">
                                         <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
                                           A
                                         </span>
                                         <div className="space-y-2 flex-1">
                                           {item.answer.map((line, lIdx) => (
-                                            <p key={lIdx} className="text-gray-300 leading-relaxed">
+                                            <p key={lIdx} className="text-gray-800 leading-relaxed">
                                               {line}
                                             </p>
                                           ))}
                                           {item.answer.length === 0 && (
-                                            <p className="text-gray-400 italic">
+                                            <p className="text-gray-500 italic">
                                               Prepare your own answer based on your experience.
                                             </p>
                                           )}
@@ -340,11 +340,11 @@ export default function InterviewPrep({ user }) {
                                   // Tip Box
                                   <div 
                                     key={qIdx}
-                                    className="bg-amber-500/10 rounded-xl px-5 py-4 border border-amber-500/20"
+                                    className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200"
                                   >
                                     <div className="flex items-start gap-3">
-                                      <Lightbulb className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                                      <p className="text-gray-300 leading-relaxed">{item.tip}</p>
+                                      <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                      <p className="text-gray-800 leading-relaxed">{item.tip}</p>
                                     </div>
                                   </div>
                                 ) : null
