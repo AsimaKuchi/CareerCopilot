@@ -4303,7 +4303,7 @@ async def start_scheduler():
         replace_existing=True
     )
     scheduler.start()
-    logger.info("📅 Job scheduler started - jobs will refresh every 6 hours")
+    logger.info("📅 Job scheduler started - jobs will refresh every 2 hours")
     
     # Run initial ingestion if database is empty
     job_count = await db.stored_jobs.count_documents({})
