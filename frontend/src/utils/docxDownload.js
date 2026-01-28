@@ -3,7 +3,7 @@ import { saveAs } from "file-saver";
 
 const safeFilename = (name) => {
   const cleaned = (name || "document.docx")
-    .replace(/[<>:"/\\|?*-\x1F]/g, "_")
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
     .trim();
 
   return cleaned.toLowerCase().endsWith(".docx") ? cleaned : `${cleaned}.docx`;
