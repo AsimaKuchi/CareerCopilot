@@ -70,9 +70,10 @@ os.makedirs(STATIC_DOWNLOADS_DIR, exist_ok=True)
 # Create the main app
 app = FastAPI()
 
-# Mount static downloads directory - files here are served directly (not through API)
+# Mount static downloads under /api/static-downloads so it goes through the backend
+# (Kubernetes ingress routes /api/* to backend)
 from fastapi.staticfiles import StaticFiles
-app.mount("/downloads", StaticFiles(directory=STATIC_DOWNLOADS_DIR), name="static_downloads")
+app.mount("/api/static-downloads", StaticFiles(directory=STATIC_DOWNLOADS_DIR), name="static_downloads")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
