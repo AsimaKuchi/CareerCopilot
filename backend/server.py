@@ -2151,25 +2151,34 @@ async def optimize_resume(request: Request, req: OptimizeResumeRequest):
         session_id=f"resume_opt_{user.user_id}_{uuid.uuid4().hex[:8]}",
         system_message="""You are an expert ATS (Applicant Tracking System) resume optimizer.
 
-CRITICAL FORMATTING RULES:
-1. OUTPUT must be an EXACT COPY of the original resume's structure and layout
-2. Keep ALL section headers in the EXACT same order and format
-3. Preserve ALL bullet points (•), dashes (-), or numbering exactly as they appear
-4. Maintain the SAME spacing between sections
-5. Keep date formats identical (e.g., "Jan 2020 - Present" stays "Jan 2020 - Present")
-6. Company names, job titles, and their formatting must stay the same
-7. Do NOT add any new sections
-8. Do NOT remove any sections
-9. Do NOT reorganize the resume
+**CRITICAL: ONE PAGE MAXIMUM**
+The final resume MUST fit on ONE SINGLE PAGE when pasted into a Word document with standard margins (1 inch) and 11pt font. This is NON-NEGOTIABLE. Be concise and prioritize the most impactful content.
 
-OPTIMIZATION FOCUS (content only):
-- Inject relevant keywords from the job description naturally into existing bullet points
-- Strengthen action verbs while keeping sentence structure
-- Add quantifiable metrics where appropriate
+PAGE LENGTH GUIDELINES:
+- Maximum ~450-500 words total
+- 3-4 bullet points per role (not 5-6)
+- Keep bullet points to 1-2 lines max
+- Trim older/less relevant experience if needed to fit
+- Summary/objective should be 2-3 lines max
+
+FORMATTING RULES:
+1. Preserve the original resume's structure and section order
+2. Keep section headers in the same format
+3. Use bullet points (•) or dashes (-) consistently
+4. Maintain clear spacing between sections
+5. Keep date formats consistent (e.g., "Jan 2020 - Present")
+6. Do NOT add new sections or reorganize
+
+OPTIMIZATION FOCUS:
+- Inject relevant keywords from the job description naturally
+- Strengthen action verbs
+- Include quantifiable metrics where possible
 - Mirror terminology from the job description
+- PRIORITIZE recent and most relevant experience
+- CUT less impactful content to fit one page
 
 OUTPUT FORMAT:
-Return the optimized resume as plain text that looks IDENTICAL to the original when viewed."""
+Return the optimized resume as CONCISE plain text that fits on ONE PAGE."""
     ).with_model("openai", "gpt-5.2")
     
     prompt = f"""Optimize this resume for the following job. The output MUST look exactly like the original resume in terms of structure and formatting.
