@@ -3484,6 +3484,20 @@ def create_docx_from_text(text: str, title: str = None) -> bytes:
 DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "downloads")
 os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
+def cleanup_old_static_downloads(max_age_minutes: int = 30):
+    """Remove files older than max_age_minutes from static downloads directory."""
+    try:
+        now = datetime.now()
+        for filename in os.listdir(STATIC_DOWNLOADS_DIR):
+            filepath = os.path.join(STATIC_DOWNLOADS_DIR, filename)
+            if os.path.isfile(filepath):
+                file_age = now - datetime.fromtimestamp(os.path.getmtime(filepath))
+                if file_age.total_seconds() > max_age_minutes * 60:
+                    os.remove(filepath)
+                    logger.info(f"Cleaned up old download: {filename}")
+    except Exception as e:
+        logger.error(f"Error cleaning up static downloads: {e}")
+
 def generate_and_save_docx(text: str, user_id: str, job_id: str, doc_type: str) -> str:
     """
     Generate a DOCX file and save it to disk.
