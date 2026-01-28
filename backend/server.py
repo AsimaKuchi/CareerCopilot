@@ -3480,84 +3480,9 @@ def create_docx_from_text(text: str, title: str = None) -> bytes:
     buffer.seek(0)
     return buffer.getvalue()
 
-# Directory for storing generated DOCX files (fallback if Supabase not configured)
+# Legacy downloads directory (kept for backwards compatibility)
 DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "downloads")
 os.makedirs(DOWNLOADS_DIR, exist_ok=True)
-
-async def upload_to_supabase_and_get_signed_url(
-    file_bytes: bytes, 
-    bucket: str, 
-    filename: str, 
-    expires_in: int = 300
-) -> str:
-    """
-    Upload file to Supabase Storage and return a signed URL.
-    
-    Args:
-        file_bytes: The file content as bytes
-        bucket: Supabase storage bucket name
-        filename: Name for the file in storage
-        expires_in: URL expiration time in seconds (default 5 minutes)
-    
-    Returns:
-        Signed URL for downloading the file
-    """
-    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-        raise HTTPException(
-            status_code=500, 
-            detail="Supabase Storage not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
-        )
-    
-    headers = {
-        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
-        "apikey": SUPABASE_SERVICE_ROLE_KEY,
-    }
-    
-    async with httpx.AsyncClient() as client:
-        # Upload file to Supabase Storage
-        upload_url = f"{SUPABASE_URL}/storage/v1/object/{bucket}/{filename}"
-        
-        upload_response = await client.post(
-            upload_url,
-            headers={
-                **headers,
-                "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            },
-            content=file_bytes,
-        )
-        
-        # If file exists, try to update it
-        if upload_response.status_code == 400:
-            upload_response = await client.put(
-                upload_url,
-                headers={
-                    **headers,
-                    "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                },
-                content=file_bytes,
-            )
-        
-        if upload_response.status_code not in [200, 201]:
-            logger.error(f"Supabase upload failed: {upload_response.status_code} - {upload_response.text}")
-            raise HTTPException(status_code=500, detail="Failed to upload file to storage")
-        
-        # Create signed URL
-        sign_url = f"{SUPABASE_URL}/storage/v1/object/sign/{bucket}/{filename}"
-        sign_response = await client.post(
-            sign_url,
-            headers=headers,
-            json={"expiresIn": expires_in}
-        )
-        
-        if sign_response.status_code != 200:
-            logger.error(f"Supabase sign URL failed: {sign_response.status_code} - {sign_response.text}")
-            raise HTTPException(status_code=500, detail="Failed to generate download URL")
-        
-        sign_data = sign_response.json()
-        signed_path = sign_data.get("signedURL", "")
-        
-        # Return full signed URL
-        return f"{SUPABASE_URL}/storage/v1{signed_path}"
 
 def generate_and_save_docx(text: str, user_id: str, job_id: str, doc_type: str) -> str:
     """
