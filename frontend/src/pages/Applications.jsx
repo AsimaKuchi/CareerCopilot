@@ -73,6 +73,19 @@ export default function Applications({ user }) {
   const [copiedField, setCopiedField] = useState(null);
   const [autoFillScript, setAutoFillScript] = useState(null);
   const [loadingScript, setLoadingScript] = useState(false);
+  const [viewDocument, setViewDocument] = useState(null); // {type: 'resume'|'cover', content: string, company: string}
+
+  // Copy entire document to clipboard
+  const copyDocument = async () => {
+    if (viewDocument?.content) {
+      try {
+        await navigator.clipboard.writeText(viewDocument.content);
+        toast.success("Copied to clipboard! You can now paste into Word or Google Docs.");
+      } catch (err) {
+        toast.error("Failed to copy");
+      }
+    }
+  };
 
   // Download resume as .docx (same as Lovable)
   const downloadResume = async (resumeText, companyName) => {
