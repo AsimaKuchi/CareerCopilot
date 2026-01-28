@@ -63,6 +63,35 @@ ASHBY_COMPANIES = []
 JOB_CACHE_TTL_MINUTES = 30  # Cache jobs for 30 minutes
 PARALLEL_BATCH_SIZE = 20    # Fetch 20 companies in parallel
 
+# Non-English words/patterns to filter out (common in French, Spanish, Portuguese, German job titles)
+NON_ENGLISH_PATTERNS = [
+    # French
+    "analyste", "développeur", "ingénieur", "responsable", "directeur", "gestionnaire",
+    "conseiller", "coordonnateur", "spécialiste", "technicien", "adjoint", "chargé",
+    " de la ", " du ", " des ", " sur ", " aux ", " pour ", " et ", " ou ",
+    "qualité", "données", "affaires", "services", "ressources", "humaines",
+    # Spanish  
+    "analista", "desarrollador", "ingeniero", "gerente", "director", "especialista",
+    "coordinador", "técnico", "asistente", " de ", " del ", " los ", " las ", " para ",
+    # Portuguese
+    "portugais", "português", "portuguese", "analista", "desenvolvedor", "engenheiro",
+    # German
+    "entwickler", "ingenieur", "leiter", "berater", "spezialist", "projektleiter",
+    " und ", " für ", " mit ",
+    # Common non-English indicators in titles
+    "(français)", "(french)", "(francais)", "(portugais)", "(portuguese)", "(español)", 
+    "(spanish)", "(deutsch)", "(german)", "(italien)", "(italian)",
+    "bilingue", "bilingual", "francophone"
+]
+
+def is_english_job(title: str) -> bool:
+    """Check if a job title appears to be in English."""
+    title_lower = title.lower()
+    for pattern in NON_ENGLISH_PATTERNS:
+        if pattern in title_lower:
+            return False
+    return True
+
 # Static downloads directory - files served directly by FastAPI static mount
 STATIC_DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "static_downloads")
 os.makedirs(STATIC_DOWNLOADS_DIR, exist_ok=True)
