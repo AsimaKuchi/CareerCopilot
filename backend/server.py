@@ -265,6 +265,13 @@ class JobComparison(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class SupportRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    reason: str
+    description: str
+
 class JobSearchQuery(BaseModel):
     query: str
     location: Optional[str] = None
