@@ -3774,7 +3774,10 @@ async def generate_cover_letter_docx(request: Request, application_id: str):
 
 @api_router.get("/applications/{application_id}/download/resume")
 async def download_resume_docx(request: Request, application_id: str):
-    """Download optimized resume as DOCX file."""
+    """
+    Download optimized resume as DOCX file.
+    Uploads to Supabase Storage and returns 302 redirect to signed URL.
+    """
     user = await get_current_user(request)
     
     app_doc = await db.applications.find_one(
@@ -3796,22 +3799,24 @@ async def download_resume_docx(request: Request, application_id: str):
     # Create the DOCX content
     docx_bytes = create_docx_from_text(app_doc["optimized_resume"])
     
-    # Use StreamingResponse with explicit headers
-    return StreamingResponse(
-        io.BytesIO(docx_bytes),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": str(len(docx_bytes)),
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
+    # Upload to Supabase and get signed URL
+    storage_filename = f"{user.user_id}/{application_id}/resume_{uuid.uuid4().hex[:8]}.docx"
+    signed_url = await upload_to_supabase_and_get_signed_url(
+        file_bytes=docx_bytes,
+        bucket=SUPABASE_BUCKET_RESUMES,
+        filename=storage_filename,
+        expires_in=300  # 5 minutes
     )
+    
+    # Return 302 redirect to the signed URL
+    return RedirectResponse(url=signed_url, status_code=302)
 
 @api_router.get("/applications/{application_id}/download/cover-letter")
 async def download_cover_letter_docx(request: Request, application_id: str):
-    """Download cover letter as DOCX file."""
+    """
+    Download cover letter as DOCX file.
+    Uploads to Supabase Storage and returns 302 redirect to signed URL.
+    """
     user = await get_current_user(request)
     
     app_doc = await db.applications.find_one(
@@ -3828,23 +3833,22 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     # Create DOCX file - sanitize filename
     company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
     job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
-    filename = f"Cover_Letter_{company}_{job_title}.docx"
+    filename = f"CoverLetter_{company}_{job_title}.docx"
     
     # Create the DOCX content
     docx_bytes = create_docx_from_text(app_doc["cover_letter"])
     
-    # Use StreamingResponse with explicit headers
-    return StreamingResponse(
-        io.BytesIO(docx_bytes),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": str(len(docx_bytes)),
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
+    # Upload to Supabase and get signed URL
+    storage_filename = f"{user.user_id}/{application_id}/coverletter_{uuid.uuid4().hex[:8]}.docx"
+    signed_url = await upload_to_supabase_and_get_signed_url(
+        file_bytes=docx_bytes,
+        bucket=SUPABASE_BUCKET_COVERLETTERS,
+        filename=storage_filename,
+        expires_in=300  # 5 minutes
     )
+    
+    # Return 302 redirect to the signed URL
+    return RedirectResponse(url=signed_url, status_code=302)
 
 @api_router.get("/applications/{application_id}/autofill-script")
 async def get_autofill_script(request: Request, application_id: str):
