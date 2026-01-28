@@ -3784,7 +3784,7 @@ async def generate_cover_letter_docx(request: Request, application_id: str):
 async def download_resume_docx(request: Request, application_id: str):
     """
     Download optimized resume as DOCX file.
-    Uploads to Supabase Storage and returns 302 redirect to signed URL.
+    Saves to static directory and returns 302 redirect to static file URL.
     """
     user = await get_current_user(request)
     
@@ -3802,28 +3802,31 @@ async def download_resume_docx(request: Request, application_id: str):
     # Create DOCX file - sanitize filename
     company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
     job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
-    filename = f"Resume_{company}_{job_title}.docx"
+    
+    # Generate unique filename to avoid conflicts
+    unique_id = uuid.uuid4().hex[:8]
+    filename = f"Resume_{company}_{job_title}_{unique_id}.docx"
     
     # Create the DOCX content
     docx_bytes = create_docx_from_text(app_doc["optimized_resume"])
     
-    # Upload to Supabase and get signed URL
-    storage_filename = f"{user.user_id}/{application_id}/resume_{uuid.uuid4().hex[:8]}.docx"
-    signed_url = await upload_to_supabase_and_get_signed_url(
-        file_bytes=docx_bytes,
-        bucket=SUPABASE_BUCKET_RESUMES,
-        filename=storage_filename,
-        expires_in=300  # 5 minutes
-    )
+    # Save to static downloads directory
+    filepath = os.path.join(STATIC_DOWNLOADS_DIR, filename)
+    with open(filepath, 'wb') as f:
+        f.write(docx_bytes)
     
-    # Return 302 redirect to the signed URL
-    return RedirectResponse(url=signed_url, status_code=302)
+    logger.info(f"Saved resume to static: {filepath}")
+    
+    # Return 302 redirect to the static file URL
+    # The /downloads path is mounted as static files
+    static_url = f"/downloads/{filename}"
+    return RedirectResponse(url=static_url, status_code=302)
 
 @api_router.get("/applications/{application_id}/download/cover-letter")
 async def download_cover_letter_docx(request: Request, application_id: str):
     """
     Download cover letter as DOCX file.
-    Uploads to Supabase Storage and returns 302 redirect to signed URL.
+    Saves to static directory and returns 302 redirect to static file URL.
     """
     user = await get_current_user(request)
     
@@ -3841,22 +3844,25 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     # Create DOCX file - sanitize filename
     company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
     job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
-    filename = f"CoverLetter_{company}_{job_title}.docx"
+    
+    # Generate unique filename to avoid conflicts
+    unique_id = uuid.uuid4().hex[:8]
+    filename = f"CoverLetter_{company}_{job_title}_{unique_id}.docx"
     
     # Create the DOCX content
     docx_bytes = create_docx_from_text(app_doc["cover_letter"])
     
-    # Upload to Supabase and get signed URL
-    storage_filename = f"{user.user_id}/{application_id}/coverletter_{uuid.uuid4().hex[:8]}.docx"
-    signed_url = await upload_to_supabase_and_get_signed_url(
-        file_bytes=docx_bytes,
-        bucket=SUPABASE_BUCKET_COVERLETTERS,
-        filename=storage_filename,
-        expires_in=300  # 5 minutes
-    )
+    # Save to static downloads directory
+    filepath = os.path.join(STATIC_DOWNLOADS_DIR, filename)
+    with open(filepath, 'wb') as f:
+        f.write(docx_bytes)
     
-    # Return 302 redirect to the signed URL
-    return RedirectResponse(url=signed_url, status_code=302)
+    logger.info(f"Saved cover letter to static: {filepath}")
+    
+    # Return 302 redirect to the static file URL
+    # The /downloads path is mounted as static files
+    static_url = f"/downloads/{filename}"
+    return RedirectResponse(url=static_url, status_code=302)
 
 @api_router.get("/applications/{application_id}/autofill-script")
 async def get_autofill_script(request: Request, application_id: str):
