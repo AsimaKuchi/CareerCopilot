@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { API } from "@/App";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -20,12 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navbar from "@/components/Navbar";
 import {
@@ -51,6 +46,16 @@ import {
   Rocket,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const forceDownload = (url: string) => {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
 
 export default function Applications({ user }) {
   const [applications, setApplications] = useState([]);
@@ -80,28 +85,95 @@ export default function Applications({ user }) {
 
   const handleOpenApplication = (app) => {
     if (app.apply_link) {
-      window.open(app.apply_link, '_blank');
+      window.open(app.apply_link, "_blank");
     } else {
       toast.error("No application link available for this job");
     }
   };
 
+  /**
+   * ✅ Reliable download helper (works even when window.location.href "does nothing")
+   * - Includes cookies via credentials: "include"
+   * - Forces browser to save blob as .docx
+   * - Extracts filename from Content-Disposition if provided
+   */
+  const downloadDocx = async (url: string, fallbackFilename = "document.docx") => {
+  try {
+    console.log("[downloadDocx] starting:", url);
+
+    const res = await fetch(url, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    console.log("[downloadDocx] status:", res.status);
+    console.log("content-type:", res.headers.get("content-type"));
+    console.log("content-length:", res.headers.get("content-length"));
+    console.log("content-disposition:", res.headers.get("content-disposition"));
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("Download failed:", res.status, text);
+      toast.error(`Download failed (${res.status}).`);
+      return;
+    }
+
+    const disposition = res.headers.get("content-disposition") || "";
+    const match = disposition.match(/filename="([^"]+)"/i);
+    const filename = match?.[1] || fallbackFilename;
+
+    const blob = await res.blob();
+    console.log("[downloadDocx] blob size:", blob.size);
+
+    if (!blob || blob.size === 0) {
+      toast.error("Download failed: empty file.");
+      return;
+    }
+
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+
+    a.click();
+
+    // ✅ IMPORTANT: delay cleanup so the browser has time to start saving
+    setTimeout(() => {
+      window.URL.revokeObjectURL(blobUrl);
+      a.remove();
+      console.log("[downloadDocx] cleanup done");
+    }, 1500);
+
+    toast.success("Download started.");
+  } catch (err) {
+    console.error("Download error:", err);
+    toast.error("Download failed. Check console/network.");
+  }
+};
+
   const handleSubmitNow = async (app) => {
     setSubmitApp(app);
     setAutoFillScript(null);
-    
+
     // Fetch the auto-fill script
     setLoadingScript(true);
     try {
-      const response = await fetch(`${API}/applications/${app.application_id}/autofill-script`, {
-        credentials: 'include'
-      });
+      const response = await fetch(
+        `${API}/applications/${app.application_id}/autofill-script`,
+        {
+          credentials: "include",
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setAutoFillScript(data.script);
       }
     } catch (err) {
-      console.error('Failed to load auto-fill script:', err);
+      console.error("Failed to load auto-fill script:", err);
     } finally {
       setLoadingScript(false);
     }
@@ -134,12 +206,14 @@ export default function Applications({ user }) {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to approve application");
-      
-      setApplications(apps => apps.map(app =>
-        app.application_id === applicationId
-          ? { ...app, status: "applied", applied_at: new Date().toISOString() }
-          : app
-      ));
+
+      setApplications((apps) =>
+        apps.map((app) =>
+          app.application_id === applicationId
+            ? { ...app, status: "applied", applied_at: new Date().toISOString() }
+            : app
+        )
+      );
       toast.success("Application approved! You can now submit it manually.");
     } catch (error) {
       toast.error("Failed to approve application");
@@ -155,27 +229,32 @@ export default function Applications({ user }) {
         method: "POST",
         credentials: "include",
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
-        // Update application status to applied
-        setApplications(apps => apps.map(app =>
-          app.application_id === applicationId
-            ? { ...app, status: "applied", applied_at: new Date().toISOString(), auto_submitted: true }
-            : app
-        ));
+        setApplications((apps) =>
+          apps.map((app) =>
+            app.application_id === applicationId
+              ? {
+                  ...app,
+                  status: "applied",
+                  applied_at: new Date().toISOString(),
+                  auto_submitted: true,
+                }
+              : app
+          )
+        );
         toast.success(`✅ Auto-submitted to ${company}!`);
       } else {
-        // Automation failed, show error with fallback
         toast.error(
           <div>
             <div className="font-semibold">{data.message}</div>
             {data.fallback_link && (
               <div className="mt-2">
-                <a 
-                  href={data.fallback_link} 
-                  target="_blank" 
+                <a
+                  href={data.fallback_link}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-400 underline"
                 >
@@ -186,8 +265,7 @@ export default function Applications({ user }) {
           </div>,
           { duration: 8000 }
         );
-        
-        // If rate limited, show special message
+
         if (response.status === 429) {
           toast.warning("Rate limit: Please wait 5 minutes between auto-submissions");
         }
@@ -203,29 +281,27 @@ export default function Applications({ user }) {
     setActionLoading(applicationId);
     try {
       toast.info(`🔄 Auto-filling application for ${company}...`, { duration: 3000 });
-      
+
       const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
         method: "POST",
         credentials: "include",
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
-        // Update application status
-        setApplications(apps => apps.map(app =>
-          app.application_id === applicationId
-            ? { ...app, status: "ready_to_submit", auto_fill_result: data }
-            : app
-        ));
-        
-        // Show success with fields filled
+        setApplications((apps) =>
+          apps.map((app) =>
+            app.application_id === applicationId
+              ? { ...app, status: "ready_to_submit", auto_fill_result: data }
+              : app
+          )
+        );
+
         toast.success(
           <div>
             <div className="font-semibold">✅ Application auto-filled!</div>
-            <div className="text-sm mt-1">
-              {data.fields_filled?.length || 0} fields populated
-            </div>
+            <div className="text-sm mt-1">{data.fields_filled?.length || 0} fields populated</div>
             <div className="text-sm mt-2 text-amber-300">
               Click &quot;Open Application&quot; to review and submit
             </div>
@@ -233,15 +309,14 @@ export default function Applications({ user }) {
           { duration: 8000 }
         );
       } else {
-        // Auto-fill failed, provide fallback link
         toast.error(
           <div>
             <div className="font-semibold">{data.message}</div>
             {data.apply_link && (
               <div className="mt-2">
-                <a 
-                  href={data.apply_link} 
-                  target="_blank" 
+                <a
+                  href={data.apply_link}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-400 underline"
                 >
@@ -260,11 +335,15 @@ export default function Applications({ user }) {
     }
   };
 
-  // Check if auto-fill is supported for this job
   const isAutoFillSupported = (applyLink) => {
     if (!applyLink) return false;
     const link = applyLink.toLowerCase();
-    return link.includes('greenhouse.io') || link.includes('lever.co') || link.includes('jobs.lever') || link.includes('ashbyhq.com');
+    return (
+      link.includes("greenhouse.io") ||
+      link.includes("lever.co") ||
+      link.includes("jobs.lever") ||
+      link.includes("ashbyhq.com")
+    );
   };
 
   const handleReject = async (applicationId) => {
@@ -275,12 +354,12 @@ export default function Applications({ user }) {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to reject application");
-      
-      setApplications(apps => apps.map(app =>
-        app.application_id === applicationId
-          ? { ...app, status: "rejected" }
-          : app
-      ));
+
+      setApplications((apps) =>
+        apps.map((app) =>
+          app.application_id === applicationId ? { ...app, status: "rejected" } : app
+        )
+      );
       toast.info("Application skipped");
     } catch (error) {
       toast.error("Failed to skip application");
@@ -298,8 +377,8 @@ export default function Applications({ user }) {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to delete application");
-      
-      setApplications(apps => apps.filter(app => app.application_id !== deleteId));
+
+      setApplications((apps) => apps.filter((app) => app.application_id !== deleteId));
       toast.success("Application deleted");
     } catch (error) {
       toast.error("Failed to delete application");
@@ -310,15 +389,15 @@ export default function Applications({ user }) {
   };
 
   const handleBulkApprove = async () => {
-    const pendingApps = applications.filter(app => app.status === "pending");
+    const pendingApps = applications.filter((app) => app.status === "pending");
     if (pendingApps.length === 0) return;
-    
+
     setBulkApproveLoading(true);
     setShowBulkConfirm(false);
-    
+
     let successCount = 0;
     let failCount = 0;
-    
+
     for (const app of pendingApps) {
       try {
         const response = await fetch(`${API}/applications/${app.application_id}/approve`, {
@@ -327,11 +406,13 @@ export default function Applications({ user }) {
         });
         if (response.ok) {
           successCount++;
-          setApplications(apps => apps.map(a =>
-            a.application_id === app.application_id
-              ? { ...a, status: "applied", applied_at: new Date().toISOString() }
-              : a
-          ));
+          setApplications((apps) =>
+            apps.map((a) =>
+              a.application_id === app.application_id
+                ? { ...a, status: "applied", applied_at: new Date().toISOString() }
+                : a
+            )
+          );
         } else {
           failCount++;
         }
@@ -339,9 +420,9 @@ export default function Applications({ user }) {
         failCount++;
       }
     }
-    
+
     setBulkApproveLoading(false);
-    
+
     if (successCount > 0 && failCount === 0) {
       toast.success(`All ${successCount} applications approved and submitted!`);
     } else if (successCount > 0 && failCount > 0) {
@@ -391,16 +472,16 @@ export default function Applications({ user }) {
     return "match-score-low";
   };
 
-  const filteredApps = applications.filter(app => {
+  const filteredApps = applications.filter((app) => {
     if (activeTab === "all") return true;
     return app.status === activeTab;
   });
 
   const counts = {
     all: applications.length,
-    pending: applications.filter(a => a.status === "pending").length,
-    applied: applications.filter(a => a.status === "applied").length,
-    rejected: applications.filter(a => a.status === "rejected").length,
+    pending: applications.filter((a) => a.status === "pending").length,
+    applied: applications.filter((a) => a.status === "applied").length,
+    rejected: applications.filter((a) => a.status === "rejected").length,
   };
 
   if (loading) {
@@ -425,18 +506,15 @@ export default function Applications({ user }) {
   return (
     <div className="min-h-screen bg-background" data-testid="applications-page">
       <Navbar user={user} />
-      
+
       <div className="hero-glow opacity-30" />
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 py-8">
         <div className="mb-8 animate-fade-in">
           <h1 className="text-3xl font-bold text-foreground mb-2">My Applications</h1>
-          <p className="text-muted-foreground">
-            Track and manage your job applications
-          </p>
+          <p className="text-muted-foreground">Track and manage your job applications</p>
         </div>
 
-        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <TabsList className="bg-white/5 border border-white/10">
@@ -453,8 +531,7 @@ export default function Applications({ user }) {
                 Skipped ({counts.rejected})
               </TabsTrigger>
             </TabsList>
-            
-            {/* Bulk Apply Button */}
+
             {counts.pending > 0 && (
               <Button
                 data-testid="bulk-approve-btn"
@@ -478,7 +555,6 @@ export default function Applications({ user }) {
           </div>
         </Tabs>
 
-        {/* Applications List */}
         {filteredApps.length > 0 ? (
           <div className="space-y-4" data-testid="applications-list">
             {filteredApps.map((app, i) => (
@@ -489,12 +565,10 @@ export default function Applications({ user }) {
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    {/* Status Icon */}
                     <div className="hidden md:flex w-12 h-12 rounded-xl bg-white/5 items-center justify-center flex-shrink-0">
                       {getStatusIcon(app.status)}
                     </div>
 
-                    {/* Job Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <div>
@@ -524,16 +598,13 @@ export default function Applications({ user }) {
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        <span>
-                          Created: {new Date(app.created_at).toLocaleDateString()}
-                        </span>
+                        <span>Created: {new Date(app.created_at).toLocaleDateString()}</span>
                         {app.applied_at && (
                           <>
                             <span>•</span>
                             <span>Applied: {new Date(app.applied_at).toLocaleDateString()}</span>
                           </>
                         )}
-                        {/* Document indicators */}
                         {(app.optimized_resume || app.cover_letter) && (
                           <>
                             <span>•</span>
@@ -555,11 +626,14 @@ export default function Applications({ user }) {
                         )}
                       </div>
 
-                      {/* Expandable Documents Section */}
                       {(app.optimized_resume || app.cover_letter) && (
                         <div className="mt-3">
                           <button
-                            onClick={() => setExpandedApp(expandedApp === app.application_id ? null : app.application_id)}
+                            onClick={() =>
+                              setExpandedApp(
+                                expandedApp === app.application_id ? null : app.application_id
+                              )
+                            }
                             className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
                           >
                             {expandedApp === app.application_id ? (
@@ -569,7 +643,7 @@ export default function Applications({ user }) {
                             )}
                             {expandedApp === app.application_id ? "Hide" : "View"} saved documents
                           </button>
-                          
+
                           {expandedApp === app.application_id && (
                             <div className="mt-4 space-y-4">
                               {app.optimized_resume && (
@@ -582,10 +656,14 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => {
-                                        // Direct navigation - browser handles download natively
-                                        window.location.href = `${API}/applications/${app.application_id}/download/resume`;
-                                      }}
+                                      onClick={() =>
+                                        downloadDocx(
+                                          `${API}/applications/${app.application_id}/download/resume`,
+                                          `Resume_${app.company || "Company"}_${
+                                            app.job_title || "Role"
+                                          }.docx`
+                                        )
+                                      }
                                       className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
@@ -597,6 +675,7 @@ export default function Applications({ user }) {
                                   </pre>
                                 </div>
                               )}
+
                               {app.cover_letter && (
                                 <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                                   <div className="flex items-center justify-between mb-2">
@@ -607,10 +686,14 @@ export default function Applications({ user }) {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => {
-                                        // Direct navigation - browser handles download natively
-                                        window.location.href = `${API}/applications/${app.application_id}/download/cover-letter`;
-                                      }}
+                                      onClick={() =>
+                                        downloadDocx(
+                                          `${API}/applications/${app.application_id}/download/cover-letter`,
+                                          `CoverLetter_${app.company || "Company"}_${
+                                            app.job_title || "Role"
+                                          }.docx`
+                                        )
+                                      }
                                       className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
@@ -628,9 +711,7 @@ export default function Applications({ user }) {
                       )}
                     </div>
 
-                    {/* Actions */}
                     <div className="flex flex-col gap-2">
-                      {/* Primary Actions Row */}
                       <div className="flex items-center gap-2">
                         <Button
                           data-testid={`review-btn-${i}`}
@@ -653,8 +734,7 @@ export default function Applications({ user }) {
                           Open Application
                         </Button>
                       </div>
-                      
-                      {/* Status-based Actions Row */}
+
                       <div className="flex items-center gap-2">
                         {app.status === "pending" && (
                           <>
@@ -674,11 +754,19 @@ export default function Applications({ user }) {
                                 </>
                               )}
                             </Button>
+
                             {isAutoFillSupported(app.apply_link) && (
                               <Button
                                 data-testid={`auto-fill-btn-${i}`}
                                 size="sm"
-                                onClick={() => handleAutoFill(app.application_id, app.job_title, app.company, app.apply_link)}
+                                onClick={() =>
+                                  handleAutoFill(
+                                    app.application_id,
+                                    app.job_title,
+                                    app.company,
+                                    app.apply_link
+                                  )
+                                }
                                 disabled={actionLoading === app.application_id}
                                 className="bg-purple-500 hover:bg-purple-600"
                                 title="Auto-fill the application form with your profile data"
@@ -693,6 +781,7 @@ export default function Applications({ user }) {
                                 )}
                               </Button>
                             )}
+
                             <Button
                               data-testid={`reject-btn-${i}`}
                               size="sm"
@@ -705,6 +794,7 @@ export default function Applications({ user }) {
                             </Button>
                           </>
                         )}
+
                         {app.status === "ready_to_submit" && (
                           <>
                             <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 px-3 py-1">
@@ -713,7 +803,7 @@ export default function Applications({ user }) {
                             <Button
                               data-testid={`open-to-submit-btn-${i}`}
                               size="sm"
-                              onClick={() => window.open(app.apply_link, '_blank')}
+                              onClick={() => window.open(app.apply_link, "_blank")}
                               className="bg-emerald-500 hover:bg-emerald-600"
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
@@ -721,13 +811,21 @@ export default function Applications({ user }) {
                             </Button>
                           </>
                         )}
+
                         {app.status === "approved" && (
                           <>
                             {isAutoFillSupported(app.apply_link) && (
                               <Button
                                 data-testid={`auto-fill-approved-btn-${i}`}
                                 size="sm"
-                                onClick={() => handleAutoFill(app.application_id, app.job_title, app.company, app.apply_link)}
+                                onClick={() =>
+                                  handleAutoFill(
+                                    app.application_id,
+                                    app.job_title,
+                                    app.company,
+                                    app.apply_link
+                                  )
+                                }
                                 disabled={actionLoading === app.application_id}
                                 className="bg-purple-500 hover:bg-purple-600"
                               >
@@ -752,11 +850,13 @@ export default function Applications({ user }) {
                             </Button>
                           </>
                         )}
+
                         {app.status === "applied" && (
                           <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 px-3 py-1">
                             ✓ Applied
                           </Badge>
                         )}
+
                         <Button
                           data-testid={`delete-btn-${i}`}
                           size="sm"
@@ -788,7 +888,6 @@ export default function Applications({ user }) {
         )}
       </main>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="bg-background border-white/10">
           <AlertDialogHeader>
@@ -799,32 +898,26 @@ export default function Applications({ user }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-white/10">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Approve Confirmation Dialog */}
       <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
         <AlertDialogContent className="bg-background border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle>Approve All Pending Applications?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will approve and submit all {counts.pending} pending application{counts.pending !== 1 ? 's' : ''}. 
-              Each application will be marked as submitted with its optimized resume and cover letter (if generated).
+              This will approve and submit all {counts.pending} pending application
+              {counts.pending !== 1 ? "s" : ""}. Each application will be marked as submitted with
+              its optimized resume and cover letter (if generated).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-white/10">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkApprove}
-              className="bg-emerald-500 hover:bg-emerald-600"
-            >
+            <AlertDialogAction onClick={handleBulkApprove} className="bg-emerald-500 hover:bg-emerald-600">
               <Send className="w-4 h-4 mr-2" />
               Approve All ({counts.pending})
             </AlertDialogAction>
@@ -832,7 +925,6 @@ export default function Applications({ user }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Review Application Dialog */}
       <Dialog open={!!reviewApp} onOpenChange={() => setReviewApp(null)}>
         <DialogContent className="bg-background border-white/10 max-w-4xl max-h-[90vh]">
           <DialogHeader>
@@ -844,10 +936,9 @@ export default function Applications({ user }) {
               {reviewApp?.job_title} at {reviewApp?.company}
             </DialogDescription>
           </DialogHeader>
-          
+
           <ScrollArea className="max-h-[70vh] pr-4">
             <div className="space-y-6">
-              {/* Match Info */}
               <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                 <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-indigo-400" />
@@ -860,7 +951,9 @@ export default function Applications({ user }) {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Location:</span>
-                    <span className="ml-2 text-foreground">{reviewApp?.location || "Not specified"}</span>
+                    <span className="ml-2 text-foreground">
+                      {reviewApp?.location || "Not specified"}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Match Score:</span>
@@ -873,7 +966,6 @@ export default function Applications({ user }) {
                 </div>
               </div>
 
-              {/* Optimized Resume */}
               {reviewApp?.optimized_resume && (
                 <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <div className="flex items-center justify-between mb-3">
@@ -885,19 +977,25 @@ export default function Applications({ user }) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => copyToClipboard(reviewApp.optimized_resume, 'resume')}
+                        onClick={() => copyToClipboard(reviewApp.optimized_resume, "resume")}
                         className="h-7 text-xs text-emerald-400 hover:bg-emerald-500/20"
                       >
-                        {copiedField === 'resume' ? <CheckCheck className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-                        {copiedField === 'resume' ? 'Copied!' : 'Copy'}
+                        {copiedField === "resume" ? (
+                          <CheckCheck className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Copy className="w-3 h-3 mr-1" />
+                        )}
+                        {copiedField === "resume" ? "Copied!" : "Copy"}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          // Direct navigation - browser handles download natively
-                          window.location.href = `${API}/applications/${reviewApp.application_id}/download/resume`;
-                        }}
+                        onClick={() =>
+                          downloadDocx(
+                            `${API}/applications/${reviewApp.application_id}/download/resume`,
+                            `Resume_${reviewApp.company || "Company"}_${reviewApp.job_title || "Role"}.docx`
+                          )
+                        }
                         className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                       >
                         <Download className="w-3 h-3 mr-1" />
@@ -911,7 +1009,6 @@ export default function Applications({ user }) {
                 </div>
               )}
 
-              {/* Cover Letter */}
               {reviewApp?.cover_letter && (
                 <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                   <div className="flex items-center justify-between mb-3">
@@ -923,19 +1020,25 @@ export default function Applications({ user }) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => copyToClipboard(reviewApp.cover_letter, 'cover')}
+                        onClick={() => copyToClipboard(reviewApp.cover_letter, "cover")}
                         className="h-7 text-xs text-indigo-400 hover:bg-indigo-500/20"
                       >
-                        {copiedField === 'cover' ? <CheckCheck className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-                        {copiedField === 'cover' ? 'Copied!' : 'Copy'}
+                        {copiedField === "cover" ? (
+                          <CheckCheck className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Copy className="w-3 h-3 mr-1" />
+                        )}
+                        {copiedField === "cover" ? "Copied!" : "Copy"}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          // Direct navigation - browser handles download natively
-                          window.location.href = `${API}/applications/${reviewApp.application_id}/download/cover-letter`;
-                        }}
+                        onClick={() =>
+                          downloadDocx(
+                            `${API}/applications/${reviewApp.application_id}/download/cover-letter`,
+                            `CoverLetter_${reviewApp.company || "Company"}_${reviewApp.job_title || "Role"}.docx`
+                          )
+                        }
                         className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                       >
                         <Download className="w-3 h-3 mr-1" />
@@ -949,7 +1052,6 @@ export default function Applications({ user }) {
                 </div>
               )}
 
-              {/* No documents warning */}
               {!reviewApp?.optimized_resume && !reviewApp?.cover_letter && (
                 <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
                   <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
@@ -966,10 +1068,7 @@ export default function Applications({ user }) {
             <Button variant="outline" onClick={() => setReviewApp(null)} className="border-white/10">
               Close
             </Button>
-            <Button 
-              onClick={() => handleOpenApplication(reviewApp)}
-              className="bg-cyan-500 hover:bg-cyan-600"
-            >
+            <Button onClick={() => handleOpenApplication(reviewApp)} className="bg-cyan-500 hover:bg-cyan-600">
               <ExternalLink className="w-4 h-4 mr-2" />
               Open Application
             </Button>
@@ -977,7 +1076,6 @@ export default function Applications({ user }) {
         </DialogContent>
       </Dialog>
 
-      {/* Submit Now Dialog - Assisted Apply */}
       <Dialog open={!!submitApp} onOpenChange={() => { setSubmitApp(null); setAutoFillScript(null); }}>
         <DialogContent className="bg-background border-white/10 max-w-2xl max-h-[90vh]">
           <DialogHeader>
@@ -989,17 +1087,16 @@ export default function Applications({ user }) {
               {submitApp?.job_title} at {submitApp?.company}
             </DialogDescription>
           </DialogHeader>
-          
+
           <ScrollArea className="max-h-[65vh]">
             <div className="space-y-4 pr-4">
-              {/* Auto-Fill Script Section */}
               <div className="p-4 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30">
                 <h4 className="text-sm font-medium text-indigo-400 mb-2 flex items-center gap-2">
                   <Rocket className="w-4 h-4" />
                   Auto-Fill (Recommended)
                 </h4>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Copy our auto-fill script and paste it in the browser console on the application page. 
+                  Copy our auto-fill script and paste it in the browser console on the application page.
                   It will automatically fill in your name, email, resume, and cover letter.
                 </p>
                 {loadingScript ? (
@@ -1010,10 +1107,14 @@ export default function Applications({ user }) {
                 ) : autoFillScript ? (
                   <div className="space-y-2">
                     <Button
-                      onClick={() => copyToClipboard(autoFillScript, 'autofill-script')}
-                      className={`w-full ${copiedField === 'autofill-script' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-indigo-500 hover:bg-indigo-600'}`}
+                      onClick={() => copyToClipboard(autoFillScript, "autofill-script")}
+                      className={`w-full ${
+                        copiedField === "autofill-script"
+                          ? "bg-emerald-500 hover:bg-emerald-600"
+                          : "bg-indigo-500 hover:bg-indigo-600"
+                      }`}
                     >
-                      {copiedField === 'autofill-script' ? (
+                      {copiedField === "autofill-script" ? (
                         <>
                           <CheckCheck className="w-4 h-4 mr-2" />
                           Script Copied!
@@ -1034,40 +1135,53 @@ export default function Applications({ user }) {
                 )}
               </div>
 
-              {/* Manual Option */}
               <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                 <h4 className="text-sm font-medium text-foreground mb-3">Or Copy Manually:</h4>
                 <div className="grid grid-cols-2 gap-3">
                   {submitApp?.optimized_resume && (
                     <Button
                       variant="outline"
-                      onClick={() => copyToClipboard(submitApp.optimized_resume, 'submit-resume')}
+                      onClick={() => copyToClipboard(submitApp.optimized_resume, "submit-resume")}
                       className="h-auto py-3 flex-col items-center gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                     >
-                      {copiedField === 'submit-resume' ? <CheckCheck className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
-                      <span className="text-xs">{copiedField === 'submit-resume' ? 'Resume Copied!' : 'Copy Resume'}</span>
+                      {copiedField === "submit-resume" ? (
+                        <CheckCheck className="w-5 h-5" />
+                      ) : (
+                        <FileText className="w-5 h-5" />
+                      )}
+                      <span className="text-xs">
+                        {copiedField === "submit-resume" ? "Resume Copied!" : "Copy Resume"}
+                      </span>
                     </Button>
                   )}
                   {submitApp?.cover_letter && (
                     <Button
                       variant="outline"
-                      onClick={() => copyToClipboard(submitApp.cover_letter, 'submit-cover')}
+                      onClick={() => copyToClipboard(submitApp.cover_letter, "submit-cover")}
                       className="h-auto py-3 flex-col items-center gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                     >
-                      {copiedField === 'submit-cover' ? <CheckCheck className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
-                      <span className="text-xs">{copiedField === 'submit-cover' ? 'Cover Letter Copied!' : 'Copy Cover Letter'}</span>
+                      {copiedField === "submit-cover" ? (
+                        <CheckCheck className="w-5 h-5" />
+                      ) : (
+                        <MessageSquare className="w-5 h-5" />
+                      )}
+                      <span className="text-xs">
+                        {copiedField === "submit-cover" ? "Cover Letter Copied!" : "Copy Cover Letter"}
+                      </span>
                     </Button>
                   )}
                 </div>
               </div>
 
-              {/* Instructions */}
               <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                 <h4 className="text-sm font-medium text-foreground mb-2">How to Use Auto-Fill:</h4>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Click &quot;Copy Auto-Fill Script&quot; above</li>
                   <li>Click &quot;Open Application Page&quot; below</li>
-                  <li>On the job site, press <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">F12</kbd> to open Developer Tools</li>
+                  <li>
+                    On the job site, press{" "}
+                    <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">F12</kbd> to open Developer Tools
+                  </li>
                   <li>Click the &quot;Console&quot; tab</li>
                   <li>Paste the script (Ctrl+V) and press Enter</li>
                   <li>Review the filled fields, upload resume if needed</li>
@@ -1090,7 +1204,7 @@ export default function Applications({ user }) {
             <Button variant="outline" onClick={() => setSubmitApp(null)} className="border-white/10">
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 handleOpenApplication(submitApp);
                 toast.success("Application page opened. Good luck!");
