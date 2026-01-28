@@ -3751,16 +3751,17 @@ async def download_resume_docx(request: Request, application_id: str):
     
     logger.info(f"Saved resume to static: {filepath}")
     
-    # Return 302 redirect to the static file URL
-    # The /downloads path is mounted as static files
-    static_url = f"/api/static-downloads/{filename}"
-    return RedirectResponse(url=static_url, status_code=302)
+    # Return file directly with proper download headers
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
 
 @api_router.get("/applications/{application_id}/download/cover-letter")
 async def download_cover_letter_docx(request: Request, application_id: str):
     """
     Download cover letter as DOCX file.
-    Saves to static directory and returns 302 redirect to static file URL.
     """
     user = await get_current_user(request)
     
@@ -3793,10 +3794,12 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     
     logger.info(f"Saved cover letter to static: {filepath}")
     
-    # Return 302 redirect to the static file URL
-    # The /downloads path is mounted as static files
-    static_url = f"/api/static-downloads/{filename}"
-    return RedirectResponse(url=static_url, status_code=302)
+    # Return file directly with proper download headers
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
 
 @api_router.get("/applications/{application_id}/autofill-script")
 async def get_autofill_script(request: Request, application_id: str):
