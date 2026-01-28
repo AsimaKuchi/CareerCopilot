@@ -1,7 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, APIRouter, HTTPException, Response, Request, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -36,6 +36,12 @@ db = client[os.environ['DB_NAME']]
 # API Keys
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
+
+# Supabase Storage configuration (for file downloads)
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+SUPABASE_BUCKET_RESUMES = 'resumes'
+SUPABASE_BUCKET_COVERLETTERS = 'coverletters'
 
 # VERIFIED Greenhouse company boards (tested and working - no 404s)
 # These companies have active Greenhouse job boards as of Jan 2025
