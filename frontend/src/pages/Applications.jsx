@@ -1008,10 +1008,6 @@ export default function Applications({ user }) {
                         <Download className="w-3 h-3 mr-1" />
                         .docx
                       </Button>
-                      >
-                        <Download className="w-3 h-3 mr-1" />
-                        .docx
-                      </a>
                     </div>
                   </div>
                   <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-48 overflow-auto bg-black/20 p-3 rounded">
