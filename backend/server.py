@@ -3744,21 +3744,23 @@ async def download_cover_letter_docx(request: Request, application_id: str):
         raise HTTPException(status_code=400, detail="No cover letter found for this application")
     
     # Create DOCX file - sanitize filename
-    import re
     company = re.sub(r'[^\w\s-]', '', app_doc.get("company", "Company")).replace(" ", "_")
     job_title = re.sub(r'[^\w\s-]', '', app_doc.get("job_title", "Position")).replace(" ", "_")
     filename = f"Cover_Letter_{company}_{job_title}.docx"
     
-    # Create the DOCX content
+    # Create the DOCX content and save to temp file
     docx_bytes = create_docx_from_text(app_doc["cover_letter"])
     
-    return Response(
-        content=docx_bytes,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": str(len(docx_bytes))
-        }
+    # Save to temporary file for FileResponse
+    import tempfile
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")
+    temp_file.write(docx_bytes)
+    temp_file.close()
+    
+    return FileResponse(
+        path=temp_file.name,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
 @api_router.get("/applications/{application_id}/autofill-script")
