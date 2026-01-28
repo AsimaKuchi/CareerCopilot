@@ -2181,22 +2181,24 @@ OUTPUT FORMAT:
 Return the optimized resume as CONCISE plain text that fits on ONE PAGE."""
     ).with_model("openai", "gpt-5.2")
     
-    prompt = f"""Optimize this resume for the following job. The output MUST look exactly like the original resume in terms of structure and formatting.
+    prompt = f"""Optimize this resume for the following job. The output MUST FIT ON ONE SINGLE PAGE in a Word document.
 
 JOB DESCRIPTION:
 {req.job_description}
 
-ORIGINAL RESUME (copy this format EXACTLY):
+ORIGINAL RESUME:
 {original_resume}
 
-CRITICAL: Your output must have:
-- Same section headers in same order
-- Same bullet point style (• or - or numbers)
-- Same line breaks and spacing
-- Same date formats
-- Only the CONTENT of bullet points should be enhanced with keywords
+CRITICAL REQUIREMENTS:
+1. **ONE PAGE ONLY** - This is the most important rule. Be concise!
+2. Keep section headers and overall structure
+3. Use consistent bullet points (• or -)
+4. Limit each role to 3-4 impactful bullet points (1-2 lines each)
+5. Enhance content with keywords from the job description
+6. Cut less relevant content if needed to fit one page
+7. Maximum ~450-500 words total
 
-Return the optimized resume now:"""
+Return the concise, one-page optimized resume now:"""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
