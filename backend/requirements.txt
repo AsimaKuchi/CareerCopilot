@@ -131,3 +131,6 @@ greenlet==3.3.1
 playwright==1.57.0
 pyee==13.0.0
 APScheduler==3.11.2
+supabase==2.27.2
+supabase-auth==2.27.2
+supabase-functions==2.27.2
