@@ -74,6 +74,40 @@ export default function Applications({ user }) {
   const [autoFillScript, setAutoFillScript] = useState(null);
   const [loadingScript, setLoadingScript] = useState(false);
 
+  // Download resume as .docx (same as Lovable)
+  const downloadResume = async (resumeText, companyName) => {
+    const paragraphs = resumeText.split('\n\n').map(
+      (text) => new Paragraph({
+        children: [new TextRun({ text, size: 24 })],
+        spacing: { after: 200 },
+      })
+    );
+    
+    const doc = new Document({
+      sections: [{ children: paragraphs }],
+    });
+    
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Resume_${companyName.replace(/\s+/g, '_')}.docx`);
+  };
+
+  // Download cover letter as .docx (same as Lovable)
+  const downloadCoverLetter = async (coverLetterText, companyName) => {
+    const paragraphs = coverLetterText.split('\n\n').map(
+      (text) => new Paragraph({
+        children: [new TextRun({ text, size: 24 })],
+        spacing: { after: 200 },
+      })
+    );
+    
+    const doc = new Document({
+      sections: [{ children: paragraphs }],
+    });
+    
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Cover_Letter_${companyName.replace(/\s+/g, '_')}.docx`);
+  };
+
   const copyToClipboard = async (text, field) => {
     try {
       await navigator.clipboard.writeText(text);
