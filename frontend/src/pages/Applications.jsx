@@ -948,20 +948,7 @@ export default function Applications({ user }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch(`${API}/applications/${reviewApp.application_id}/prepare-download/resume`, {
-                              method: 'POST',
-                              credentials: 'include'
-                            });
-                            const data = await res.json();
-                            if (data.download_url) {
-                              window.open(data.download_url, '_blank');
-                            }
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        }}
+                        onClick={() => downloadResume(reviewApp.optimized_resume, reviewApp.company || 'Company')}
                         className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                       >
                         <Download className="w-3 h-3 mr-1" />
@@ -999,20 +986,7 @@ export default function Applications({ user }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch(`${API}/applications/${reviewApp.application_id}/prepare-download/cover-letter`, {
-                              method: 'POST',
-                              credentials: 'include'
-                            });
-                            const data = await res.json();
-                            if (data.download_url) {
-                              window.open(data.download_url, '_blank');
-                            }
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        }}
+                        onClick={() => downloadCoverLetter(reviewApp.cover_letter, reviewApp.company || 'Company')}
                         className="h-7 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
                       >
                         <Download className="w-3 h-3 mr-1" />
