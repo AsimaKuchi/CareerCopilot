@@ -4103,6 +4103,33 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
+@api_router.get("/test-download")
+async def test_download():
+    """Test endpoint - downloads a simple DOCX file without authentication."""
+    from docx import Document
+    import io
+    
+    # Create a simple test document
+    doc = Document()
+    doc.add_heading('Test Download', 0)
+    doc.add_paragraph('If you can read this, downloads are working!')
+    doc.add_paragraph('Generated at: ' + datetime.now().isoformat())
+    
+    # Save to bytes
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    docx_bytes = buffer.getvalue()
+    
+    # Save to static downloads
+    filename = f"test_download_{uuid.uuid4().hex[:8]}.docx"
+    filepath = os.path.join(STATIC_DOWNLOADS_DIR, filename)
+    with open(filepath, 'wb') as f:
+        f.write(docx_bytes)
+    
+    # Redirect to static file
+    return RedirectResponse(url=f"/api/static-downloads/{filename}", status_code=302)
+
 # Include the routers
 app.include_router(api_router)
 app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
