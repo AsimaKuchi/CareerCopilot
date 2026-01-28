@@ -1374,12 +1374,36 @@ export default function Applications({ user }) {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-indigo-400">
-              Auto-Fill Data - {autoFillData?.company}
+              {autoFillData?.playwrightSuccess ? '✅ Auto-Fill Complete' : '📋 Application Data'} - {autoFillData?.company}
             </DialogTitle>
             <DialogDescription>
-              Copy each field to fill your application. Click the copy button next to each field.
+              {autoFillData?.playwrightSuccess 
+                ? `${autoFillData?.fieldsFilled?.length || 0} fields were automatically filled. Review and complete any remaining fields.`
+                : 'Copy each field to fill your application manually.'}
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Success/Warning Banner */}
+          {autoFillData?.playwrightSuccess ? (
+            <div className="p-3 bg-emerald-500/20 rounded-lg border border-emerald-500/30 mb-4">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-semibold">{autoFillData?.message}</span>
+              </div>
+              {autoFillData?.fieldsFilled?.length > 0 && (
+                <div className="text-sm text-emerald-300 mt-2">
+                  Filled: {autoFillData.fieldsFilled.join(', ')}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3 bg-amber-500/20 rounded-lg border border-amber-500/30 mb-4">
+              <div className="flex items-center gap-2 text-amber-400">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-semibold">{autoFillData?.message || 'Manual entry required'}</span>
+              </div>
+            </div>
+          )}
           
           <div className="flex gap-2 mb-4">
             <Button
@@ -1397,39 +1421,67 @@ export default function Applications({ user }) {
 
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-3">
+              {/* Fields that need manual entry (failed or not filled) */}
+              {autoFillData?.fieldsFailed?.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-sm font-semibold text-amber-400 mb-2">⚠️ Fields needing manual entry:</div>
+                  <div className="text-xs text-muted-foreground">
+                    {autoFillData.fieldsFailed.join(', ')}
+                  </div>
+                </div>
+              )}
+              
               {autoFillData?.data && Object.entries(autoFillData.data)
                 .filter(([key, value]) => key !== 'resume_text' && key !== 'cover_letter')
-                .map(([key, value]) => (
-                  <div 
-                    key={key} 
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      value ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 border-white/10 opacity-50'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        {key.replace(/_/g, ' ')}
+                .map(([key, value]) => {
+                  const wasFilled = autoFillData?.fieldsFilled?.some(f => 
+                    f.toLowerCase().replace(/\s+/g, '_') === key.toLowerCase() ||
+                    f.toLowerCase().includes(key.replace(/_/g, ' ').toLowerCase())
+                  );
+                  
+                  return (
+                    <div 
+                      key={key} 
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        wasFilled 
+                          ? 'bg-emerald-500/10 border-emerald-500/20' 
+                          : value 
+                            ? 'bg-white/5 border-white/10' 
+                            : 'bg-white/5 border-white/10 opacity-50'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                            {key.replace(/_/g, ' ')}
+                          </span>
+                          {wasFilled && (
+                            <span className="text-xs bg-emerald-500/30 text-emerald-300 px-1.5 py-0.5 rounded">
+                              Auto-filled
+                            </span>
+                          )}
+                        </div>
+                        <div className={`text-sm truncate mt-1 ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
+                          {value || 'Not provided'}
+                        </div>
                       </div>
-                      <div className={`text-sm truncate ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
-                        {value || 'Not provided'}
-                      </div>
+                      {value && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(value, key)}
+                          className="ml-2 flex-shrink-0"
+                        >
+                          {copiedField === key ? (
+                            <CheckCheck className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      )}
                     </div>
-                    {value && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => copyToClipboard(value, key)}
-                        className="ml-2 flex-shrink-0"
-                      >
-                        {copiedField === key ? (
-                          <CheckCheck className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               
               {/* Resume and Cover Letter sections */}
               {autoFillData?.data?.resume_text && (
@@ -1478,11 +1530,14 @@ export default function Applications({ user }) {
             </div>
           </ScrollArea>
 
-          <div className="mt-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+          <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-amber-200">
-                <strong>Tip:</strong> Open the application link, then click each copy button and paste into the corresponding field. Review all information before submitting.
+              <Lightbulb className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-200">
+                <strong>Next steps:</strong> Click &quot;Open Application&quot; to go to the job page. 
+                {autoFillData?.playwrightSuccess 
+                  ? ' The form should already be filled - just review and submit!'
+                  : ' Use the copy buttons above to fill each field, then review and submit.'}
               </div>
             </div>
           </div>
