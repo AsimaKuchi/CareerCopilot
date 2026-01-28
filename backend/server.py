@@ -2187,13 +2187,7 @@ CRITICAL: Your output must have:
 - Same date formats
 - Only the CONTENT of bullet points should be enhanced with keywords
 
-Return the optimized resume now:
-2. Preserve all formatting (headers, bullet points, date formats)
-3. Only modify content to add relevant keywords from the job description
-4. Strengthen action verbs and add metrics where possible
-5. Ensure the optimized resume looks structurally identical to the original
-
-Return the optimized resume in the same format as the original."""
+Return the optimized resume now:"""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
