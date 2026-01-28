@@ -4294,10 +4294,10 @@ async def scheduled_job_ingestion():
 @app.on_event("startup")
 async def start_scheduler():
     """Start the job scheduler on app startup."""
-    # Run job ingestion every 6 hours
+    # Run job ingestion every 2 hours
     scheduler.add_job(
         scheduled_job_ingestion,
-        trigger=IntervalTrigger(hours=6),
+        trigger=IntervalTrigger(hours=2),
         id="job_ingestion",
         name="Refresh jobs from Greenhouse/Lever",
         replace_existing=True
