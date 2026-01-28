@@ -1,10 +1,7 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
 
-export async function downloadDocxFromText(
-  text: string,
-  filename: string
-) {
+export async function downloadDocxFromText(text, filename) {
   if (!text) return;
 
   const paragraphs = text
