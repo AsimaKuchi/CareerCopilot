@@ -92,68 +92,12 @@ export default function Applications({ user }) {
   };
 
   /**
-   * ✅ Reliable download helper (works even when window.location.href "does nothing")
-   * - Includes cookies via credentials: "include"
-   * - Forces browser to save blob as .docx
-   * - Extracts filename from Content-Disposition if provided
+   * Direct navigation download - backend returns 302 redirect to Supabase signed URL
+   * No fetch, no blob, no async - just direct browser navigation
    */
-  const downloadDocx = async (url, fallbackFilename = "document.docx") => {
-  try {
-    console.log("[downloadDocx] starting:", url);
-
-    const res = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    console.log("[downloadDocx] status:", res.status);
-    console.log("content-type:", res.headers.get("content-type"));
-    console.log("content-length:", res.headers.get("content-length"));
-    console.log("content-disposition:", res.headers.get("content-disposition"));
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error("Download failed:", res.status, text);
-      toast.error(`Download failed (${res.status}).`);
-      return;
-    }
-
-    const disposition = res.headers.get("content-disposition") || "";
-    const match = disposition.match(/filename="([^"]+)"/i);
-    const filename = match?.[1] || fallbackFilename;
-
-    const blob = await res.blob();
-    console.log("[downloadDocx] blob size:", blob.size);
-
-    if (!blob || blob.size === 0) {
-      toast.error("Download failed: empty file.");
-      return;
-    }
-
-    const blobUrl = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = filename;
-    a.style.display = "none";
-    document.body.appendChild(a);
-
-    a.click();
-
-    // ✅ IMPORTANT: delay cleanup so the browser has time to start saving
-    setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl);
-      a.remove();
-      console.log("[downloadDocx] cleanup done");
-    }, 1500);
-
-    toast.success("Download started.");
-  } catch (err) {
-    console.error("Download error:", err);
-    toast.error("Download failed. Check console/network.");
-  }
-};
+  const downloadFile = (url) => {
+    window.location.assign(url);
+  };
 
   const handleSubmitNow = async (app) => {
     setSubmitApp(app);
