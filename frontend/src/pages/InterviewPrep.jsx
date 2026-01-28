@@ -206,66 +206,153 @@ export default function InterviewPrep({ user }) {
               <CardContent>
                 {prepMaterials ? (
                   <ScrollArea className="h-[600px] pr-4">
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      <div 
-                        className="interview-prep-content space-y-4"
-                        dangerouslySetInnerHTML={{ 
-                          __html: prepMaterials
-                            .split('\n')
-                            .map(line => {
-                              // Horizontal rule
-                              if (line.trim() === '---' || line.trim() === '___') {
-                                return `<hr class="my-10 border-white/20" />`;
-                              }
-                              // ALL-CAPS numbered headers (1. COMMON INTERVIEW QUESTIONS)
-                              else if (line.trim().match(/^\d+\.\s+[A-Z\s]+$/)) {
-                                return `<h2 class="font-extrabold text-2xl text-indigo-400 mt-12 mb-6 uppercase tracking-wide">${line}</h2>`;
-                              }
-                              // Level-4 headers (#### Question)
-                              else if (line.trim().startsWith('####')) {
-                                const text = line.replace(/^####\s*/, '');
-                                return `<h4 class="font-bold text-xl text-foreground mt-8 mb-3 leading-tight">${text}</h4>`;
-                              }
-                              // Level-3 headers
-                              else if (line.trim().startsWith('###')) {
-                                return `<h3 class="font-bold text-xl text-emerald-400 mt-8 mb-4">${line.replace(/^###\s*/, '')}</h3>`;
-                              }
-                              // Level-2 headers
-                              else if (line.trim().startsWith('##')) {
-                                return `<h2 class="font-bold text-2xl text-indigo-400 mt-10 mb-5">${line.replace(/^##\s*/, '')}</h2>`;
-                              }
-                              // Blockquotes (> Sample answer) - make text bolder
-                              else if (line.trim().startsWith('>')) {
-                                const content = line.trim().substring(1).trim();
-                                return `<blockquote class="border-l-4 border-indigo-500 pl-5 py-3 my-4 text-gray-300 font-medium bg-white/5 rounded-r leading-relaxed">${content}</blockquote>`;
-                              }
-                              // Remove italics - just make it bold regular text
-                              else if (line.trim().match(/^\*[^*]+\*$/) || line.trim().startsWith('Suggested') || line.trim().startsWith('STAR') || line.trim().startsWith('Approach')) {
-                                const content = line.trim().replace(/^\*/, '').replace(/\*$/, '');
-                                return `<p class="font-semibold text-base text-gray-300 mb-3 mt-2">${content}</p>`;
-                              }
-                              // Bold questions (lines ending with ?)
-                              else if (line.trim().endsWith('?')) {
-                                return `<p class="font-bold text-lg text-foreground mt-6 mb-2 leading-relaxed">${line}</p>`;
-                              }
-                              // Numbered items (1., 2., etc) - make bolder
-                              else if (line.trim().match(/^\d+\./)) {
-                                return `<p class="font-semibold text-base text-foreground mt-3 mb-2 leading-relaxed">${line}</p>`;
-                              }
-                              // Bullet points - make bolder
-                              else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-                                const content = line.trim().substring(2);
-                                return `<p class="ml-4 text-gray-300 font-medium mb-2 leading-relaxed">• ${content}</p>`;
-                              }
-                              // Regular paragraphs - make bolder and easier to read
-                              else if (line.trim()) {
-                                return `<p class="text-gray-300 font-medium leading-relaxed mb-3">${line}</p>`;
-                              }
-                              return '<div class="h-3"></div>'; // Whitespace
-                            })
-                            .join('') 
-                        }}
-                      />
+                    <div className="space-y-6">
+                      {(() => {
+                        // Parse the prep materials into sections
+                        const cleanText = prepMaterials
+                          .replace(/\*\*/g, '')  // Remove **bold**
+                          .replace(/\*/g, '')    // Remove *italic*
+                          .replace(/#{1,4}\s*/g, '')  // Remove # headers
+                          .replace(/---/g, '')   // Remove horizontal rules
+                          .replace(/___/g, '');
+                        
+                        // Split into Q&A pairs
+                        const lines = cleanText.split('\n').filter(line => line.trim());
+                        const sections = [];
+                        let currentSection = null;
+                        let currentQA = null;
+                        
+                        for (const line of lines) {
+                          const trimmed = line.trim();
+                          
+                          // Section headers (numbered like "1. COMMON QUESTIONS" or all caps)
+                          if (trimmed.match(/^\d+\.\s+[A-Z\s]+$/) || 
+                              (trimmed === trimmed.toUpperCase() && trimmed.length > 10 && !trimmed.includes('?'))) {
+                            if (currentSection) sections.push(currentSection);
+                            currentSection = {
+                              title: trimmed.replace(/^\d+\.\s*/, ''),
+                              items: []
+                            };
+                            currentQA = null;
+                          }
+                          // Questions (end with ?)
+                          else if (trimmed.endsWith('?')) {
+                            if (currentQA && currentSection) {
+                              currentSection.items.push(currentQA);
+                            }
+                            currentQA = {
+                              question: trimmed,
+                              answer: []
+                            };
+                          }
+                          // Answer content
+                          else if (currentQA && trimmed) {
+                            // Clean up bullet points
+                            const cleanLine = trimmed
+                              .replace(/^[-•*]\s*/, '')
+                              .replace(/^>\s*/, '')
+                              .replace(/^\d+\.\s*/, '');
+                            if (cleanLine) {
+                              currentQA.answer.push(cleanLine);
+                            }
+                          }
+                          // If no current Q&A but has content, might be intro or tips
+                          else if (!currentQA && currentSection && trimmed) {
+                            const cleanLine = trimmed.replace(/^[-•*]\s*/, '').replace(/^>\s*/, '');
+                            if (cleanLine && !cleanLine.match(/^\d+\.\s*$/)) {
+                              currentSection.items.push({ tip: cleanLine });
+                            }
+                          }
+                        }
+                        
+                        // Push last items
+                        if (currentQA && currentSection) {
+                          currentSection.items.push(currentQA);
+                        }
+                        if (currentSection) sections.push(currentSection);
+                        
+                        // If no sections parsed, show as simple text
+                        if (sections.length === 0) {
+                          return (
+                            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                {cleanText}
+                              </p>
+                            </div>
+                          );
+                        }
+                        
+                        return sections.map((section, sIdx) => (
+                          <div key={sIdx} className="space-y-4">
+                            {/* Section Title */}
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                                <span className="text-indigo-400 font-bold text-sm">{sIdx + 1}</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-indigo-400 uppercase tracking-wide">
+                                {section.title}
+                              </h2>
+                            </div>
+                            
+                            {/* Q&A Items */}
+                            <div className="space-y-4 ml-2">
+                              {section.items.map((item, qIdx) => (
+                                item.question ? (
+                                  // Q&A Box
+                                  <div 
+                                    key={qIdx} 
+                                    className="bg-white/5 rounded-xl border border-white/10 overflow-hidden"
+                                  >
+                                    {/* Question */}
+                                    <div className="bg-indigo-500/10 px-5 py-4 border-b border-white/10">
+                                      <div className="flex items-start gap-3">
+                                        <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
+                                          Q
+                                        </span>
+                                        <p className="text-foreground font-semibold text-base leading-relaxed">
+                                          {item.question}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Answer */}
+                                    <div className="px-5 py-4">
+                                      <div className="flex items-start gap-3">
+                                        <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
+                                          A
+                                        </span>
+                                        <div className="space-y-2 flex-1">
+                                          {item.answer.map((line, lIdx) => (
+                                            <p key={lIdx} className="text-gray-300 leading-relaxed">
+                                              {line}
+                                            </p>
+                                          ))}
+                                          {item.answer.length === 0 && (
+                                            <p className="text-gray-400 italic">
+                                              Prepare your own answer based on your experience.
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : item.tip ? (
+                                  // Tip Box
+                                  <div 
+                                    key={qIdx}
+                                    className="bg-amber-500/10 rounded-xl px-5 py-4 border border-amber-500/20"
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <Lightbulb className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                                      <p className="text-gray-300 leading-relaxed">{item.tip}</p>
+                                    </div>
+                                  </div>
+                                ) : null
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
                     </div>
                   </ScrollArea>
                 ) : (
