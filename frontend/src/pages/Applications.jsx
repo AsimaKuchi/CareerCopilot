@@ -591,6 +591,8 @@ export default function Applications({ user }) {
                                     </h5>
                                     <a
                                       href={`${API}/applications/${app.application_id}/download/resume`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
                                       className="inline-flex items-center h-7 px-3 text-xs border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 rounded-md"
                                     >
                                       <Download className="w-3 h-3 mr-1" />
