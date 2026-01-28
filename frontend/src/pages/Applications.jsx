@@ -193,28 +193,40 @@ export default function Applications({ user }) {
         ? `Resume_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}.docx`
         : `Cover_Letter_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
       
-      // Method 1: Create object URL and trigger download
+      // Method: Open in new window to bypass sandbox restrictions
       const url = window.URL.createObjectURL(blob);
       console.log("Blob URL created:", url);
       
-      const link = document.createElement('a');
-      link.style.display = 'none';
-      link.href = url;
-      link.download = filename;
-      link.setAttribute('download', filename);
+      // Try opening in new window first (bypasses sandbox)
+      const newWindow = window.open(url, '_blank');
       
-      document.body.appendChild(link);
-      console.log("Clicking download link...");
-      link.click();
-      
-      // Cleanup after a delay
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        console.log("Cleanup complete");
-      }, 1000);
-      
-      toast.success(`Downloading ${filename}...`);
+      if (newWindow) {
+        // If new window opened, provide instructions
+        toast.success(`File opened in new tab. Right-click and "Save As" to download as ${filename}`);
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 60000); // Keep URL alive for 1 minute
+      } else {
+        // Fallback: try direct download link
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = url;
+        link.download = filename;
+        link.setAttribute('download', filename);
+        link.target = '_blank';
+        
+        document.body.appendChild(link);
+        console.log("Clicking download link...");
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          console.log("Cleanup complete");
+        }, 1000);
+        
+        toast.info(`If download didn't start, the preview environment may be blocking it. Try "Copy All Text" instead.`);
+      }
     } catch (err) {
       console.error('Download error:', err);
       toast.error(`Download failed: ${err.message}`);
