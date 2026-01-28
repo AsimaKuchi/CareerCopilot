@@ -725,7 +725,7 @@ async def update_profile(request: Request, update: ProfileUpdate):
     return profile
 
 def extract_text_from_docx(content: bytes) -> str:
-    """Extract text from DOCX file while preserving structure."""
+    """Extract text from DOCX file while preserving structure and formatting."""
     try:
         doc = Document(io.BytesIO(content))
         lines = []
@@ -733,15 +733,29 @@ def extract_text_from_docx(content: bytes) -> str:
         for para in doc.paragraphs:
             text = para.text.strip()
             if text:
-                # Preserve formatting hints
+                # Check for bullet points or list items
                 if para.style and para.style.name:
                     style = para.style.name.lower()
                     if 'heading' in style or 'title' in style:
-                        lines.append(f"\n{text.upper()}\n{'=' * len(text)}")
+                        # Add spacing before headings
+                        if lines:
+                            lines.append('')
+                        lines.append(text.upper())
+                        lines.append('')
+                    elif 'list' in style or 'bullet' in style:
+                        lines.append(f"• {text}")
                     else:
                         lines.append(text)
                 else:
-                    lines.append(text)
+                    # Check if paragraph has bullet formatting
+                    if para._element.pPr is not None:
+                        numPr = para._element.pPr.numPr
+                        if numPr is not None:
+                            lines.append(f"• {text}")
+                        else:
+                            lines.append(text)
+                    else:
+                        lines.append(text)
         
         # Also extract text from tables
         for table in doc.tables:
