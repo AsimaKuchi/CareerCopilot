@@ -408,7 +408,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+            <Link to="/support" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</Link>
           </div>
         </div>
       </footer>
