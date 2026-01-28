@@ -740,11 +740,14 @@ async def get_profile(request: Request):
 
 @api_router.put("/profile")
 async def update_profile(request: Request, update: ProfileUpdate):
-    """Update user profile."""
+    """Update user profile with encryption for sensitive fields."""
     user = await get_current_user(request)
     
     update_data = {k: v for k, v in update.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Encrypt sensitive fields before storing
+    update_data = encrypt_sensitive_data(update_data)
     
     await db.user_profiles.update_one(
         {"user_id": user.user_id},
@@ -756,6 +759,9 @@ async def update_profile(request: Request, update: ProfileUpdate):
         {"user_id": user.user_id},
         {"_id": 0}
     )
+    
+    # Decrypt before returning
+    profile = decrypt_sensitive_data(profile)
     
     return profile
 
