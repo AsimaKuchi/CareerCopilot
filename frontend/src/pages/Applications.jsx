@@ -1311,7 +1311,7 @@ export default function Applications({ user }) {
           </div>
 
           <div className="mt-4 text-center text-muted-foreground text-sm">
-            Click "Download .docx" to save directly to your computer with formatting preserved
+            Click &quot;Download .docx&quot; to save directly to your computer with formatting preserved
           </div>
         </DialogContent>
       </Dialog>
