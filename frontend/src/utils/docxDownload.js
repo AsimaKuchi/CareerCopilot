@@ -10,15 +10,12 @@ const safeFilename = (name) => {
 };
 
 export async function downloadDocxFromText(text, filename) {
-  console.log("[downloadDocxFromText] Starting download...", { textLength: text?.length, filename });
-  
   if (!text) {
     console.error("[downloadDocxFromText] No text provided");
     return;
   }
 
   try {
-    console.log("[downloadDocxFromText] Creating paragraphs...");
     const paragraphs = text
       .split(/\n\s*\n/)
       .map(
@@ -35,21 +32,13 @@ export async function downloadDocxFromText(text, filename) {
           })
       );
 
-    console.log("[downloadDocxFromText] Creating document with", paragraphs.length, "paragraphs");
     const doc = new Document({
       sections: [{ children: paragraphs }],
     });
 
-    console.log("[downloadDocxFromText] Packing to blob...");
     const blob = await Packer.toBlob(doc);
-    console.log("[downloadDocxFromText] Blob created, size:", blob.size);
-
-    const safeName = safeFilename(filename);
-    console.log("[downloadDocxFromText] Calling saveAs with filename:", safeName);
-    saveAs(blob, safeName);
-    console.log("[downloadDocxFromText] saveAs called successfully");
+    saveAs(blob, safeFilename(filename));
   } catch (error) {
     console.error("[downloadDocxFromText] Error:", error);
-    console.error("[downloadDocxFromText] Error stack:", error.stack);
   }
 }
