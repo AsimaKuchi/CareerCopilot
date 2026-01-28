@@ -33,16 +33,16 @@ Build a website that helps users find jobs best suited for them based on what in
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (January 25, 2025)
+## What's Been Implemented (January 28, 2025)
 
 ### MVP Features ✅
 - **Landing Page**: Hero section, features showcase, CTAs with light theme
 - **Google Auth**: Full OAuth flow with session management
 - **Dashboard**: 
   - Stats cards, quick actions, profile completion guide
-  - **NEW (Jan 25)**: "Your Saved Jobs" section showing jobs from last search
-  - **NEW (Jan 25)**: "NEW" star badge on jobs not seen before
-  - **NEW (Jan 25)**: "Find New Jobs" button to trigger fresh search
+  - "Your Saved Jobs" section showing jobs from last search
+  - "NEW" star badge on jobs not seen before
+  - "Find New Jobs" button to trigger fresh search
 - **Profile Page**: 
   - Resume upload (PDF, DOCX, TXT)
   - Skills management
@@ -53,7 +53,7 @@ Build a website that helps users find jobs best suited for them based on what in
   - Seniority Level (entry, junior, mid, senior, lead, manager, director, executive)
 - **Job Search**: 
   - Real-time search via JSearch API
-  - **NEW**: Detailed match evaluation with:
+  - Detailed match evaluation with:
     - Match score (0-100%)
     - Match recommendation (strong_match, good_match, review, weak_match, skip)
     - Strengths list
@@ -64,9 +64,12 @@ Build a website that helps users find jobs best suited for them based on what in
   - Grayed out "skip" recommended jobs with disabled apply button
 - **Applications**: Create, approve, reject, delete with status tracking
 - **AI Features**:
-  - Resume ATS optimization (GPT-5.2)
+  - Resume ATS optimization (GPT-5.2) - **NEW (Jan 28): One-page constraint enforced**
   - Cover letter generation (GPT-5.2)
   - Interview prep materials (GPT-5.2)
+- **Document Handling**:
+  - "View & Copy" modal for optimized resume/cover letter (workaround for download issues)
+  - Direct .docx download is non-functional (browser security blocks)
 
 ### Backend API Endpoints
 - `POST /api/auth/session` - Exchange session_id for session_token
