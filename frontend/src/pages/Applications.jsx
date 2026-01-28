@@ -1342,6 +1342,126 @@ export default function Applications({ user }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Auto-Fill Data Modal */}
+      <Dialog open={!!autoFillData} onOpenChange={() => setAutoFillData(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-indigo-400">
+              Auto-Fill Data - {autoFillData?.company}
+            </DialogTitle>
+            <DialogDescription>
+              Copy each field to fill your application. Click the copy button next to each field.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex gap-2 mb-4">
+            <Button
+              onClick={() => {
+                if (autoFillData?.applyLink) {
+                  window.open(autoFillData.applyLink, '_blank');
+                }
+              }}
+              className="bg-indigo-500 hover:bg-indigo-600"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Open Application
+            </Button>
+          </div>
+
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-3">
+              {autoFillData?.data && Object.entries(autoFillData.data)
+                .filter(([key, value]) => key !== 'resume_text' && key !== 'cover_letter')
+                .map(([key, value]) => (
+                  <div 
+                    key={key} 
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      value ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 border-white/10 opacity-50'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                        {key.replace(/_/g, ' ')}
+                      </div>
+                      <div className={`text-sm truncate ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
+                        {value || 'Not provided'}
+                      </div>
+                    </div>
+                    {value && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(value, key)}
+                        className="ml-2 flex-shrink-0"
+                      >
+                        {copiedField === key ? (
+                          <CheckCheck className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              
+              {/* Resume and Cover Letter sections */}
+              {autoFillData?.data?.resume_text && (
+                <div className="mt-4 p-3 rounded-lg border bg-emerald-500/10 border-emerald-500/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide">Resume</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(autoFillData.data.resume_text, 'resume')}
+                    >
+                      {copiedField === 'resume' ? (
+                        <><CheckCheck className="w-4 h-4 text-emerald-400 mr-1" /> Copied</>
+                      ) : (
+                        <><Copy className="w-4 h-4 mr-1" /> Copy Resume</>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {autoFillData.data.resume_text.length} characters ready to paste
+                  </div>
+                </div>
+              )}
+              
+              {autoFillData?.data?.cover_letter && (
+                <div className="p-3 rounded-lg border bg-indigo-500/10 border-indigo-500/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide">Cover Letter</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(autoFillData.data.cover_letter, 'cover_letter')}
+                    >
+                      {copiedField === 'cover_letter' ? (
+                        <><CheckCheck className="w-4 h-4 text-emerald-400 mr-1" /> Copied</>
+                      ) : (
+                        <><Copy className="w-4 h-4 mr-1" /> Copy Cover Letter</>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {autoFillData.data.cover_letter.length} characters ready to paste
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="mt-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-amber-200">
+                <strong>Tip:</strong> Open the application link, then click each copy button and paste into the corresponding field. Review all information before submitting.
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
