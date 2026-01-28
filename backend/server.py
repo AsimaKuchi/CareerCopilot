@@ -3753,7 +3753,7 @@ async def download_resume_docx(request: Request, application_id: str):
     
     # Return 302 redirect to the static file URL
     # The /downloads path is mounted as static files
-    static_url = f"/downloads/{filename}"
+    static_url = f"/api/static-downloads/{filename}"
     return RedirectResponse(url=static_url, status_code=302)
 
 @api_router.get("/applications/{application_id}/download/cover-letter")
@@ -3795,7 +3795,7 @@ async def download_cover_letter_docx(request: Request, application_id: str):
     
     # Return 302 redirect to the static file URL
     # The /downloads path is mounted as static files
-    static_url = f"/downloads/{filename}"
+    static_url = f"/api/static-downloads/{filename}"
     return RedirectResponse(url=static_url, status_code=302)
 
 @api_router.get("/applications/{application_id}/autofill-script")
