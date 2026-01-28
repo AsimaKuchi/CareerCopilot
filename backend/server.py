@@ -4283,7 +4283,7 @@ app.add_middleware(
 scheduler = AsyncIOScheduler()
 
 async def scheduled_job_ingestion():
-    """Background task to refresh jobs every 6 hours."""
+    """Background task to refresh jobs every 2 hours."""
     logger.info("🔄 Starting scheduled job ingestion...")
     try:
         result = await ingest_all_jobs()
