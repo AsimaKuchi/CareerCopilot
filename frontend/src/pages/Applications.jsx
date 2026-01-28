@@ -1259,22 +1259,30 @@ export default function Applications({ user }) {
               {viewDocument?.type === 'resume' ? 'Optimized Resume' : 'Cover Letter'} - {viewDocument?.company}
             </DialogTitle>
             <DialogDescription>
-              Copy the text below and paste into Word, Google Docs, or any text editor
+              Download as Word document or copy the text below
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-4 flex-wrap">
             <Button
-              onClick={copyDocument}
+              onClick={() => downloadDocument(viewDocument?.content, viewDocument?.company, viewDocument?.type)}
               className={viewDocument?.type === 'resume' 
                 ? 'bg-emerald-500 hover:bg-emerald-600' 
                 : 'bg-indigo-500 hover:bg-indigo-600'}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download .docx
+            </Button>
+            <Button
+              variant="outline"
+              onClick={copyDocument}
+              className="border-white/20"
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy All Text
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => {
                 const textArea = document.getElementById('document-content');
                 if (textArea) {
