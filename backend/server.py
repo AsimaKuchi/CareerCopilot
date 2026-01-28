@@ -25,6 +25,9 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 from docx import Document
 from PyPDF2 import PdfReader
 
+# Encryption for sensitive data
+from encryption import encrypt_sensitive_data, decrypt_sensitive_data, encrypt_field
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
