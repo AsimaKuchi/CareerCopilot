@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -20,6 +20,7 @@ import asyncio
 import re
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeout
+import resend
 
 # Document parsing imports
 from docx import Document
@@ -30,6 +31,11 @@ from encryption import encrypt_sensitive_data, decrypt_sensitive_data, encrypt_f
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Resend configuration
+resend.api_key = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'Fuzail.abukhari@gmail.com')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
