@@ -1515,8 +1515,8 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         await db.user_profiles.update_one(
             {"user_id": user.user_id},
             {"$set": {
-                "resume_text": resume_text,
-                "resume_raw": raw_content_b64,
+                "resume_text": encrypt_field(resume_text),
+                "resume_raw": encrypt_field(raw_content_b64),
                 "resume_filename": file.filename,
                 "resume_format": resume_format,
                 "updated_at": datetime.now(timezone.utc).isoformat()
@@ -1524,12 +1524,13 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
             upsert=True
         )
         
-        logger.info(f"Resume uploaded for user {user.user_id}: {file.filename} (format: {resume_format})")
+        logger.info(f"Resume uploaded for user {user.user_id}: {file.filename} (format: {resume_format}, encrypted: yes)")
         return {
-            "message": "Resume uploaded successfully", 
+            "message": "Resume uploaded and encrypted successfully", 
             "filename": file.filename,
             "format": resume_format,
-            "text_extracted": len(resume_text) > 0
+            "text_extracted": len(resume_text) > 0,
+            "encrypted": True
         }
     
     except HTTPException:
