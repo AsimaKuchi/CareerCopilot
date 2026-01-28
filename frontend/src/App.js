@@ -9,6 +9,7 @@ import Profile from "@/pages/Profile";
 import JobSearch from "@/pages/JobSearch";
 import Applications from "@/pages/Applications";
 import InterviewPrep from "@/pages/InterviewPrep";
+import Support from "@/pages/Support";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
