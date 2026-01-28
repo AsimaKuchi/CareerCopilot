@@ -1229,6 +1229,10 @@ async def search_greenhouse(request: Request):
             if job.get("job_id") in applied_job_ids:
                 continue
             
+            # Skip non-English job postings
+            if not is_english_job(job.get("title", "")):
+                continue
+            
             job_title = job.get("title", "").lower()
             job_company = job.get("company", "").lower()
             job_dept = job.get("department", "").lower()
