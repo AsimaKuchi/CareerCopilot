@@ -69,8 +69,16 @@ ASHBY_COMPANIES = []
 JOB_CACHE_TTL_MINUTES = 30  # Cache jobs for 30 minutes
 PARALLEL_BATCH_SIZE = 20    # Fetch 20 companies in parallel
 
+# Static downloads directory - files served directly by FastAPI static mount
+STATIC_DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "static_downloads")
+os.makedirs(STATIC_DOWNLOADS_DIR, exist_ok=True)
+
 # Create the main app
 app = FastAPI()
+
+# Mount static downloads directory - files here are served directly (not through API)
+from fastapi.staticfiles import StaticFiles
+app.mount("/downloads", StaticFiles(directory=STATIC_DOWNLOADS_DIR), name="static_downloads")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
