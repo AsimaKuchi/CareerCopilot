@@ -68,8 +68,9 @@ Build a website that helps users find jobs best suited for them based on what in
   - Cover letter generation (GPT-5.2)
   - Interview prep materials (GPT-5.2)
 - **Document Handling**:
-  - "View & Copy" modal for optimized resume/cover letter (workaround for download issues)
-  - Direct .docx download is non-functional (browser security blocks)
+  - **NEW (Jan 28)**: "Download .docx" button in View modal - client-side generation with formatting preserved
+  - "View & Copy" modal for optimized resume/cover letter
+  - Download preserves headings (bold), bullet points (indented), and proper spacing
 
 ### Backend API Endpoints
 - `POST /api/auth/session` - Exchange session_id for session_token
