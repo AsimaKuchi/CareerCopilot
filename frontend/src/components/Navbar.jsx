@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Home,
+  HelpCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
