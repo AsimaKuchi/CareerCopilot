@@ -207,7 +207,7 @@ export default function Support() {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Quick Response</h3>
                     <p className="text-sm text-muted-foreground">
-                      Most issues resolved same day
+                      Most issues resolved within 24-48 hours
                     </p>
                   </div>
                 </div>
