@@ -25,6 +25,8 @@ import {
   Linkedin,
   Clock,
   Pencil,
+  Mail,
+  GraduationCap,
 } from "lucide-react";
 import {
   Select,
