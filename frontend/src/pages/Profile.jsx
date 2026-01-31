@@ -398,19 +398,81 @@ export default function Profile({ user }) {
                 <Briefcase className="w-5 h-5 text-amber-400" />
                 Skills
               </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Click a skill to add years of experience (optional)
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {profile?.skills?.map((skill, i) => (
-                  <Badge
-                    key={i}
-                    variant="secondary"
-                    className="bg-white/5 hover:bg-white/10 px-3 py-1 cursor-pointer group"
-                    onClick={() => removeSkill(i)}
+                  <Popover 
+                    key={i} 
+                    open={editingSkillIndex === i}
+                    onOpenChange={(open) => setEditingSkillIndex(open ? i : null)}
                   >
-                    {skill}
-                    <X className="w-3 h-3 ml-2 opacity-50 group-hover:opacity-100" />
-                  </Badge>
+                    <PopoverTrigger asChild>
+                      <Badge
+                        variant="secondary"
+                        className={`px-3 py-1.5 cursor-pointer group transition-all ${
+                          getSkillYears(skill) 
+                            ? "bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30" 
+                            : "bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          {getSkillName(skill)}
+                          {getSkillYears(skill) && (
+                            <span className="text-amber-400 text-xs font-normal">
+                              · {getSkillYears(skill)} yrs
+                            </span>
+                          )}
+                          {!getSkillYears(skill) && (
+                            <Pencil className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-50" />
+                          )}
+                        </span>
+                      </Badge>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-3" align="start">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{getSkillName(skill)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => {
+                              removeSkill(i);
+                              setEditingSkillIndex(null);
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Years of experience (optional)
+                          </Label>
+                          <Select
+                            value={getSkillYears(skill) || ""}
+                            onValueChange={(value) => updateSkillYears(i, value)}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select years" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Not specified</SelectItem>
+                              {yearsOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 ))}
               </div>
               <div className="flex gap-2">
