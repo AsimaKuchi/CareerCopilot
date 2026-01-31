@@ -124,6 +124,72 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ========================
+# SALARY PARSING HELPER
+# ========================
+
+def parse_salary_from_description(description: str) -> Optional[str]:
+    """
+    Parse salary information from job description text.
+    Returns a formatted salary string or None if not found.
+    Does NOT hallucinate values - only returns what's explicitly stated.
+    """
+    if not description:
+        return None
+    
+    text = description.lower()
+    
+    # Common salary patterns
+    patterns = [
+        # $XX,XXX - $XX,XXX or $XXk - $XXk
+        r'\$[\d,]+(?:k)?\s*[-–to]+\s*\$[\d,]+(?:k)?(?:\s*(?:per\s+)?(?:year|annual|yr|/yr|/year))?',
+        # $XX,XXX/year or $XXk/year
+        r'\$[\d,]+(?:k)?(?:\s*[-–]\s*\$[\d,]+(?:k)?)?\s*(?:per\s+)?(?:year|annual|annually|yr|/yr|/year)',
+        # $XX - $XX per hour
+        r'\$[\d,.]+\s*[-–to]+\s*\$[\d,.]+\s*(?:per\s+)?(?:hour|hr|/hr|/hour|hourly)',
+        # Salary: $XX,XXX
+        r'salary[:\s]+\$[\d,]+(?:k)?(?:\s*[-–]\s*\$[\d,]+(?:k)?)?',
+        # Compensation: $XX,XXX
+        r'compensation[:\s]+\$[\d,]+(?:k)?(?:\s*[-–]\s*\$[\d,]+(?:k)?)?',
+        # XX,XXX - XX,XXX USD/CAD
+        r'[\d,]+\s*[-–to]+\s*[\d,]+\s*(?:usd|cad|gbp|eur)(?:\s*(?:per\s+)?(?:year|annual))?',
+        # Base salary: $XXX,XXX
+        r'base\s+salary[:\s]+\$[\d,]+(?:k)?(?:\s*[-–]\s*\$[\d,]+(?:k)?)?',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            salary_text = match.group(0).strip()
+            # Clean up and format
+            salary_text = salary_text.replace('salary:', '').replace('compensation:', '').replace('base salary:', '').strip()
+            # Capitalize currency codes
+            for code in ['usd', 'cad', 'gbp', 'eur']:
+                salary_text = re.sub(code, code.upper(), salary_text, flags=re.IGNORECASE)
+            return salary_text.strip()
+    
+    return None
+
+def format_salary_range(min_salary: Optional[int], max_salary: Optional[int], description: str = "") -> str:
+    """
+    Format salary range from structured data or parse from description.
+    Returns 'Salary not listed' if no salary information is available.
+    """
+    # First try structured salary fields
+    if min_salary and max_salary:
+        return f"${min_salary:,} - ${max_salary:,}/year"
+    elif min_salary:
+        return f"${min_salary:,}+/year"
+    elif max_salary:
+        return f"Up to ${max_salary:,}/year"
+    
+    # Try parsing from description
+    parsed = parse_salary_from_description(description)
+    if parsed:
+        return parsed
+    
+    return "Salary not listed"
+
+# ========================
 # PYDANTIC MODELS
 # ========================
 
