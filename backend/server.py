@@ -296,6 +296,8 @@ class ApplyRequest(BaseModel):
     location: Optional[str] = None
     job_description: str
     apply_link: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
     optimized_resume: Optional[str] = None
     cover_letter: Optional[str] = None
 
