@@ -454,14 +454,14 @@ export default function Profile({ user }) {
                             Years of experience (optional)
                           </Label>
                           <Select
-                            value={getSkillYears(skill) || ""}
-                            onValueChange={(value) => updateSkillYears(i, value)}
+                            value={getSkillYears(skill) || "none"}
+                            onValueChange={(value) => updateSkillYears(i, value === "none" ? null : value)}
                           >
                             <SelectTrigger className="h-9">
                               <SelectValue placeholder="Select years" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Not specified</SelectItem>
+                              <SelectItem value="none">Not specified</SelectItem>
                               {yearsOptions.map((opt) => (
                                 <SelectItem key={opt.value} value={opt.value}>
                                   {opt.label}
