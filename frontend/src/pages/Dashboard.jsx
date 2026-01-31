@@ -413,6 +413,14 @@ export default function Dashboard({ user }) {
                             <span className="truncate">{job.location}</span>
                           </div>
                         )}
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" />
+                          <span className={`truncate ${(job.job_min_salary || job.job_max_salary || job.salary_min || job.salary_max) ? "text-emerald-400" : ""}`}>
+                            {job.job_min_salary || job.salary_min
+                              ? `$${(job.job_min_salary || job.salary_min).toLocaleString()}${(job.job_max_salary || job.salary_max) ? ` - $${(job.job_max_salary || job.salary_max).toLocaleString()}` : '+'}`
+                              : "Salary not listed"}
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="mt-3 flex items-center justify-between">
