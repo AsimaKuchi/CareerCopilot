@@ -965,6 +965,9 @@ async def get_profile(request: Request):
     # Decrypt sensitive fields before returning
     profile = decrypt_sensitive_data(profile)
     
+    # Normalize skills to new format (migrates old string[] to object[])
+    profile["skills"] = normalize_skills(profile.get("skills", []))
+    
     return profile
 
 @api_router.put("/profile")
