@@ -2904,6 +2904,9 @@ async def create_application(request: Request, req: ApplyRequest):
         }
         match_score = calculate_match_score(job_mock, profile)
     
+    # Format salary range
+    salary_range = format_salary_range(req.salary_min, req.salary_max, req.job_description)
+    
     application = {
         "application_id": f"app_{uuid.uuid4().hex[:12]}",
         "user_id": user.user_id,
@@ -2912,6 +2915,7 @@ async def create_application(request: Request, req: ApplyRequest):
         "company": req.company,
         "location": req.location,
         "job_description": req.job_description,
+        "salary_range": salary_range,
         "apply_link": req.apply_link,
         "optimized_resume": req.optimized_resume,
         "cover_letter": req.cover_letter,
