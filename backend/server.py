@@ -247,7 +247,7 @@ class UserProfile(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProfileUpdate(BaseModel):
-    skills: Optional[List[str]] = None
+    skills: Optional[List[Any]] = None  # Can be List[str] or List[Skill dict]
     experience_years: Optional[int] = None
     job_titles: Optional[List[str]] = None
     preferred_locations: Optional[List[str]] = None
