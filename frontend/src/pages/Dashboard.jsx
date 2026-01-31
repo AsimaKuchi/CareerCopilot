@@ -21,6 +21,7 @@ import {
   MapPin,
   Building,
   ExternalLink,
+  DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 
