@@ -214,6 +214,8 @@ class JobApplication(BaseModel):
     job_title: str
     company: str
     location: Optional[str] = None
+    job_description: Optional[str] = None
+    salary_range: Optional[str] = None
     optimized_resume: Optional[str] = None
     cover_letter: Optional[str] = None
     status: str = "pending"  # pending, approved, applied, rejected
