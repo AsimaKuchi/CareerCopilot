@@ -46,6 +46,8 @@ import {
   CheckCheck,
   Rocket,
   Lightbulb,
+  DollarSign,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
