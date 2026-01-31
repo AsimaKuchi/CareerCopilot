@@ -698,6 +698,12 @@ export default function Applications({ user }) {
                                 {app.location}
                               </span>
                             )}
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4" />
+                              <span className={app.salary_range && app.salary_range !== "Salary not listed" ? "text-emerald-400" : "text-muted-foreground"}>
+                                {app.salary_range || "Salary not listed"}
+                              </span>
+                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -739,6 +745,56 @@ export default function Applications({ user }) {
                           </>
                         )}
                       </div>
+
+                      {/* View Job Details Toggle */}
+                      {app.job_description && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() =>
+                              setExpandedJobDetails(
+                                expandedJobDetails === app.application_id ? null : app.application_id
+                              )
+                            }
+                            className="flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                          >
+                            {expandedJobDetails === app.application_id ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                            <Info className="w-4 h-4" />
+                            {expandedJobDetails === app.application_id ? "Hide" : "View"} job details
+                          </button>
+
+                          {expandedJobDetails === app.application_id && (
+                            <div className="mt-4 p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                              {/* Salary Section */}
+                              <div className="mb-4 pb-3 border-b border-cyan-500/20">
+                                <h5 className="text-sm font-medium text-cyan-400 flex items-center gap-2 mb-2">
+                                  <DollarSign className="w-4 h-4" />
+                                  Salary
+                                </h5>
+                                <p className={`text-base font-semibold ${app.salary_range && app.salary_range !== "Salary not listed" ? "text-emerald-400" : "text-muted-foreground"}`}>
+                                  {app.salary_range || "Salary not listed"}
+                                </p>
+                              </div>
+                              
+                              {/* Job Description Section */}
+                              <div>
+                                <h5 className="text-sm font-medium text-cyan-400 flex items-center gap-2 mb-2">
+                                  <FileText className="w-4 h-4" />
+                                  Job Description
+                                </h5>
+                                <div className="max-h-80 overflow-y-auto pr-2 scrollbar-thin">
+                                  <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                    {app.job_description}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {(app.optimized_resume || app.cover_letter) && (
                         <div className="mt-3">
