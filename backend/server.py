@@ -303,8 +303,10 @@ class ProfileUpdate(BaseModel):
     industries: Optional[List[str]] = None
     open_to_any_industry: Optional[bool] = None
     seniority_level: Optional[str] = None
+    email: Optional[str] = None
     phone_number: Optional[str] = None
     linkedin_url: Optional[str] = None
+    highest_education: Optional[str] = None
     # New auto-application fields
     current_company: Optional[str] = None
     willing_to_relocate: Optional[str] = None
