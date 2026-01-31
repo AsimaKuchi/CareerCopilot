@@ -650,6 +650,24 @@ export default function Profile({ user }) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
+                <Label className="text-foreground mb-2 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-400" />
+                  Email Address
+                  <span className="text-red-400 ml-1">*</span>
+                </Label>
+                <Input
+                  data-testid="email-input"
+                  type="email"
+                  placeholder="e.g., john.doe@email.com"
+                  value={profile?.email || ""}
+                  onChange={(e) => updateProfile({ email: e.target.value })}
+                  className="bg-white/5 border-white/10"
+                />
+                <p className="text-sm text-gray-400 mt-1">
+                  Your preferred contact email for job applications.
+                </p>
+              </div>
+              <div>
                 <Label className="text-foreground mb-2 block">
                   Phone Number
                   <span className="text-red-400 ml-1">*</span>
@@ -713,6 +731,44 @@ export default function Profile({ user }) {
                   onChange={(e) => updateProfile({ portfolio_url: e.target.value })}
                   className="bg-white/5 border-white/10"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Education Card */}
+          <Card className="glass-light" data-testid="education-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-purple-400" />
+                Education
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-foreground mb-2 block">
+                  Highest Level of Education
+                </Label>
+                <Select
+                  value={profile?.highest_education || ""}
+                  onValueChange={(value) => updateProfile({ highest_education: value })}
+                >
+                  <SelectTrigger data-testid="education-select" className="bg-white/5 border-white/10">
+                    <SelectValue placeholder="Select your highest education level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high_school">High School Diploma / GED</SelectItem>
+                    <SelectItem value="some_college">Some College (No Degree)</SelectItem>
+                    <SelectItem value="associate">Associate Degree</SelectItem>
+                    <SelectItem value="bachelor">Bachelor&apos;s Degree</SelectItem>
+                    <SelectItem value="master">Master&apos;s Degree</SelectItem>
+                    <SelectItem value="doctorate">Doctorate (PhD, MD, JD, etc.)</SelectItem>
+                    <SelectItem value="professional">Professional Certification</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-400 mt-1">
+                  Used for job applications that require education information.
+                </p>
               </div>
             </CardContent>
           </Card>
