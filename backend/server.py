@@ -2026,7 +2026,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     resume_text = (profile.get("resume_text") or "").lower()
     has_resume = len(resume_text) > 100
     target_roles = [r.lower() for r in profile.get("job_titles", [])]
-    profile_skills = [s.lower() for s in profile.get("skills", [])]
+    profile_skills = get_skill_names(profile.get("skills", []))  # Use helper for backwards compatibility
     user_years = profile.get("experience_years", 0)
     user_seniority = profile.get("seniority_level", "").lower()
     
