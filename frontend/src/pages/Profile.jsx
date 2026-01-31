@@ -23,6 +23,8 @@ import {
   Building2,
   Phone,
   Linkedin,
+  Clock,
+  Pencil,
 } from "lucide-react";
 import {
   Select,
@@ -31,6 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
 
 export default function Profile({ user }) {
