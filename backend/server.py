@@ -267,8 +267,11 @@ class UserProfile(BaseModel):
     open_to_any_industry: bool = False
     seniority_level: Optional[str] = None  # entry, junior, mid, senior, lead, manager, director, executive
     # Contact information for auto-fill
+    email: Optional[str] = None  # User's preferred contact email
     phone_number: Optional[str] = None
     linkedin_url: Optional[str] = None
+    # Education
+    highest_education: Optional[str] = None  # high_school, associate, bachelor, master, doctorate, other
     # Auto-application fields
     current_company: Optional[str] = None
     willing_to_relocate: Optional[str] = None  # yes, no, open_to_discussion
