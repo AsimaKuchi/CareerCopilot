@@ -201,13 +201,18 @@ class User(BaseModel):
     picture: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class Skill(BaseModel):
+    """Skill with optional years of experience."""
+    name: str
+    years: Optional[str] = None  # "<1", "1–2", "3–5", "5+"
+
 class UserProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
     user_id: str
     resume_text: Optional[str] = None
     resume_filename: Optional[str] = None
     resume_format: Optional[str] = None
-    skills: List[str] = []
+    skills: List[Any] = []  # Can be List[str] or List[Skill] for backwards compatibility
     experience_years: int = 0
     job_titles: List[str] = []
     preferred_locations: List[str] = []
