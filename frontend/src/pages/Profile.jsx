@@ -52,6 +52,14 @@ export default function Profile({ user }) {
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newIndustry, setNewIndustry] = useState("");
+  const [editingSkillIndex, setEditingSkillIndex] = useState(null);
+
+  const yearsOptions = [
+    { value: "<1", label: "<1 year" },
+    { value: "1–2", label: "1–2 years" },
+    { value: "3–5", label: "3–5 years" },
+    { value: "5+", label: "5+ years" },
+  ];
 
   useEffect(() => {
     fetchProfile();
