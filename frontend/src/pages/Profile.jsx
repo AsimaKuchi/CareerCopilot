@@ -194,7 +194,9 @@ export default function Profile({ user }) {
 
   const addSkill = () => {
     if (!newSkill.trim()) return;
-    const skills = [...(profile?.skills || []), newSkill.trim()];
+    // Add skill as object with name and optional years
+    const newSkillObj = { name: newSkill.trim(), years: null };
+    const skills = [...(profile?.skills || []), newSkillObj];
     updateProfile({ skills });
     setNewSkill("");
   };
@@ -202,6 +204,26 @@ export default function Profile({ user }) {
   const removeSkill = (index) => {
     const skills = (profile?.skills || []).filter((_, i) => i !== index);
     updateProfile({ skills });
+  };
+
+  const updateSkillYears = (index, years) => {
+    const skills = [...(profile?.skills || [])];
+    if (skills[index]) {
+      skills[index] = { ...skills[index], years: years || null };
+      updateProfile({ skills });
+    }
+    setEditingSkillIndex(null);
+  };
+
+  const getSkillName = (skill) => {
+    // Handle both old string format and new object format
+    if (typeof skill === "string") return skill;
+    return skill?.name || "";
+  };
+
+  const getSkillYears = (skill) => {
+    if (typeof skill === "string") return null;
+    return skill?.years || null;
   };
 
   const addTitle = () => {
