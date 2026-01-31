@@ -462,6 +462,8 @@ export default function JobSearch({ user }) {
           location: selectedJob.location,
           job_description: selectedJob.full_description || selectedJob.description,
           apply_link: selectedJob.apply_link || null,
+          salary_min: selectedJob.job_min_salary || selectedJob.salary_min || null,
+          salary_max: selectedJob.job_max_salary || selectedJob.salary_max || null,
           optimized_resume: optimizedResume || null,
           cover_letter: coverLetter || null,
         }),
