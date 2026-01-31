@@ -751,16 +751,14 @@ export default function JobSearch({ user }) {
                             <span>Remote</span>
                           </div>
                         )}
-                        {(job.salary_min || job.salary_max) && (
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="w-4 h-4" />
-                            <span>
-                              {job.salary_min && `$${job.salary_min.toLocaleString()}`}
-                              {job.salary_min && job.salary_max && ' - '}
-                              {job.salary_max && `$${job.salary_max.toLocaleString()}`}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          <span className={(job.salary_min || job.salary_max || job.job_min_salary || job.job_max_salary) ? "text-emerald-400" : ""}>
+                            {(job.salary_min || job.job_min_salary)
+                              ? `$${(job.salary_min || job.job_min_salary).toLocaleString()}${(job.salary_max || job.job_max_salary) ? ` - $${(job.salary_max || job.job_max_salary).toLocaleString()}` : '+'}`
+                              : "Salary not listed"}
+                          </span>
+                        </div>
                         {job.posted_at && (
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
