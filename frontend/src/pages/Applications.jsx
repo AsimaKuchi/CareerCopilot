@@ -68,6 +68,7 @@ export default function Applications({ user }) {
   const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [expandedApp, setExpandedApp] = useState(null);
+  const [expandedJobDetails, setExpandedJobDetails] = useState(null); // For job description expansion
   const [reviewApp, setReviewApp] = useState(null);
   const [submitApp, setSubmitApp] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
