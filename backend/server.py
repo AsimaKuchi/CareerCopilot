@@ -3055,8 +3055,10 @@ async def auto_fill_application(app_data: Dict, user_data: Dict, profile_data: D
     current_company = autofill_data.get("current_company", "") or profile_data.get("current_company", "")
     
     # Location fields (from normalized structured data)
+    address_street = profile_data.get("address_street", "")  # May be empty, kept for backwards compatibility
     address_city = autofill_data.get("city", "") or profile_data.get("address_city", "")
     address_state = autofill_data.get("state", "") or profile_data.get("address_state", "")
+    address_postal = profile_data.get("address_postal_code", "")  # May be empty, kept for backwards compatibility
     address_country = autofill_data.get("country", "") or profile_data.get("address_country", "")
     
     # Professional fields (use normalized enum values)
