@@ -4387,7 +4387,7 @@ async def get_autofill_script(request: Request, application_id: str):
 
 @api_router.get("/autofill/data")
 async def get_autofill_data_endpoint(request: Request, url: str = None):
-    """Get user data for bookmarklet auto-fill. Matches by job URL or returns latest approved application."""
+    """Get user data for bookmarklet auto-fill using v2 structured schema."""
     user = await get_current_user(request)
     
     # Get user info
@@ -4402,19 +4402,38 @@ async def get_autofill_data_endpoint(request: Request, url: str = None):
         {"_id": 0}
     )
     
-    # Parse name
+    # Decrypt sensitive data if encrypted
+    if profile:
+        profile = decrypt_sensitive_data(profile)
+    
+    # Get structured autofill data from v2 schema
+    autofill = get_autofill_data(profile) if profile else {}
+    
+    # Parse name from user doc if not in autofill
     full_name = user_doc.get("name", "") if user_doc else ""
     name_parts = full_name.split(" ", 1)
-    first_name = name_parts[0] if name_parts else ""
-    last_name = name_parts[1] if len(name_parts) > 1 else ""
-    email = user_doc.get("email", "") if user_doc else ""
-    phone = profile.get("phone", "") if profile else ""
-    linkedin = profile.get("linkedin", "") if profile else ""
+    first_name = autofill.get("firstName") or (name_parts[0] if name_parts else "")
+    last_name = autofill.get("lastName") or (name_parts[1] if len(name_parts) > 1 else "")
+    email = autofill.get("email") or (user_doc.get("email", "") if user_doc else "")
+    
+    # Use normalized values from structured schema
+    phone = autofill.get("phone") or ""  # E.164 format
+    linkedin = autofill.get("linkedinUrl") or ""
+    github = autofill.get("githubUrl") or ""
+    portfolio = autofill.get("portfolioUrl") or ""
+    
+    # Location fields
+    city = autofill.get("city") or ""
+    state = autofill.get("state") or ""
+    country = autofill.get("country") or ""
+    
+    # Work authorization (normalized)
+    work_authorization = autofill.get("workAuthorizationStatus") or ""
+    requires_sponsorship = autofill.get("requiresSponsorship")
     
     # Try to find matching application by URL
     app_doc = None
     if url:
-        # Try to match by apply_link
         app_doc = await db.applications.find_one(
             {"user_id": user.user_id, "apply_link": {"$regex": url.split("?")[0], "$options": "i"}},
             {"_id": 0}
@@ -4456,7 +4475,20 @@ async def get_autofill_data_endpoint(request: Request, url: str = None):
         "lastName": last_name,
         "email": email,
         "phone": phone,
+        "phoneFormatted": autofill.get("phoneFormatted") or "",
         "linkedin": linkedin,
+        "github": github,
+        "portfolio": portfolio,
+        "city": city,
+        "state": state,
+        "country": country,
+        "workAuthorization": work_authorization,
+        "requiresSponsorship": requires_sponsorship,
+        "education": autofill.get("education") or "",
+        "seniorityLevel": autofill.get("seniorityLevel") or "",
+        "willingToRelocate": autofill.get("willingToRelocate") or "",
+        "noticePeriod": autofill.get("noticePeriod") or "",
+        "skills": autofill.get("skills") or [],
         "resume": resume_text,
         "coverLetter": cover_letter,
         "jobTitle": job_title,
