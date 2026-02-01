@@ -35,6 +35,7 @@ from profile_schema import (
     get_autofill_data,
     get_normalized_value,
     normalize_skills,
+    get_skill_names,
 )
 
 ROOT_DIR = Path(__file__).parent
