@@ -6,7 +6,7 @@ import json
 def test_broader_analyst_search():
     """Test broader analyst searches in Toronto to see if we can find more jobs"""
     
-    base_url = "https://careerfit-30.preview.emergentagent.com"
+    base_url = "https://quality-jobs.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"

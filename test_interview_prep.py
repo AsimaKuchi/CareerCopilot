@@ -5,7 +5,7 @@ import json
 
 def test_interview_prep():
     """Test interview prep endpoint specifically"""
-    base_url = "https://careerfit-30.preview.emergentagent.com"
+    base_url = "https://quality-jobs.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     print("📋 TESTING INTERVIEW PREP GENERATION")

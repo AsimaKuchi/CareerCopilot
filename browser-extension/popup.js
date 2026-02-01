@@ -1,6 +1,6 @@
 // JobMatch AI Browser Extension - Popup Script
 
-const API_BASE = 'https://careerfit-30.preview.emergentagent.com/api';
+const API_BASE = 'https://quality-jobs.preview.emergentagent.com/api';
 
 // Check connection status and load application data
 async function init() {
@@ -54,7 +54,7 @@ async function init() {
       autofillBtn.textContent = 'Open JobMatch AI';
       autofillBtn.disabled = false;
       autofillBtn.onclick = () => {
-        chrome.tabs.create({ url: 'https://careerfit-30.preview.emergentagent.com' });
+        chrome.tabs.create({ url: 'https://quality-jobs.preview.emergentagent.com' });
       };
     } else {
       throw new Error('Failed to fetch data');
@@ -68,7 +68,7 @@ async function init() {
 
   // Settings button
   settingsBtn.onclick = () => {
-    chrome.tabs.create({ url: 'https://careerfit-30.preview.emergentagent.com/profile' });
+    chrome.tabs.create({ url: 'https://quality-jobs.preview.emergentagent.com/profile' });
   };
 }
 

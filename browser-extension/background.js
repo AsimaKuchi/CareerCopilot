@@ -6,7 +6,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     console.log('JobMatch AI Extension installed');
     // Open welcome page
     chrome.tabs.create({
-      url: 'https://careerfit-30.preview.emergentagent.com?extension=installed'
+      url: 'https://quality-jobs.preview.emergentagent.com?extension=installed'
     });
   }
 });
@@ -15,7 +15,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'openJobMatch') {
     chrome.tabs.create({
-      url: 'https://careerfit-30.preview.emergentagent.com'
+      url: 'https://quality-jobs.preview.emergentagent.com'
     });
   }
   return true;
