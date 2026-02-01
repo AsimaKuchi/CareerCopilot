@@ -4385,7 +4385,7 @@ async def get_autofill_script(request: Request, application_id: str):
     }
 
 @api_router.get("/autofill/data")
-async def get_autofill_data(request: Request, url: str = None):
+async def get_autofill_data_endpoint(request: Request, url: str = None):
     """Get user data for bookmarklet auto-fill. Matches by job URL or returns latest approved application."""
     user = await get_current_user(request)
     
