@@ -1,0 +1,20 @@
+{
+  "name": "jobmatch-autofill-bot",
+  "version": "1.0.0",
+  "description": "Playwright-based auto-fill bot for job applications",
+  "main": "src/index.js",
+  "scripts": {
+    "autofill": "node src/index.js",
+    "test": "node src/index.js --help"
+  },
+  "keywords": ["playwright", "autofill", "jobs", "greenhouse", "lever", "ashby"],
+  "author": "JobMatch AI",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^2.7.0"
+  }
+}
