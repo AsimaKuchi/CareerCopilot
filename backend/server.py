@@ -3044,6 +3044,169 @@ async def approve_application(request: Request, application_id: str):
 # Removed: POST /applications/{application_id}/auto-fill
 # Removed: POST /applications/{application_id}/auto-submit
 
+@api_router.get("/applications/{application_id}/autofill-payload")
+async def get_autofill_payload(request: Request, application_id: str):
+    """
+    Get complete autofill payload for a specific application.
+    Returns application metadata, structured profile v2, and documents.
+    Used by external auto-fill bots (Claude + Playwright).
+    """
+    user = await get_current_user(request)
+    
+    # Get application
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Get user info
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Get profile and decrypt
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if profile:
+        profile = decrypt_sensitive_data(profile)
+        # Ensure v2 migration
+        if profile.get("profile_version") != 2:
+            profile = migrate_profile_to_v2(profile)
+    else:
+        profile = {}
+    
+    # Determine ATS type from apply_link
+    apply_link = app_doc.get("apply_link", "")
+    ats_type = "unknown"
+    if "greenhouse.io" in apply_link.lower():
+        ats_type = "greenhouse"
+    elif "lever.co" in apply_link.lower() or "jobs.lever" in apply_link.lower():
+        ats_type = "lever"
+    elif "ashbyhq.com" in apply_link.lower():
+        ats_type = "ashby"
+    elif "workday" in apply_link.lower():
+        ats_type = "workday"
+    elif "icims" in apply_link.lower():
+        ats_type = "icims"
+    elif "taleo" in apply_link.lower():
+        ats_type = "taleo"
+    elif "smartrecruiters" in apply_link.lower():
+        ats_type = "smartrecruiters"
+    
+    # Parse user name
+    full_name = user_doc.get("name", "") if user_doc else ""
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    
+    # Get autofill data from v2 schema
+    autofill_data = get_autofill_data(profile) if profile else {}
+    
+    # Build response
+    response = {
+        "application": {
+            "application_id": app_doc.get("application_id"),
+            "job_id": app_doc.get("job_id"),
+            "job_title": app_doc.get("job_title"),
+            "company": app_doc.get("company"),
+            "location": app_doc.get("location"),
+            "apply_url": apply_link,
+            "ats_type": ats_type,
+            "status": app_doc.get("status"),
+            "match_score": app_doc.get("match_score"),
+            "created_at": app_doc.get("created_at"),
+        },
+        "profile": {
+            # Identity
+            "first_name": first_name,
+            "last_name": last_name,
+            "full_name": full_name,
+            "email": autofill_data.get("email") or user_doc.get("email", "") if user_doc else "",
+            
+            # Contact - normalized
+            "phone": autofill_data.get("phone"),  # E.164 format
+            "phone_formatted": autofill_data.get("phoneFormatted"),
+            "phone_country_code": autofill_data.get("phoneCountryCode"),
+            
+            # Location - normalized
+            "city": autofill_data.get("city"),
+            "state": autofill_data.get("state"),
+            "country": autofill_data.get("country"),
+            "country_full": autofill_data.get("countryFull"),
+            
+            # Links
+            "linkedin_url": autofill_data.get("linkedinUrl"),
+            "github_url": autofill_data.get("githubUrl"),
+            "portfolio_url": autofill_data.get("portfolioUrl"),
+            "website_url": autofill_data.get("websiteUrl"),
+            
+            # Work Authorization - normalized with sponsorship flag
+            "work_authorization": {
+                "status": autofill_data.get("workAuthorizationStatus"),
+                "country": autofill_data.get("workAuthorizationCountry"),
+                "requires_sponsorship": autofill_data.get("requiresSponsorship"),
+                "expiry_date": autofill_data.get("workAuthorizationExpiry"),
+                "raw": profile.get("work_authorization"),
+            },
+            
+            # Professional
+            "seniority_level": autofill_data.get("seniorityLevel"),
+            "education": autofill_data.get("education"),
+            "experience_years": autofill_data.get("experienceYears") or profile.get("experience_years", 0),
+            "current_company": autofill_data.get("currentCompany") or profile.get("current_company"),
+            
+            # Preferences
+            "desired_job_titles": autofill_data.get("desiredJobTitles", []),
+            "preferred_locations": autofill_data.get("preferredLocations", []),
+            "work_arrangement": autofill_data.get("workArrangement"),
+            "job_types": autofill_data.get("jobTypes", []),
+            "willing_to_relocate": autofill_data.get("willingToRelocate"),
+            "notice_period": autofill_data.get("noticePeriod"),
+            "availability_date": autofill_data.get("availabilityDate"),
+            
+            # Compensation
+            "salary_min": autofill_data.get("salaryMin"),
+            "salary_max": autofill_data.get("salaryMax"),
+            "salary_currency": autofill_data.get("salaryCurrency", "USD"),
+            
+            # Skills - simple list for matching
+            "skills": autofill_data.get("skills", []),
+            # Skills with years - full structured data
+            "skills_with_years": autofill_data.get("skillsWithYears", []),
+            
+            # Industries
+            "target_industries": autofill_data.get("targetIndustries", []),
+            "open_to_any_industry": autofill_data.get("openToAnyIndustry", False),
+            
+            # Application defaults
+            "referral_source": autofill_data.get("referralSource", "LinkedIn"),
+            
+            # Raw structured data for advanced use cases
+            "structured": profile.get("structured", {}),
+        },
+        "documents": {
+            "resume": {
+                "text": app_doc.get("optimized_resume") or profile.get("resume_text") or "",
+                "is_optimized": bool(app_doc.get("optimized_resume")),
+                "file_available": bool(profile.get("resume_filename")),
+                "original_filename": profile.get("resume_filename"),
+            },
+            "cover_letter": {
+                "text": app_doc.get("cover_letter") or "",
+                "file_available": bool(app_doc.get("cover_letter")),
+            }
+        }
+    }
+    
+    return response
+
 @api_router.put("/applications/{application_id}/reject")
 async def reject_application(request: Request, application_id: str):
     """Reject/skip an application."""
