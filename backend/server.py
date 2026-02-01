@@ -3082,23 +3082,55 @@ async def get_autofill_payload(request: Request, application_id: str):
     else:
         profile = {}
     
-    # Determine ATS type from apply_link
+    # Determine ATS type from apply_link with confidence scoring
     apply_link = app_doc.get("apply_link", "")
+    apply_link_lower = apply_link.lower()
     ats_type = "unknown"
-    if "greenhouse.io" in apply_link.lower():
+    ats_confidence = "none"
+    ats_detected_from = None
+    
+    # High confidence: domain-based detection
+    if "greenhouse.io" in apply_link_lower or "boards.greenhouse" in apply_link_lower:
         ats_type = "greenhouse"
-    elif "lever.co" in apply_link.lower() or "jobs.lever" in apply_link.lower():
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "lever.co" in apply_link_lower or "jobs.lever" in apply_link_lower:
         ats_type = "lever"
-    elif "ashbyhq.com" in apply_link.lower():
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "ashbyhq.com" in apply_link_lower or "jobs.ashby" in apply_link_lower:
         ats_type = "ashby"
-    elif "workday" in apply_link.lower():
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "myworkdayjobs.com" in apply_link_lower or "workday.com" in apply_link_lower:
         ats_type = "workday"
-    elif "icims" in apply_link.lower():
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "icims.com" in apply_link_lower:
         ats_type = "icims"
-    elif "taleo" in apply_link.lower():
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "taleo" in apply_link_lower:
         ats_type = "taleo"
-    elif "smartrecruiters" in apply_link.lower():
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "smartrecruiters.com" in apply_link_lower:
         ats_type = "smartrecruiters"
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "jobvite.com" in apply_link_lower:
+        ats_type = "jobvite"
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    elif "breezy.hr" in apply_link_lower:
+        ats_type = "breezy"
+        ats_confidence = "high"
+        ats_detected_from = "domain"
+    # Medium confidence: path-based detection
+    elif "/jobs/" in apply_link_lower or "/careers/" in apply_link_lower:
+        ats_type = "custom"
+        ats_confidence = "low"
+        ats_detected_from = "path_pattern"
     
     # Parse user name
     full_name = user_doc.get("name", "") if user_doc else ""
@@ -3109,8 +3141,98 @@ async def get_autofill_payload(request: Request, application_id: str):
     # Get autofill data from v2 schema
     autofill_data = get_autofill_data(profile) if profile else {}
     
+    # Build confirm_required list - fields that need user confirmation before submitting
+    confirm_required = []
+    
+    # Work authorization - always confirm (legal implications)
+    if autofill_data.get("workAuthorizationStatus"):
+        confirm_required.append({
+            "field": "work_authorization",
+            "reason": "Legal implications - verify authorization status is accurate",
+            "current_value": autofill_data.get("workAuthorizationStatus")
+        })
+    
+    # Salary - always confirm (negotiation implications)
+    if autofill_data.get("salaryMin") or autofill_data.get("salaryMax"):
+        confirm_required.append({
+            "field": "salary",
+            "reason": "Compensation expectations may vary by role",
+            "current_value": {
+                "min": autofill_data.get("salaryMin"),
+                "max": autofill_data.get("salaryMax"),
+                "currency": autofill_data.get("salaryCurrency", "USD")
+            }
+        })
+    
+    # Relocation - confirm if set
+    if autofill_data.get("willingToRelocate"):
+        confirm_required.append({
+            "field": "willing_to_relocate",
+            "reason": "Relocation preference may depend on specific role/location",
+            "current_value": autofill_data.get("willingToRelocate")
+        })
+    
+    # Notice period - confirm if set
+    if autofill_data.get("noticePeriod"):
+        confirm_required.append({
+            "field": "notice_period",
+            "reason": "Availability may have changed",
+            "current_value": autofill_data.get("noticePeriod")
+        })
+    
+    # Referral source - confirm (company-specific)
+    confirm_required.append({
+        "field": "referral_source",
+        "reason": "How you heard about this role may vary",
+        "current_value": autofill_data.get("referralSource", "LinkedIn")
+    })
+    
+    # Requires sponsorship - critical legal field
+    if autofill_data.get("requiresSponsorship") is not None:
+        confirm_required.append({
+            "field": "requires_sponsorship",
+            "reason": "Sponsorship requirement is a critical legal field",
+            "current_value": autofill_data.get("requiresSponsorship")
+        })
+    
+    # Document file URLs and metadata
+    # Resume file handling
+    resume_filename = profile.get("resume_filename")
+    resume_format = profile.get("resume_format", "").lower()
+    resume_file_url = None
+    resume_mime_type = None
+    
+    if resume_filename:
+        # Determine MIME type from format/filename
+        if resume_format == "pdf" or resume_filename.endswith(".pdf"):
+            resume_mime_type = "application/pdf"
+        elif resume_format == "docx" or resume_filename.endswith(".docx"):
+            resume_mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif resume_format == "doc" or resume_filename.endswith(".doc"):
+            resume_mime_type = "application/msword"
+        elif resume_format == "txt" or resume_filename.endswith(".txt"):
+            resume_mime_type = "text/plain"
+        else:
+            resume_mime_type = "application/octet-stream"
+        
+        # Generate file URL - for now, point to the prepare-download endpoint
+        # In production, this could be a signed S3/GCS URL
+        resume_file_url = f"/api/applications/{application_id}/prepare-download/resume"
+    
+    # Cover letter file handling (generated as .docx)
+    cover_letter_text = app_doc.get("cover_letter") or ""
+    cover_letter_file_url = None
+    cover_letter_mime_type = None
+    cover_letter_filename = None
+    
+    if cover_letter_text:
+        cover_letter_filename = f"cover_letter_{app_doc.get('company', 'company').replace(' ', '_').lower()}.docx"
+        cover_letter_mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        cover_letter_file_url = f"/api/applications/{application_id}/prepare-download/cover-letter"
+    
     # Build response
     response = {
+        "confirm_required": confirm_required,
         "application": {
             "application_id": app_doc.get("application_id"),
             "job_id": app_doc.get("job_id"),
@@ -3119,6 +3241,8 @@ async def get_autofill_payload(request: Request, application_id: str):
             "location": app_doc.get("location"),
             "apply_url": apply_link,
             "ats_type": ats_type,
+            "ats_confidence": ats_confidence,
+            "ats_detected_from": ats_detected_from,
             "status": app_doc.get("status"),
             "match_score": app_doc.get("match_score"),
             "created_at": app_doc.get("created_at"),
@@ -3195,12 +3319,17 @@ async def get_autofill_payload(request: Request, application_id: str):
             "resume": {
                 "text": app_doc.get("optimized_resume") or profile.get("resume_text") or "",
                 "is_optimized": bool(app_doc.get("optimized_resume")),
-                "file_available": bool(profile.get("resume_filename")),
-                "original_filename": profile.get("resume_filename"),
+                "file_available": bool(resume_filename),
+                "file_url": resume_file_url,
+                "file_name": resume_filename,
+                "mime_type": resume_mime_type,
             },
             "cover_letter": {
-                "text": app_doc.get("cover_letter") or "",
-                "file_available": bool(app_doc.get("cover_letter")),
+                "text": cover_letter_text,
+                "file_available": bool(cover_letter_text),
+                "file_url": cover_letter_file_url,
+                "file_name": cover_letter_filename,
+                "mime_type": cover_letter_mime_type,
             }
         }
     }
