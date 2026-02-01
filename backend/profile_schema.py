@@ -398,6 +398,26 @@ def normalize_skill(skill: Any) -> Dict:
         }
     return None
 
+def get_skill_names(skills: list) -> list:
+    """
+    Extract just the skill names from the skills list (works with both formats).
+    Used for backwards-compatible matching logic.
+    """
+    if not skills:
+        return []
+    
+    names = []
+    for skill in skills:
+        if isinstance(skill, str):
+            names.append(skill.lower())
+        elif isinstance(skill, dict):
+            name = skill.get("name", "") or skill.get("normalized", {}).get("name", "")
+            if name:
+                names.append(name.lower())
+    
+    return names
+
+
 def normalize_skills(skills: List) -> List[Dict]:
     """Normalize skills list to structured fields."""
     if not skills:
