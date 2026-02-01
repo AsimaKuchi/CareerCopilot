@@ -3060,6 +3060,8 @@ async def auto_fill_application(app_data: Dict, user_data: Dict, profile_data: D
     Use Playwright to auto-fill a job application form (Greenhouse/Lever).
     Opens a visible browser for user to review and submit manually.
     Returns dict with 'success', 'message', 'fields_filled', and optional 'error' keys.
+    
+    Uses structured/normalized profile data for reliable form filling.
     """
     apply_link = app_data.get("apply_link", "")
     
@@ -3074,33 +3076,36 @@ async def auto_fill_application(app_data: Dict, user_data: Dict, profile_data: D
     else:
         return {"success": False, "message": "Unsupported application platform. Only Greenhouse, Lever, and Ashby are supported.", "error": "UNSUPPORTED_PLATFORM"}
     
-    # Parse user data
+    # Get auto-fill data from structured schema
+    # This uses normalized values when available, falls back to raw
+    autofill_data = get_autofill_data(profile_data)
+    
+    # Parse user data (from Google auth)
     full_name = user_data.get("name", "")
     name_parts = full_name.split(" ", 1)
     first_name = name_parts[0] if name_parts else ""
     last_name = name_parts[1] if len(name_parts) > 1 else ""
-    email = user_data.get("email", "")
+    email = profile_data.get("email") or user_data.get("email", "")
     
-    # Get all profile fields for auto-fill
-    phone = profile_data.get("phone_number", "")
-    linkedin = profile_data.get("linkedin_url", "")
-    github = profile_data.get("github_url", "")
-    portfolio = profile_data.get("portfolio_url", "")
-    current_company = profile_data.get("current_company", "")
+    # Use normalized values from structured schema
+    phone = autofill_data.get("phone", "") or profile_data.get("phone_number", "")
+    linkedin = autofill_data.get("linkedin_url", "") or profile_data.get("linkedin_url", "")
+    github = autofill_data.get("github_url", "") or profile_data.get("github_url", "")
+    portfolio = autofill_data.get("portfolio_url", "") or profile_data.get("portfolio_url", "")
+    current_company = autofill_data.get("current_company", "") or profile_data.get("current_company", "")
     
-    # Address fields
-    address_street = profile_data.get("address_street", "")
-    address_city = profile_data.get("address_city", "")
-    address_state = profile_data.get("address_state", "")
-    address_postal = profile_data.get("address_postal_code", "")
-    address_country = profile_data.get("address_country", "")
+    # Location fields (from normalized structured data)
+    address_city = autofill_data.get("city", "") or profile_data.get("address_city", "")
+    address_state = autofill_data.get("state", "") or profile_data.get("address_state", "")
+    address_country = autofill_data.get("country", "") or profile_data.get("address_country", "")
     
-    # Application-specific fields
-    willing_to_relocate = profile_data.get("willing_to_relocate", "")
-    notice_period = profile_data.get("notice_period", "")
-    referral_source = profile_data.get("referral_source", "LinkedIn")
-    salary_min = profile_data.get("salary_min", "")
-    work_authorization = profile_data.get("work_authorization", "")
+    # Professional fields (use normalized enum values)
+    willing_to_relocate = autofill_data.get("willing_to_relocate", "") or profile_data.get("willing_to_relocate", "")
+    notice_period = autofill_data.get("notice_period", "") or profile_data.get("notice_period", "")
+    referral_source = autofill_data.get("referral_source", "") or profile_data.get("referral_source", "LinkedIn")
+    salary_min = autofill_data.get("salary_min", "") or profile_data.get("salary_min", "")
+    work_authorization = autofill_data.get("work_authorization", "") or profile_data.get("work_authorization", "")
+    education = autofill_data.get("education", "") or profile_data.get("highest_education", "")
     
     # Resume and cover letter
     resume_text = app_data.get("optimized_resume") or profile_data.get("resume_text", "")
