@@ -949,7 +949,7 @@ async def logout(request: Request, response: Response):
 
 @api_router.get("/profile")
 async def get_profile(request: Request):
-    """Get user profile with decrypted sensitive data."""
+    """Get user profile with decrypted sensitive data and structured schema."""
     user = await get_current_user(request)
     
     profile = await db.user_profiles.find_one(
@@ -958,9 +958,10 @@ async def get_profile(request: Request):
     )
     
     if not profile:
-        # Create default profile
+        # Create default profile with v2 schema
         profile = {
             "user_id": user.user_id,
+            "profile_version": 2,
             "resume_text": None,
             "resume_filename": None,
             "skills": [],
@@ -978,18 +979,38 @@ async def get_profile(request: Request):
     # Decrypt sensitive fields before returning
     profile = decrypt_sensitive_data(profile)
     
-    # Normalize skills to new format (migrates old string[] to object[])
-    profile["skills"] = normalize_skills(profile.get("skills", []))
+    # Migrate to v2 structured schema if needed
+    if profile.get("profile_version") != 2:
+        profile = migrate_profile_to_v2(profile)
+        # Save migrated profile
+        await db.user_profiles.update_one(
+            {"user_id": user.user_id},
+            {"$set": {"profile_version": 2, "structured": profile.get("structured", {})}}
+        )
+    
+    # Also normalize skills for frontend compatibility
+    raw_skills = profile.get("skills", [])
+    normalized_skills = []
+    for skill in raw_skills:
+        if isinstance(skill, str):
+            normalized_skills.append({"name": skill, "years": None})
+        elif isinstance(skill, dict):
+            normalized_skills.append({
+                "name": skill.get("name", ""),
+                "years": skill.get("years")
+            })
+    profile["skills"] = normalized_skills
     
     return profile
 
 @api_router.put("/profile")
 async def update_profile(request: Request, update: ProfileUpdate):
-    """Update user profile with encryption for sensitive fields."""
+    """Update user profile with encryption and structured schema migration."""
     user = await get_current_user(request)
     
     update_data = {k: v for k, v in update.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["profile_version"] = 2
     
     # Encrypt sensitive fields before storing
     update_data = encrypt_sensitive_data(update_data)
