@@ -857,31 +857,20 @@ export default function Profile({ user }) {
             </CardContent>
           </Card>
 
-          {/* Address Card */}
+          {/* Location Card */}
           <Card className="glass-light" data-testid="address-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-rose-400" />
-                Full Address (for applications)
+                Location
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Some job applications require your full address. This will be auto-filled when needed.
+                Your location helps with job matching and application forms.
               </p>
 
-              <div>
-                <Label className="text-foreground mb-2 block">Street Address</Label>
-                <Input
-                  data-testid="address-street-input"
-                  placeholder="e.g., 123 Main Street, Apt 4B"
-                  value={profile?.address_street || ""}
-                  onChange={(e) => updateProfile({ address_street: e.target.value })}
-                  className="bg-white/5 border-white/10"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-foreground mb-2 block">City</Label>
                   <Input
@@ -893,25 +882,12 @@ export default function Profile({ user }) {
                   />
                 </div>
                 <div>
-                  <Label className="text-foreground mb-2 block">State/Province</Label>
+                  <Label className="text-foreground mb-2 block">Province / State</Label>
                   <Input
                     data-testid="address-state-input"
                     placeholder="e.g., Ontario"
                     value={profile?.address_state || ""}
                     onChange={(e) => updateProfile({ address_state: e.target.value })}
-                    className="bg-white/5 border-white/10"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-foreground mb-2 block">Postal/ZIP Code</Label>
-                  <Input
-                    data-testid="address-postal-input"
-                    placeholder="e.g., M5V 1A1"
-                    value={profile?.address_postal_code || ""}
-                    onChange={(e) => updateProfile({ address_postal_code: e.target.value })}
                     className="bg-white/5 border-white/10"
                   />
                 </div>
