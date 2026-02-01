@@ -106,8 +106,10 @@ The job matching evaluates candidates against jobs using:
 - ✅ Work authorization filter
 - ✅ Industry and seniority matching
 - ✅ Fallback search mechanism for multi-word queries (fixed Jan 25, 2025)
+- ✅ **Profile v2 Schema Migration (Feb 1, 2025)**: Structured schema with normalized enums for work authorization, skills, education, phone (E.164), location. Auto-fill now uses normalized values.
 
 ### P1 - High Priority (Next)
+- [ ] Enhance Playwright Auto-Fill with new v2 structured fields
 - [ ] Add Google Jobs as a search source (user approved)
 - [ ] Interview Tips & Prep feature completion
 - [ ] Email notifications for new job matches
