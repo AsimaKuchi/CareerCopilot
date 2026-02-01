@@ -128,12 +128,11 @@ The job matching evaluates candidates against jobs using:
 - [ ] Salary negotiation tips
 - [ ] Video interview practice
 
-## Test Results (Latest: iteration_4.json - January 25, 2025)
-- **Backend**: 100% success rate (18/18 tests passed)
-- **Frontend**: All UI flows verified
-- **Performance**: Job loading reduced from 35-60s to ~2s (parallel fetching)
-- **Fixed P0 Bug**: Fallback search endpoint corrected in JobSearch.jsx
-- **New Features**: Dashboard saved jobs, NEW star indicators, parallel fetching
+## Test Results (Latest: iteration_7.json - February 1, 2025)
+- **Backend**: 100% success rate (59/59 tests passed - 36 unit + 23 API tests)
+- **Profile v2 Schema**: All migration functions verified
+- **API Endpoints**: GET/PUT /api/profile, GET /api/autofill/data all passing
+- **Performance**: Job loading ~2s (parallel fetching)
 
 ## Database Schema
 
@@ -144,12 +143,14 @@ The job matching evaluates candidates against jobs using:
 - picture: string (optional)
 - created_at: datetime
 
-### user_profiles
+### user_profiles (v2 Schema)
 - user_id: string
-- resume_text: string (optional)
+- profile_version: int (1 or 2)
+- migrated_at: datetime (when migrated to v2)
+- resume_text: string (optional, encrypted)
 - resume_filename: string (optional)
 - resume_format: string (optional)
-- skills: array[string]
+- skills: array[{name: string, years: number, level: string}]
 - experience_years: int
 - job_titles: array[string]
 - preferred_locations: array[string]
@@ -160,6 +161,26 @@ The job matching evaluates candidates against jobs using:
 - industries: array[string] - max 3
 - open_to_any_industry: boolean
 - seniority_level: string (optional) - entry, junior, mid, senior, lead, manager, director, executive
+- highest_education: string (optional)
+- phone_number: string (optional, encrypted)
+- email: string (optional)
+- linkedin_url: string (optional, encrypted)
+- github_url: string (optional, encrypted)
+- portfolio_url: string (optional, encrypted)
+- address_city: string (optional, encrypted)
+- address_state: string (optional, encrypted)
+- address_country: string (optional, encrypted)
+- **structured**: object - Contains normalized values for auto-fill:
+  - workAuthorization: {raw, normalized: {country, status, requiresSponsorship, expiryDate}}
+  - seniorityLevel: {raw, normalized}
+  - education: {raw, normalized}
+  - skills: {items: [{name, years, level}]}
+  - contact: {email, phone: {raw, normalized (E.164), formatted}, location: {raw, normalized}}
+  - links: {linkedin, github, portfolio, website}
+  - preferences: {desiredJobTitles, preferredLocations, workArrangement, jobTypes, willingToRelocate, noticePeriod}
+  - compensation: {salaryExpectations: {min, max, currency}}
+  - industries: {targetIndustries, openToAny}
+  - applicationDefaults: {referralSource}
 - updated_at: datetime
 
 ### applications
