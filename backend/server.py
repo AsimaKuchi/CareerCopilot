@@ -19,7 +19,7 @@ import io
 import asyncio
 import re
 from bs4 import BeautifulSoup
-from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeout
+# Playwright import removed - auto-fill to be reimplemented
 import resend
 
 # Document parsing imports
