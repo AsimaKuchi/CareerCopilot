@@ -982,13 +982,36 @@ async def update_profile(request: Request, update: ProfileUpdate):
         upsert=True
     )
     
+    # Fetch updated profile
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
     )
     
-    # Decrypt before returning
+    # Decrypt before processing
     profile = decrypt_sensitive_data(profile)
+    
+    # Re-migrate to v2 to regenerate structured data with updated fields
+    profile = migrate_profile_to_v2(profile)
+    
+    # Save the regenerated structured data
+    await db.user_profiles.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"structured": profile.get("structured", {}), "migrated_at": profile.get("migrated_at")}}
+    )
+    
+    # Normalize skills for frontend compatibility
+    raw_skills = profile.get("skills", [])
+    normalized_skills = []
+    for skill in raw_skills:
+        if isinstance(skill, str):
+            normalized_skills.append({"name": skill, "years": None})
+        elif isinstance(skill, dict):
+            normalized_skills.append({
+                "name": skill.get("name", ""),
+                "years": skill.get("years")
+            })
+    profile["skills"] = normalized_skills
     
     return profile
 
