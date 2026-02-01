@@ -28,12 +28,14 @@ Build a website that helps users find jobs best suited for them based on what in
 ### Key Files
 ```
 /app/backend/server.py          # Main API endpoints
+/app/backend/profile_schema.py  # Profile v2 schema + migration logic
+/app/backend/encryption.py      # AES encryption for sensitive data
 /app/frontend/src/App.js        # Main React app with routing
 /app/frontend/src/pages/        # All page components
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (January 28, 2025)
+## What's Been Implemented (February 1, 2025)
 
 ### MVP Features ✅
 - **Landing Page**: Hero section, features showcase, CTAs with light theme
