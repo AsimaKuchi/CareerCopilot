@@ -29,6 +29,14 @@ from PyPDF2 import PdfReader
 # Encryption for sensitive data
 from encryption import encrypt_sensitive_data, decrypt_sensitive_data, encrypt_field
 
+# Profile schema migration
+from profile_schema import (
+    migrate_profile_to_v2,
+    get_autofill_data,
+    get_normalized_value,
+    normalize_skills,
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
