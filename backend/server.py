@@ -197,47 +197,7 @@ def format_salary_range(min_salary: Optional[int], max_salary: Optional[int], de
     
     return "Salary not listed"
 
-def normalize_skills(skills: list) -> list:
-    """
-    Normalize skills to the new format: [{ name: str, years?: str }]
-    Handles migration from old string[] format to new object[] format.
-    """
-    if not skills:
-        return []
-    
-    normalized = []
-    for skill in skills:
-        if isinstance(skill, str):
-            # Old format: just a string
-            normalized.append({"name": skill, "years": None})
-        elif isinstance(skill, dict):
-            # New format: already an object
-            normalized.append({
-                "name": skill.get("name", ""),
-                "years": skill.get("years")
-            })
-        else:
-            # Unknown format, skip
-            continue
-    
-    return normalized
-
-def get_skill_names(skills: list) -> list:
-    """
-    Extract just the skill names from the skills list (works with both formats).
-    Used for backwards-compatible matching logic.
-    """
-    if not skills:
-        return []
-    
-    names = []
-    for skill in skills:
-        if isinstance(skill, str):
-            names.append(skill.lower())
-        elif isinstance(skill, dict):
-            names.append(skill.get("name", "").lower())
-    
-    return names
+# NOTE: normalize_skills and get_skill_names are imported from profile_schema.py
 
 # ========================
 # PYDANTIC MODELS
