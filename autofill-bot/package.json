@@ -1,13 +1,14 @@
 {
   "name": "jobmatch-autofill-bot",
   "version": "1.0.0",
-  "description": "Playwright-based auto-fill bot for job applications",
+  "description": "Playwright-based auto-fill bot for job applications (Greenhouse, Lever, Ashby)",
   "main": "src/index.js",
   "scripts": {
     "autofill": "node src/index.js",
-    "test": "node src/index.js --help"
+    "test": "node src/index.js --help",
+    "install-browsers": "npx playwright install chromium"
   },
-  "keywords": ["playwright", "autofill", "jobs", "greenhouse", "lever", "ashby"],
+  "keywords": ["playwright", "autofill", "jobs", "greenhouse", "lever", "ashby", "ats"],
   "author": "JobMatch AI",
   "license": "MIT",
   "dependencies": {
