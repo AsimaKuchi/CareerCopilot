@@ -3199,7 +3199,7 @@ async def get_autofill_payload(request: Request, application_id: str):
     # Resume file handling
     resume_filename = profile.get("resume_filename")
     resume_format = profile.get("resume_format", "").lower()
-    resume_file_url = None
+    resume_has_original = bool(profile.get("resume_raw"))  # Original file stored as base64
     resume_mime_type = None
     
     if resume_filename:
@@ -3214,21 +3214,11 @@ async def get_autofill_payload(request: Request, application_id: str):
             resume_mime_type = "text/plain"
         else:
             resume_mime_type = "application/octet-stream"
-        
-        # Generate file URL - for now, point to the prepare-download endpoint
-        # In production, this could be a signed S3/GCS URL
-        resume_file_url = f"/api/applications/{application_id}/prepare-download/resume"
     
     # Cover letter file handling (generated as .docx)
     cover_letter_text = app_doc.get("cover_letter") or ""
-    cover_letter_file_url = None
-    cover_letter_mime_type = None
-    cover_letter_filename = None
-    
-    if cover_letter_text:
-        cover_letter_filename = f"cover_letter_{app_doc.get('company', 'company').replace(' ', '_').lower()}.docx"
-        cover_letter_mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        cover_letter_file_url = f"/api/applications/{application_id}/prepare-download/cover-letter"
+    cover_letter_mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if cover_letter_text else None
+    cover_letter_filename = f"cover_letter_{app_doc.get('company', 'company').replace(' ', '_').lower()}.docx" if cover_letter_text else None
     
     # Build response
     response = {
