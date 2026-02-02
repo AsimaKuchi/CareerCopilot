@@ -1882,6 +1882,59 @@ async def reparse_resume(request: Request):
         logger.error(f"Resume reparse error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to reparse resume: {str(e)}")
 
+@api_router.get("/profile/resume/download/original")
+async def download_original_resume(request: Request):
+    """
+    Download the user's original resume file (preserves original format and formatting).
+    Returns the file in its original format (PDF, DOCX, etc.)
+    """
+    user = await get_current_user(request)
+    
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0, "resume_raw": 1, "resume_filename": 1, "resume_format": 1}
+    )
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    resume_raw = profile.get("resume_raw")
+    if not resume_raw:
+        raise HTTPException(status_code=404, detail="No original resume file stored")
+    
+    # Decrypt if encrypted
+    if isinstance(resume_raw, str) and resume_raw.startswith("gAAAAA"):
+        resume_raw = decrypt_field(resume_raw)
+    
+    try:
+        # Decode base64 to bytes
+        file_content = base64.b64decode(resume_raw)
+    except Exception as e:
+        logger.error(f"Failed to decode resume_raw: {e}")
+        raise HTTPException(status_code=500, detail="Failed to decode resume file")
+    
+    # Determine content type
+    resume_format = profile.get("resume_format", "").lower()
+    filename = profile.get("resume_filename", "resume")
+    
+    if resume_format == "pdf" or filename.endswith(".pdf"):
+        content_type = "application/pdf"
+    elif resume_format == "docx" or filename.endswith(".docx"):
+        content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif resume_format == "doc" or filename.endswith(".doc"):
+        content_type = "application/msword"
+    else:
+        content_type = "application/octet-stream"
+    
+    from fastapi.responses import Response
+    return Response(
+        content=file_content,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
 # ========================
 # JOB SEARCH ROUTES
 # ========================
