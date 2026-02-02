@@ -70,9 +70,10 @@ async function prepareDocumentDownload(applicationId, type) {
 }
 
 /**
- * Download a file from the static downloads endpoint
+ * Download a file from the API
  * 
- * The download_url is public (no auth required)
+ * Some endpoints require auth (like /api/profile/resume/download/original)
+ * Others are public (like /api/static-downloads/*)
  */
 async function downloadFile(downloadUrl, filename) {
   // Create downloads directory
@@ -86,7 +87,16 @@ async function downloadFile(downloadUrl, filename) {
     ? downloadUrl 
     : `${API_BASE_URL}${downloadUrl}`;
 
-  const response = await fetch(fullUrl);
+  // Build headers - include auth for API endpoints
+  const headers = {};
+  if (downloadUrl.includes('/api/') && !downloadUrl.includes('/static-downloads/')) {
+    if (SESSION_TOKEN) {
+      headers['Authorization'] = `Bearer ${SESSION_TOKEN}`;
+      headers['Cookie'] = `session_token=${SESSION_TOKEN}`;
+    }
+  }
+
+  const response = await fetch(fullUrl, { headers, redirect: 'follow' });
   
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status}`);
