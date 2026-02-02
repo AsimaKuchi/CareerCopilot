@@ -3307,19 +3307,37 @@ async def get_autofill_payload(request: Request, application_id: str):
         },
         "documents": {
             "resume": {
+                # Text version (for textarea-based ATS flows)
                 "text": app_doc.get("optimized_resume") or profile.get("resume_text") or "",
                 "is_optimized": bool(app_doc.get("optimized_resume")),
-                "file_available": bool(resume_filename),
-                "file_url": resume_file_url,
-                "file_name": resume_filename,
-                "mime_type": resume_mime_type,
+                
+                # Original file (preserves user's formatting)
+                "original": {
+                    "available": resume_has_original,
+                    "file_name": resume_filename,
+                    "format": resume_format,
+                    "mime_type": resume_mime_type,
+                    "download_url": f"/api/profile/resume/download/original" if resume_has_original else None,
+                },
+                
+                # Generated DOCX from optimized text (for ATS that need file upload)
+                "generated_docx": {
+                    "available": bool(app_doc.get("optimized_resume")),
+                    "download_url": f"/api/applications/{application_id}/download/resume" if app_doc.get("optimized_resume") else None,
+                    "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                }
             },
             "cover_letter": {
+                # Text version (for textarea-based ATS flows)
                 "text": cover_letter_text,
-                "file_available": bool(cover_letter_text),
-                "file_url": cover_letter_file_url,
-                "file_name": cover_letter_filename,
-                "mime_type": cover_letter_mime_type,
+                
+                # Generated DOCX (for ATS that need file upload)
+                "generated_docx": {
+                    "available": bool(cover_letter_text),
+                    "file_name": cover_letter_filename,
+                    "download_url": f"/api/applications/{application_id}/download/cover-letter" if cover_letter_text else None,
+                    "mime_type": cover_letter_mime_type,
+                }
             }
         }
     }
