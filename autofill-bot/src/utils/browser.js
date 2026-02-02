@@ -10,12 +10,17 @@ const { chromium } = require('playwright');
  * Create and configure browser instance
  */
 async function createBrowser(config = {}) {
+  // Force headless in server environments without display
+  const isHeadless = config.headless !== false;
+  
   const browser = await chromium.launch({
-    headless: config.headless ?? false,
+    headless: isHeadless,
     slowMo: config.slowMo ?? 100,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
     ],
