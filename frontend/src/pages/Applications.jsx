@@ -396,20 +396,31 @@ export default function Applications({ user }) {
       const data = await response.json();
 
       if (data.success) {
-        // Playwright successfully filled the form
-        toast.success(
-          <div>
-            <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields auto-filled!</div>
-            <div className="text-sm mt-1">
-              {data.fields_failed?.length > 0 && (
-                <span className="text-amber-300">{data.fields_failed.length} fields need manual entry</span>
-              )}
-            </div>
-          </div>,
-          { duration: 5000 }
-        );
+        // Check if this is manual mode (Playwright automation moved to external bot)
+        if (data.manual_mode) {
+          toast.info(
+            <div>
+              <div className="font-semibold">📋 Auto-fill data ready!</div>
+              <div className="text-sm mt-1">Use the copy buttons to fill the application form</div>
+            </div>,
+            { duration: 4000 }
+          );
+        } else {
+          // Playwright successfully filled the form (legacy)
+          toast.success(
+            <div>
+              <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields auto-filled!</div>
+              <div className="text-sm mt-1">
+                {data.fields_failed?.length > 0 && (
+                  <span className="text-amber-300">{data.fields_failed.length} fields need manual entry</span>
+                )}
+              </div>
+            </div>,
+            { duration: 5000 }
+          );
+        }
         
-        // Show the data modal for any remaining fields
+        // Show the data modal for copying fields
         setAutoFillData({
           company,
           jobTitle,
@@ -417,11 +428,12 @@ export default function Applications({ user }) {
           data: data.auto_fill_data,
           fieldsFilled: data.fields_filled || [],
           fieldsFailed: data.fields_failed || [],
-          playwrightSuccess: true,
+          playwrightSuccess: !data.manual_mode,
+          manualMode: data.manual_mode || false,
           message: data.message,
         });
       } else {
-        // Playwright failed - show manual copy modal
+        // Failed - show manual copy modal
         toast.warning(
           <div>
             <div className="font-semibold">⚠️ {data.message}</div>
@@ -438,6 +450,7 @@ export default function Applications({ user }) {
           fieldsFilled: [],
           fieldsFailed: [],
           playwrightSuccess: false,
+          manualMode: true,
           message: data.message,
         });
       }
