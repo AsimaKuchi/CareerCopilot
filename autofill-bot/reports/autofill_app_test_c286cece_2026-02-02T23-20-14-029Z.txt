@@ -1,0 +1,49 @@
+═══════════════════════════════════════════════════════════
+  AUTOFILL BOT REPORT
+═══════════════════════════════════════════════════════════
+
+Application ID: app_test_c286cece
+Started: 2026-02-02T23:20:09.030Z
+Duration: 5.00s
+Status: READY_FOR_REVIEW
+
+ATS Type: unknown (confidence: none)
+
+───────────────────────────────────────────────────────────
+  FILLED FIELDS (11)
+───────────────────────────────────────────────────────────
+  ✓ first_name: John
+  ✓ last_name: Doe
+  ✓ email: john.doe@example.com
+  ✓ phone: +14165551234
+  ✓ city: Toronto
+  ✓ linkedin: https://linkedin.com/in/johndoe
+  ✓ github: https://github.com/johndoe
+  ✓ portfolio: https://johndoe.dev
+  ✓ cover_letter: [object Object]
+  ✓ input[type="file"][name*="resume" i]: /app/autofill-bot/downloads/Resume_Stripe_Senior_S...
+  ✓ input[type="file"][accept*="pdf"]: /app/autofill-bot/downloads/CoverLetter_Stripe_Sen...
+
+───────────────────────────────────────────────────────────
+  ⚠️  REQUIRES CONFIRMATION (6)
+───────────────────────────────────────────────────────────
+  ⚠ work_authorization: Legal implications - verify authorization status is accurate
+    Current value: "citizen"
+  ⚠ salary: Compensation expectations may vary by role
+    Current value: {"min":100000,"max":150000,"currency":"USD"}
+  ⚠ willing_to_relocate: Relocation preference may depend on specific role/location
+    Current value: "unknown"
+  ⚠ notice_period: Availability may have changed
+    Current value: "unknown"
+  ⚠ referral_source: How you heard about this role may vary
+    Current value: "LinkedIn"
+  ⚠ requires_sponsorship: Sponsorship requirement is a critical legal field
+    Current value: false
+
+───────────────────────────────────────────────────────────
+  SCREENSHOTS
+───────────────────────────────────────────────────────────
+  📸 before: screenshots/app_test_c286cece_before-fill_1770074411825.png
+  📸 after: screenshots/app_test_c286cece_after-fill_1770074413925.png
+
+═══════════════════════════════════════════════════════════

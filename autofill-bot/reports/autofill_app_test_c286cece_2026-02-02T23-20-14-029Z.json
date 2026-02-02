@@ -1,0 +1,124 @@
+{
+  "applicationId": "app_test_c286cece",
+  "startedAt": "2026-02-02T23:20:09.030Z",
+  "atsType": "unknown",
+  "atsConfidence": "none",
+  "filledFields": [
+    {
+      "field": "First Name",
+      "selector": "first_name",
+      "value": "John",
+      "timestamp": "2026-02-02T23:20:13.448Z"
+    },
+    {
+      "field": "Last Name",
+      "selector": "last_name",
+      "value": "Doe",
+      "timestamp": "2026-02-02T23:20:13.495Z"
+    },
+    {
+      "field": "Email Address",
+      "selector": "email",
+      "value": "john.doe@example.com",
+      "timestamp": "2026-02-02T23:20:13.545Z"
+    },
+    {
+      "field": "Phone Number",
+      "selector": "phone",
+      "value": "+14165551234",
+      "timestamp": "2026-02-02T23:20:13.595Z"
+    },
+    {
+      "field": "City",
+      "selector": "city",
+      "value": "Toronto",
+      "timestamp": "2026-02-02T23:20:13.645Z"
+    },
+    {
+      "field": "LinkedIn URL",
+      "selector": "linkedin",
+      "value": "https://linkedin.com/in/johndoe",
+      "timestamp": "2026-02-02T23:20:13.695Z"
+    },
+    {
+      "field": "GitHub URL",
+      "selector": "github",
+      "value": "https://github.com/johndoe",
+      "timestamp": "2026-02-02T23:20:13.728Z"
+    },
+    {
+      "field": "Portfolio / Website",
+      "selector": "portfolio",
+      "value": "https://johndoe.dev",
+      "timestamp": "2026-02-02T23:20:13.778Z"
+    },
+    {
+      "field": "Cover Letter",
+      "selector": "cover_letter",
+      "value": "[object Object]",
+      "timestamp": "2026-02-02T23:20:13.829Z"
+    },
+    {
+      "field": "Resume",
+      "selector": "input[type=\"file\"][name*=\"resume\" i]",
+      "value": "/app/autofill-bot/downloads/Resume_Stripe_Senior_Software_Engineer_ce05f4f0.docx",
+      "timestamp": "2026-02-02T23:20:13.918Z"
+    },
+    {
+      "field": "Cover Letter",
+      "selector": "input[type=\"file\"][accept*=\"pdf\"]",
+      "value": "/app/autofill-bot/downloads/CoverLetter_Stripe_Senior_Software_Engineer_af75a74e.docx",
+      "timestamp": "2026-02-02T23:20:13.924Z"
+    }
+  ],
+  "skippedFields": [],
+  "confirmRequired": [
+    {
+      "field": "work_authorization",
+      "reason": "Legal implications - verify authorization status is accurate",
+      "current_value": "citizen"
+    },
+    {
+      "field": "salary",
+      "reason": "Compensation expectations may vary by role",
+      "current_value": {
+        "min": 100000,
+        "max": 150000,
+        "currency": "USD"
+      }
+    },
+    {
+      "field": "willing_to_relocate",
+      "reason": "Relocation preference may depend on specific role/location",
+      "current_value": "unknown"
+    },
+    {
+      "field": "notice_period",
+      "reason": "Availability may have changed",
+      "current_value": "unknown"
+    },
+    {
+      "field": "referral_source",
+      "reason": "How you heard about this role may vary",
+      "current_value": "LinkedIn"
+    },
+    {
+      "field": "requires_sponsorship",
+      "reason": "Sponsorship requirement is a critical legal field",
+      "current_value": false
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    {
+      "stage": "before",
+      "path": "screenshots/app_test_c286cece_before-fill_1770074411825.png"
+    },
+    {
+      "stage": "after",
+      "path": "screenshots/app_test_c286cece_after-fill_1770074413925.png"
+    }
+  ],
+  "duration": 4999,
+  "status": "ready_for_review"
+}
