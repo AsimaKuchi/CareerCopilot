@@ -1,0 +1,59 @@
+═══════════════════════════════════════════════════════════
+  AUTOFILL BOT REPORT
+═══════════════════════════════════════════════════════════
+
+Application ID: app_test_c286cece
+Started: 2026-02-02T23:07:29.270Z
+Duration: 0.26s
+Status: ERROR
+
+ATS Type: greenhouse (confidence: high)
+
+───────────────────────────────────────────────────────────
+  FILLED FIELDS (0)
+───────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────
+  ⚠️  REQUIRES CONFIRMATION (6)
+───────────────────────────────────────────────────────────
+  ⚠ work_authorization: Legal implications - verify authorization status is accurate
+    Current value: "citizen"
+  ⚠ salary: Compensation expectations may vary by role
+    Current value: {"min":100000,"max":150000,"currency":"USD"}
+  ⚠ willing_to_relocate: Relocation preference may depend on specific role/location
+    Current value: "unknown"
+  ⚠ notice_period: Availability may have changed
+    Current value: "unknown"
+  ⚠ referral_source: How you heard about this role may vary
+    Current value: "LinkedIn"
+  ⚠ requires_sponsorship: Sponsorship requirement is a critical legal field
+    Current value: false
+
+───────────────────────────────────────────────────────────
+  ✗ ERRORS (1)
+───────────────────────────────────────────────────────────
+  ✗ fatal: browserType.launch: Target page, context or browser has been closed
+Browser logs:
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Looks like you launched a headed browser without having a XServer running.                     ║
+║ Set either 'headless: true' or use 'xvfb-run <your-playwright-app>' before running Playwright. ║
+║                                                                                                ║
+║ <3 Playwright Team                                                                             ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════╝
+Call log:
+  - <launching> /pw-browsers/chromium-1208/chrome-linux/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu --disable-web-security --disable-features=IsolateOrigins,site-per-process --user-data-dir=/tmp/playwright_chromiumdev_profile-nc2nzE --remote-debugging-pipe --no-startup-window
+  - <launched> pid=3127
+  - [pid=3127][err] [3127:3141:0202/230729.489657:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+  - [pid=3127][err] [3127:3127:0202/230729.491021:ERROR:ui/ozone/platform/x11/ozone_platform_x11.cc:256] Missing X server or $DISPLAY
+  - [pid=3127][err] [3127:3127:0202/230729.491035:ERROR:ui/aura/env.cc:246] The platform failed to initialize.  Exiting.
+  - [pid=3127] <gracefully close start>
+  - [pid=3127] <kill>
+  - [pid=3127] <will force kill>
+  - [pid=3127] <process did exit: exitCode=1, signal=null>
+  - [pid=3127] starting temporary directories cleanup
+  - [pid=3127] finished temporary directories cleanup
+  - [pid=3127] <gracefully close end>
+
+
+═══════════════════════════════════════════════════════════
