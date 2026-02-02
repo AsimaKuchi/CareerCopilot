@@ -1,0 +1,54 @@
+{
+  "applicationId": "app_test_c286cece",
+  "startedAt": "2026-02-02T23:07:46.233Z",
+  "atsType": "greenhouse",
+  "atsConfidence": "high",
+  "filledFields": [],
+  "skippedFields": [],
+  "confirmRequired": [
+    {
+      "field": "work_authorization",
+      "reason": "Legal implications - verify authorization status is accurate",
+      "current_value": "citizen"
+    },
+    {
+      "field": "salary",
+      "reason": "Compensation expectations may vary by role",
+      "current_value": {
+        "min": 100000,
+        "max": 150000,
+        "currency": "USD"
+      }
+    },
+    {
+      "field": "willing_to_relocate",
+      "reason": "Relocation preference may depend on specific role/location",
+      "current_value": "unknown"
+    },
+    {
+      "field": "notice_period",
+      "reason": "Availability may have changed",
+      "current_value": "unknown"
+    },
+    {
+      "field": "referral_source",
+      "reason": "How you heard about this role may vary",
+      "current_value": "LinkedIn"
+    },
+    {
+      "field": "requires_sponsorship",
+      "reason": "Sponsorship requirement is a critical legal field",
+      "current_value": false
+    }
+  ],
+  "errors": [
+    {
+      "type": "fatal",
+      "message": "page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://boards.greenhouse.io/stripe/jobs/5789012\", waiting until \"networkidle\"\n",
+      "stack": "page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://boards.greenhouse.io/stripe/jobs/5789012\", waiting until \"networkidle\"\n\n    at main (/app/autofill-bot/src/index.js:106:16)"
+    }
+  ],
+  "screenshots": [],
+  "duration": 30364,
+  "status": "error"
+}

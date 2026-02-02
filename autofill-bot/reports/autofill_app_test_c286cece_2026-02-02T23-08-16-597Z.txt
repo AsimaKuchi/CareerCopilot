@@ -1,0 +1,40 @@
+═══════════════════════════════════════════════════════════
+  AUTOFILL BOT REPORT
+═══════════════════════════════════════════════════════════
+
+Application ID: app_test_c286cece
+Started: 2026-02-02T23:07:46.233Z
+Duration: 30.36s
+Status: ERROR
+
+ATS Type: greenhouse (confidence: high)
+
+───────────────────────────────────────────────────────────
+  FILLED FIELDS (0)
+───────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────
+  ⚠️  REQUIRES CONFIRMATION (6)
+───────────────────────────────────────────────────────────
+  ⚠ work_authorization: Legal implications - verify authorization status is accurate
+    Current value: "citizen"
+  ⚠ salary: Compensation expectations may vary by role
+    Current value: {"min":100000,"max":150000,"currency":"USD"}
+  ⚠ willing_to_relocate: Relocation preference may depend on specific role/location
+    Current value: "unknown"
+  ⚠ notice_period: Availability may have changed
+    Current value: "unknown"
+  ⚠ referral_source: How you heard about this role may vary
+    Current value: "LinkedIn"
+  ⚠ requires_sponsorship: Sponsorship requirement is a critical legal field
+    Current value: false
+
+───────────────────────────────────────────────────────────
+  ✗ ERRORS (1)
+───────────────────────────────────────────────────────────
+  ✗ fatal: page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://boards.greenhouse.io/stripe/jobs/5789012", waiting until "networkidle"
+
+
+═══════════════════════════════════════════════════════════
