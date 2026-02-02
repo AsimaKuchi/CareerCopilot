@@ -14,13 +14,15 @@ async function createBrowser(config = {}) {
   const isHeadless = config.headless !== false;
   
   const browser = await chromium.launch({
-    headless: isHeadless,
+    headless: true,  // Always true for server environment
     slowMo: config.slowMo ?? 100,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
+      '--single-process',
+      '--no-zygote',
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
     ],
