@@ -71,6 +71,11 @@ class GenericMapper extends BaseMapper {
           value = getValueFromPath(payload, match.mapping.altPath);
         }
         
+        // Handle document objects - extract text
+        if (match.mapping.isDocument && value && typeof value === 'object') {
+          value = value.text || null;
+        }
+        
         if (!value) {
           this.skipped.push(logSkippedField(match.fieldKey, 'No value in profile', labelText.trim()));
           continue;
