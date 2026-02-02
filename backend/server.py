@@ -4192,6 +4192,74 @@ async def start_scheduler():
         logger.info("Database empty - running initial job ingestion...")
         asyncio.create_task(ingest_all_jobs())
 
+# Serve test form for autofill bot testing
+@api_router.get("/test-form")
+async def serve_test_form():
+    """Serve a test application form for bot testing."""
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Application Form</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .field { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        textarea { height: 100px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Test Job Application Form</h1>
+    <form id="application-form">
+        <div class="field">
+            <label for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name">
+        </div>
+        <div class="field">
+            <label for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name">
+        </div>
+        <div class="field">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email">
+        </div>
+        <div class="field">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone">
+        </div>
+        <div class="field">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city">
+        </div>
+        <div class="field">
+            <label for="linkedin">LinkedIn URL</label>
+            <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="field">
+            <label for="github">GitHub URL</label>
+            <input type="url" id="github" name="github" placeholder="https://github.com/...">
+        </div>
+        <div class="field">
+            <label for="portfolio">Portfolio / Website</label>
+            <input type="url" id="portfolio" name="portfolio" placeholder="https://...">
+        </div>
+        <div class="field">
+            <label for="resume">Resume/CV</label>
+            <input type="file" id="resume" name="resume" accept=".pdf,.docx">
+        </div>
+        <div class="field">
+            <label for="cover_letter">Cover Letter</label>
+            <textarea id="cover_letter" name="cover_letter" placeholder="Write your cover letter..."></textarea>
+        </div>
+        <button type="submit">Submit Application</button>
+    </form>
+</body>
+</html>"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
+
 @app.on_event("shutdown")
 async def shutdown_scheduler():
     """Shutdown scheduler and database on app shutdown."""
