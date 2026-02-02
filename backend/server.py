@@ -3397,6 +3397,89 @@ async def get_autofill_payload(request: Request, application_id: str):
     
     return response
 
+@api_router.post("/applications/{application_id}/auto-fill")
+async def auto_fill_application_data(request: Request, application_id: str):
+    """
+    Get auto-fill data for an application.
+    Returns user profile data formatted for manual form filling.
+    
+    Note: Server-side Playwright automation has been moved to a separate bot.
+    This endpoint now returns data for the frontend to display copy buttons.
+    """
+    user = await get_current_user(request)
+    
+    # Get application
+    app_doc = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app_doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    apply_link = app_doc.get("apply_link", "")
+    if not apply_link:
+        return {
+            "success": False,
+            "message": "No application link found for this job",
+            "auto_fill_data": {}
+        }
+    
+    # Get user profile and decrypt
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if profile:
+        profile = decrypt_sensitive_data(profile)
+    else:
+        profile = {}
+    
+    # Get user doc for name
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Parse name
+    full_name = user_doc.get("name", "") if user_doc else ""
+    name_parts = full_name.split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+    
+    # Get autofill data from v2 schema
+    autofill = get_autofill_data(profile)
+    
+    # Build auto-fill data for frontend
+    auto_fill_data = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "full_name": full_name,
+        "email": autofill.get("email") or user_doc.get("email", "") if user_doc else "",
+        "phone": autofill.get("phoneFormatted") or autofill.get("phone") or profile.get("phone_number", ""),
+        "linkedin": autofill.get("linkedinUrl") or profile.get("linkedin_url", ""),
+        "github": autofill.get("githubUrl") or profile.get("github_url", ""),
+        "portfolio": autofill.get("portfolioUrl") or profile.get("portfolio_url", ""),
+        "city": autofill.get("city") or profile.get("address_city", ""),
+        "state": autofill.get("state") or profile.get("address_state", ""),
+        "country": autofill.get("countryFull") or autofill.get("country") or profile.get("address_country", ""),
+        "current_company": autofill.get("currentCompany") or profile.get("current_company", ""),
+        "resume_text": app_doc.get("optimized_resume") or profile.get("resume_text", ""),
+        "cover_letter": app_doc.get("cover_letter", ""),
+    }
+    
+    # Return success with data for manual copy
+    return {
+        "success": True,
+        "message": "Auto-fill data ready. Use the copy buttons to fill the application form manually.",
+        "apply_link": apply_link,
+        "auto_fill_data": auto_fill_data,
+        "fields_filled": [],  # No fields auto-filled (manual mode)
+        "fields_failed": [],
+        "manual_mode": True,  # Indicates frontend should show copy buttons
+    }
+
 @api_router.put("/applications/{application_id}/reject")
 async def reject_application(request: Request, application_id: str):
     """Reject/skip an application."""
