@@ -228,54 +228,95 @@ async function main() {
 
 /**
  * Prepare document files for upload
+ * 
+ * Document strategy:
+ * 1. For file uploads: Use original file if available (preserves formatting), else use generated DOCX
+ * 2. For textareas: Use text version
  */
 async function prepareDocuments(payload) {
   const result = {
-    resume: { type: 'none', text: null, filePath: null },
-    coverLetter: { type: 'none', text: null, filePath: null },
+    resume: { 
+      type: 'none', 
+      text: null, 
+      filePath: null,
+      originalFormat: null,
+      isOriginal: false,
+    },
+    coverLetter: { 
+      type: 'none', 
+      text: null, 
+      filePath: null,
+    },
   };
 
-  // Resume
-  if (payload.documents?.resume?.text) {
-    result.resume.text = payload.documents.resume.text;
+  const docs = payload.documents || {};
+  
+  // ═══════════════════════════════════════════════════════════
+  // RESUME
+  // ═══════════════════════════════════════════════════════════
+  
+  // Text version (for textareas)
+  if (docs.resume?.text) {
+    result.resume.text = docs.resume.text;
     result.resume.type = 'text';
   }
-
-  if (payload.documents?.resume?.file_available) {
+  
+  // Try to get original file first (preserves user's formatting)
+  if (docs.resume?.original?.available) {
     try {
-      log.debug('Generating resume DOCX...');
-      const prepared = await prepareDocumentDownload(options.application_id, 'resume');
-      if (prepared?.download_url) {
-        const filePath = await downloadFile(prepared.download_url, prepared.filename);
-        result.resume.filePath = filePath;
-        result.resume.type = 'file';
-        log.debug(`Resume downloaded: ${filePath}`);
-      }
+      log.debug('Downloading original resume file...');
+      const downloadUrl = docs.resume.original.download_url;
+      const filename = docs.resume.original.file_name || 'resume';
+      const filePath = await downloadFile(downloadUrl, filename);
+      result.resume.filePath = filePath;
+      result.resume.type = 'file';
+      result.resume.originalFormat = docs.resume.original.format;
+      result.resume.isOriginal = true;
+      log.debug(`Original resume downloaded: ${filePath} (${docs.resume.original.format})`);
     } catch (e) {
-      log.warn(`Could not prepare resume file: ${e.message}`);
-      // Fall back to text
+      log.warn(`Could not download original resume: ${e.message}`);
+    }
+  }
+  
+  // Fall back to generated DOCX if no original
+  if (result.resume.type !== 'file' && docs.resume?.generated_docx?.available) {
+    try {
+      log.debug('Downloading generated resume DOCX...');
+      const downloadUrl = docs.resume.generated_docx.download_url;
+      const filePath = await downloadFile(downloadUrl, 'resume_optimized.docx');
+      result.resume.filePath = filePath;
+      result.resume.type = 'file';
+      result.resume.isOriginal = false;
+      log.debug(`Generated resume downloaded: ${filePath}`);
+    } catch (e) {
+      log.warn(`Could not download generated resume: ${e.message}`);
+      // Final fallback to text
       result.resume.type = result.resume.text ? 'text' : 'none';
     }
   }
 
-  // Cover Letter
-  if (payload.documents?.cover_letter?.text) {
-    result.coverLetter.text = payload.documents.cover_letter.text;
+  // ═══════════════════════════════════════════════════════════
+  // COVER LETTER
+  // ═══════════════════════════════════════════════════════════
+  
+  // Text version (for textareas)
+  if (docs.cover_letter?.text) {
+    result.coverLetter.text = docs.cover_letter.text;
     result.coverLetter.type = 'text';
   }
-
-  if (payload.documents?.cover_letter?.file_available) {
+  
+  // Generated DOCX (for file uploads)
+  if (docs.cover_letter?.generated_docx?.available) {
     try {
-      log.debug('Generating cover letter DOCX...');
-      const prepared = await prepareDocumentDownload(options.application_id, 'cover-letter');
-      if (prepared?.download_url) {
-        const filePath = await downloadFile(prepared.download_url, prepared.filename);
-        result.coverLetter.filePath = filePath;
-        result.coverLetter.type = 'file';
-        log.debug(`Cover letter downloaded: ${filePath}`);
-      }
+      log.debug('Downloading cover letter DOCX...');
+      const downloadUrl = docs.cover_letter.generated_docx.download_url;
+      const filename = docs.cover_letter.generated_docx.file_name || 'cover_letter.docx';
+      const filePath = await downloadFile(downloadUrl, filename);
+      result.coverLetter.filePath = filePath;
+      result.coverLetter.type = 'file';
+      log.debug(`Cover letter downloaded: ${filePath}`);
     } catch (e) {
-      log.warn(`Could not prepare cover letter file: ${e.message}`);
+      log.warn(`Could not download cover letter: ${e.message}`);
       result.coverLetter.type = result.coverLetter.text ? 'text' : 'none';
     }
   }
