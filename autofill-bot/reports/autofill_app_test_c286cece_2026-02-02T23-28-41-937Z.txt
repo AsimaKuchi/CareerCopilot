@@ -1,0 +1,48 @@
+═══════════════════════════════════════════════════════════
+  AUTOFILL BOT REPORT
+═══════════════════════════════════════════════════════════
+
+Application ID: app_test_c286cece
+Started: 2026-02-02T23:28:36.847Z
+Duration: 5.09s
+Status: READY_FOR_REVIEW
+
+ATS Type: unknown (confidence: none)
+
+───────────────────────────────────────────────────────────
+  FILLED FIELDS (10)
+───────────────────────────────────────────────────────────
+  ✓ first_name: John
+  ✓ last_name: Doe
+  ✓ email: john.doe@example.com
+  ✓ phone: +14165551234
+  ✓ city: Toronto
+  ✓ linkedin: https://linkedin.com/in/johndoe
+  ✓ github: https://github.com/johndoe
+  ✓ portfolio: https://johndoe.dev
+  ✓ cover_letter: Dear Hiring Manager at Stripe...
+  ✓ textarea[name*="cover" i]: Dear Hiring Manager at Stripe......
+
+───────────────────────────────────────────────────────────
+  ⚠️  REQUIRES CONFIRMATION (6)
+───────────────────────────────────────────────────────────
+  ⚠ work_authorization: Legal implications - verify authorization status is accurate
+    Current value: "citizen"
+  ⚠ salary: Compensation expectations may vary by role
+    Current value: {"min":100000,"max":150000,"currency":"USD"}
+  ⚠ willing_to_relocate: Relocation preference may depend on specific role/location
+    Current value: "unknown"
+  ⚠ notice_period: Availability may have changed
+    Current value: "unknown"
+  ⚠ referral_source: How you heard about this role may vary
+    Current value: "LinkedIn"
+  ⚠ requires_sponsorship: Sponsorship requirement is a critical legal field
+    Current value: false
+
+───────────────────────────────────────────────────────────
+  SCREENSHOTS
+───────────────────────────────────────────────────────────
+  📸 before: screenshots/app_test_c286cece_before-fill_1770074919666.png
+  📸 after: screenshots/app_test_c286cece_after-fill_1770074921862.png
+
+═══════════════════════════════════════════════════════════
