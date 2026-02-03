@@ -3557,16 +3557,39 @@ async def auto_fill_application_data(request: Request, application_id: str):
         }
 
 
-async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: dict) -> dict:
+async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: dict, resume_file_data: str = None, resume_filename: str = "resume.pdf") -> dict:
     """
     Use Playwright to auto-fill a job application form.
     Returns dict with success status, filled fields, and CAPTCHA detection.
+    
+    Args:
+        apply_link: URL of the application form
+        ats_type: Type of ATS (greenhouse, lever, ashby)
+        auto_fill_data: Dict of field values to fill
+        resume_file_data: Base64 encoded resume file (optional)
+        resume_filename: Name of the resume file
     """
     fields_filled = []
     fields_failed = []
     captcha_detected = False
+    temp_resume_path = None
     
     try:
+        # Create temp file for resume if we have data
+        if resume_file_data:
+            try:
+                import tempfile
+                resume_bytes = base64.b64decode(resume_file_data)
+                # Create temp file with proper extension
+                ext = os.path.splitext(resume_filename)[1] or '.pdf'
+                temp_fd, temp_resume_path = tempfile.mkstemp(suffix=ext)
+                with os.fdopen(temp_fd, 'wb') as f:
+                    f.write(resume_bytes)
+                logger.info(f"Created temp resume file: {temp_resume_path}")
+            except Exception as e:
+                logger.error(f"Failed to create temp resume file: {e}")
+                temp_resume_path = None
+        
         async with async_playwright() as p:
             # Launch headless browser
             browser = await p.chromium.launch(
