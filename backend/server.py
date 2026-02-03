@@ -3742,6 +3742,12 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 
             except PlaywrightTimeout:
                 await browser.close()
+                # Cleanup temp file
+                if temp_resume_path and os.path.exists(temp_resume_path):
+                    try:
+                        os.remove(temp_resume_path)
+                    except:
+                        pass
                 return {
                     "success": False,
                     "captcha_detected": False,
@@ -3751,6 +3757,12 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 }
             except Exception as e:
                 await browser.close()
+                # Cleanup temp file
+                if temp_resume_path and os.path.exists(temp_resume_path):
+                    try:
+                        os.remove(temp_resume_path)
+                    except:
+                        pass
                 return {
                     "success": False,
                     "captcha_detected": False,
