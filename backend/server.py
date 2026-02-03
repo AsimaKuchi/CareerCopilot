@@ -3694,7 +3694,43 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                         except:
                             continue
                 
+                # Handle resume file upload
+                if temp_resume_path and os.path.exists(temp_resume_path):
+                    resume_selectors = [
+                        'input[type="file"][name*="resume" i]',
+                        'input[type="file"][id*="resume" i]',
+                        'input[type="file"][name*="cv" i]',
+                        'input[type="file"][id*="cv" i]',
+                        'input[type="file"][accept*="pdf"]',
+                        'input[type="file"][accept*="doc"]',
+                        'input[type="file"]:not([name*="cover" i])',
+                    ]
+                    resume_uploaded = False
+                    for selector in resume_selectors:
+                        try:
+                            element = await page.query_selector(selector)
+                            if element:
+                                await element.set_input_files(temp_resume_path)
+                                fields_filled.append("resume")
+                                resume_uploaded = True
+                                logger.info(f"Resume uploaded via selector: {selector}")
+                                break
+                        except Exception as e:
+                            logger.debug(f"Resume upload failed for {selector}: {e}")
+                            continue
+                    
+                    if not resume_uploaded:
+                        fields_failed.append("resume")
+                        logger.warning("Could not find resume file input")
+                
                 await browser.close()
+                
+                # Cleanup temp file
+                if temp_resume_path and os.path.exists(temp_resume_path):
+                    try:
+                        os.remove(temp_resume_path)
+                    except:
+                        pass
                 
                 return {
                     "success": len(fields_filled) > 0,
