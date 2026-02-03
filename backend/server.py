@@ -3400,11 +3400,14 @@ async def get_autofill_payload(request: Request, application_id: str):
 @api_router.post("/applications/{application_id}/auto-fill")
 async def auto_fill_application_data(request: Request, application_id: str):
     """
-    Get auto-fill data for an application.
-    Returns user profile data formatted for manual form filling.
+    Auto-fill a job application using Playwright.
     
-    Note: Server-side Playwright automation has been moved to a separate bot.
-    This endpoint now returns data for the frontend to display copy buttons.
+    Flow:
+    1. Try server-side Playwright automation
+    2. If CAPTCHA detected → Return data for user to complete manually
+    3. If success → Return filled fields
+    
+    The user can always fall back to manual copy mode.
     """
     user = await get_current_user(request)
     
@@ -3451,7 +3454,7 @@ async def auto_fill_application_data(request: Request, application_id: str):
     # Get autofill data from v2 schema
     autofill = get_autofill_data(profile)
     
-    # Build auto-fill data for frontend
+    # Build auto-fill data
     auto_fill_data = {
         "first_name": first_name,
         "last_name": last_name,
@@ -3469,16 +3472,300 @@ async def auto_fill_application_data(request: Request, application_id: str):
         "cover_letter": app_doc.get("cover_letter", ""),
     }
     
-    # Return success with data for manual copy
-    return {
-        "success": True,
-        "message": "Auto-fill data ready. Use the copy buttons to fill the application form manually.",
-        "apply_link": apply_link,
-        "auto_fill_data": auto_fill_data,
-        "fields_filled": [],  # No fields auto-filled (manual mode)
-        "fields_failed": [],
-        "manual_mode": True,  # Indicates frontend should show copy buttons
+    # Determine ATS type
+    ats_type = "unknown"
+    if "greenhouse.io" in apply_link.lower():
+        ats_type = "greenhouse"
+    elif "lever.co" in apply_link.lower() or "jobs.lever" in apply_link.lower():
+        ats_type = "lever"
+    elif "ashbyhq.com" in apply_link.lower():
+        ats_type = "ashby"
+    
+    # Try Playwright automation
+    try:
+        result = await playwright_auto_fill(
+            apply_link=apply_link,
+            ats_type=ats_type,
+            auto_fill_data=auto_fill_data
+        )
+        
+        if result["captcha_detected"]:
+            # CAPTCHA found - user needs to complete manually
+            return {
+                "success": False,
+                "message": "🔒 CAPTCHA detected! Please complete the application in your browser.",
+                "captcha_detected": True,
+                "apply_link": apply_link,
+                "auto_fill_data": auto_fill_data,
+                "fields_filled": result.get("fields_filled", []),
+                "fields_failed": result.get("fields_failed", []),
+                "manual_mode": True,
+                "hint": "Click 'Open Application' to continue in your browser with your data ready to paste."
+            }
+        
+        if result["success"]:
+            # Successfully filled!
+            return {
+                "success": True,
+                "message": f"✅ Auto-filled {len(result['fields_filled'])} fields!",
+                "apply_link": apply_link,
+                "auto_fill_data": auto_fill_data,
+                "fields_filled": result["fields_filled"],
+                "fields_failed": result["fields_failed"],
+                "manual_mode": False,
+                "ats_type": ats_type,
+            }
+        else:
+            # Failed for other reason - fall back to manual
+            return {
+                "success": False,
+                "message": result.get("error", "Auto-fill failed. Use copy buttons instead."),
+                "apply_link": apply_link,
+                "auto_fill_data": auto_fill_data,
+                "fields_filled": result.get("fields_filled", []),
+                "fields_failed": result.get("fields_failed", []),
+                "manual_mode": True,
+            }
+            
+    except Exception as e:
+        logger.error(f"Playwright auto-fill error: {str(e)}")
+        # Fall back to manual mode
+        return {
+            "success": False,
+            "message": f"Auto-fill unavailable: {str(e)}. Use copy buttons instead.",
+            "apply_link": apply_link,
+            "auto_fill_data": auto_fill_data,
+            "fields_filled": [],
+            "fields_failed": [],
+            "manual_mode": True,
+        }
+
+
+async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: dict) -> dict:
+    """
+    Use Playwright to auto-fill a job application form.
+    Returns dict with success status, filled fields, and CAPTCHA detection.
+    """
+    fields_filled = []
+    fields_failed = []
+    captcha_detected = False
+    
+    try:
+        async with async_playwright() as p:
+            # Launch headless browser
+            browser = await p.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            )
+            
+            context = await browser.new_context(
+                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                viewport={'width': 1920, 'height': 1080}
+            )
+            
+            page = await context.new_page()
+            
+            try:
+                # Navigate to application page
+                await page.goto(apply_link, wait_until="networkidle", timeout=30000)
+                await asyncio.sleep(2)
+                
+                # Check for CAPTCHA
+                page_content = await page.content()
+                page_content_lower = page_content.lower()
+                
+                captcha_indicators = [
+                    'captcha', 'recaptcha', 'hcaptcha', 'turnstile',
+                    'g-recaptcha', 'cf-turnstile', 'challenge-form',
+                    'verify you are human', 'prove you are not a robot'
+                ]
+                
+                for indicator in captcha_indicators:
+                    if indicator in page_content_lower:
+                        captcha_detected = True
+                        logger.info(f"CAPTCHA detected: {indicator}")
+                        break
+                
+                if captcha_detected:
+                    await browser.close()
+                    return {
+                        "success": False,
+                        "captcha_detected": True,
+                        "fields_filled": [],
+                        "fields_failed": [],
+                        "error": "CAPTCHA detected"
+                    }
+                
+                # Check for login requirement
+                login_indicators = ['sign in', 'log in', 'login required', 'please sign in']
+                for indicator in login_indicators:
+                    if indicator in page_content_lower:
+                        await browser.close()
+                        return {
+                            "success": False,
+                            "captcha_detected": False,
+                            "fields_filled": [],
+                            "fields_failed": [],
+                            "error": "Login required - please apply directly"
+                        }
+                
+                # Define field selectors based on ATS type
+                field_selectors = get_field_selectors(ats_type)
+                
+                # Fill each field
+                for field_name, selectors in field_selectors.items():
+                    value = auto_fill_data.get(field_name)
+                    if not value:
+                        continue
+                    
+                    filled = False
+                    for selector in selectors:
+                        try:
+                            element = await page.query_selector(selector)
+                            if element:
+                                is_visible = await element.is_visible()
+                                if is_visible:
+                                    await element.click()
+                                    await element.fill("")
+                                    await element.fill(str(value))
+                                    fields_filled.append(field_name)
+                                    filled = True
+                                    break
+                        except Exception as e:
+                            continue
+                    
+                    if not filled and value:
+                        fields_failed.append(field_name)
+                
+                # Handle cover letter textarea
+                if auto_fill_data.get("cover_letter"):
+                    cover_selectors = [
+                        'textarea[name*="cover" i]',
+                        'textarea[id*="cover" i]',
+                        'textarea[placeholder*="cover" i]',
+                        'textarea[aria-label*="cover" i]',
+                    ]
+                    for selector in cover_selectors:
+                        try:
+                            element = await page.query_selector(selector)
+                            if element:
+                                await element.fill(auto_fill_data["cover_letter"])
+                                fields_filled.append("cover_letter")
+                                break
+                        except:
+                            continue
+                
+                await browser.close()
+                
+                return {
+                    "success": len(fields_filled) > 0,
+                    "captcha_detected": False,
+                    "fields_filled": fields_filled,
+                    "fields_failed": fields_failed,
+                    "error": None
+                }
+                
+            except PlaywrightTimeout:
+                await browser.close()
+                return {
+                    "success": False,
+                    "captcha_detected": False,
+                    "fields_filled": fields_filled,
+                    "fields_failed": fields_failed,
+                    "error": "Page load timeout"
+                }
+            except Exception as e:
+                await browser.close()
+                return {
+                    "success": False,
+                    "captcha_detected": False,
+                    "fields_filled": fields_filled,
+                    "fields_failed": fields_failed,
+                    "error": str(e)
+                }
+                
+    except Exception as e:
+        logger.error(f"Playwright error: {str(e)}")
+        return {
+            "success": False,
+            "captcha_detected": False,
+            "fields_filled": [],
+            "fields_failed": [],
+            "error": str(e)
+        }
+
+
+def get_field_selectors(ats_type: str) -> dict:
+    """Get field selectors based on ATS type."""
+    
+    # Common selectors that work across most ATS
+    common = {
+        "first_name": [
+            'input[name="first_name"]', 'input[name="firstName"]',
+            'input[id*="first_name"]', 'input[id*="firstName"]',
+            'input[autocomplete="given-name"]',
+            'input[placeholder*="First" i]',
+        ],
+        "last_name": [
+            'input[name="last_name"]', 'input[name="lastName"]',
+            'input[id*="last_name"]', 'input[id*="lastName"]',
+            'input[autocomplete="family-name"]',
+            'input[placeholder*="Last" i]',
+        ],
+        "full_name": [
+            'input[name="name"]', 'input[name="fullName"]',
+            'input[id*="name"]:not([id*="first"]):not([id*="last"])',
+            'input[placeholder*="Full name" i]',
+        ],
+        "email": [
+            'input[name="email"]', 'input[type="email"]',
+            'input[id*="email"]', 'input[autocomplete="email"]',
+        ],
+        "phone": [
+            'input[name="phone"]', 'input[type="tel"]',
+            'input[id*="phone"]', 'input[autocomplete="tel"]',
+            'input[placeholder*="phone" i]',
+        ],
+        "linkedin": [
+            'input[name*="linkedin" i]', 'input[id*="linkedin" i]',
+            'input[placeholder*="linkedin" i]',
+        ],
+        "github": [
+            'input[name*="github" i]', 'input[id*="github" i]',
+            'input[placeholder*="github" i]',
+        ],
+        "portfolio": [
+            'input[name*="portfolio" i]', 'input[name*="website" i]',
+            'input[id*="portfolio" i]', 'input[id*="website" i]',
+            'input[placeholder*="portfolio" i]', 'input[placeholder*="website" i]',
+        ],
+        "city": [
+            'input[name="city"]', 'input[id*="city"]',
+            'input[autocomplete="address-level2"]',
+        ],
+        "state": [
+            'input[name="state"]', 'input[name="province"]',
+            'input[id*="state"]', 'input[id*="province"]',
+        ],
+        "current_company": [
+            'input[name*="company" i]', 'input[name*="employer" i]',
+            'input[id*="company" i]', 'input[placeholder*="company" i]',
+        ],
     }
+    
+    # ATS-specific additions
+    if ats_type == "greenhouse":
+        # Greenhouse uses standard naming
+        pass
+    elif ats_type == "lever":
+        # Lever sometimes uses full name instead of first/last
+        common["full_name"].insert(0, 'input[name="name"]')
+    elif ats_type == "ashby":
+        # Ashby uses aria-labels
+        for field in common:
+            common[field].append(f'input[aria-label*="{field.replace("_", " ")}" i]')
+    
+    return common
 
 @api_router.put("/applications/{application_id}/reject")
 async def reject_application(request: Request, application_id: str):
