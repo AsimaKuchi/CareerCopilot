@@ -1478,6 +1478,16 @@ export default function Applications({ user }) {
                 <AlertCircle className="w-5 h-5" />
                 <span className="font-semibold">{autoFillData?.message || 'Manual entry required'}</span>
               </div>
+              {autoFillData?.captchaDetected && (
+                <div className="mt-2 text-sm text-amber-300">
+                  🔒 The application page has a CAPTCHA. Click "Open Application" below to complete it in your browser - your data is ready to paste!
+                </div>
+              )}
+              {autoFillData?.hint && !autoFillData?.captchaDetected && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  {autoFillData.hint}
+                </div>
+              )}
             </div>
           )}
           
@@ -1488,10 +1498,10 @@ export default function Applications({ user }) {
                   window.open(autoFillData.applyLink, '_blank');
                 }
               }}
-              className="bg-indigo-500 hover:bg-indigo-600"
+              className={autoFillData?.captchaDetected ? "bg-amber-500 hover:bg-amber-600" : "bg-indigo-500 hover:bg-indigo-600"}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Open Application
+              {autoFillData?.captchaDetected ? "🔒 Open Application (Solve CAPTCHA)" : "Open Application"}
             </Button>
           </div>
 
