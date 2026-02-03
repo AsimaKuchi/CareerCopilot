@@ -396,31 +396,20 @@ export default function Applications({ user }) {
       const data = await response.json();
 
       if (data.success) {
-        // Check if this is manual mode (Playwright automation moved to external bot)
-        if (data.manual_mode) {
-          toast.info(
-            <div>
-              <div className="font-semibold">📋 Auto-fill data ready!</div>
-              <div className="text-sm mt-1">Use the copy buttons to fill the application form</div>
-            </div>,
-            { duration: 4000 }
-          );
-        } else {
-          // Playwright successfully filled the form (legacy)
-          toast.success(
-            <div>
-              <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields auto-filled!</div>
-              <div className="text-sm mt-1">
-                {data.fields_failed?.length > 0 && (
-                  <span className="text-amber-300">{data.fields_failed.length} fields need manual entry</span>
-                )}
-              </div>
-            </div>,
-            { duration: 5000 }
-          );
-        }
+        // Playwright successfully filled the form
+        toast.success(
+          <div>
+            <div className="font-semibold">✅ {data.fields_filled?.length || 0} fields auto-filled!</div>
+            <div className="text-sm mt-1">
+              {data.fields_failed?.length > 0 && (
+                <span className="text-amber-300">{data.fields_failed.length} fields need manual entry</span>
+              )}
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
         
-        // Show the data modal for copying fields
+        // Show the data modal for copying remaining fields
         setAutoFillData({
           company,
           jobTitle,
@@ -428,30 +417,44 @@ export default function Applications({ user }) {
           data: data.auto_fill_data,
           fieldsFilled: data.fields_filled || [],
           fieldsFailed: data.fields_failed || [],
-          playwrightSuccess: !data.manual_mode,
-          manualMode: data.manual_mode || false,
+          playwrightSuccess: true,
+          manualMode: false,
+          captchaDetected: false,
           message: data.message,
         });
       } else {
-        // Failed - show manual copy modal
-        toast.warning(
-          <div>
-            <div className="font-semibold">⚠️ {data.message}</div>
-            <div className="text-sm mt-1">Use the copy buttons to fill manually</div>
-          </div>,
-          { duration: 5000 }
-        );
+        // Check if CAPTCHA was detected
+        if (data.captcha_detected) {
+          toast.warning(
+            <div>
+              <div className="font-semibold">🔒 CAPTCHA Detected</div>
+              <div className="text-sm mt-1">Open the application to complete it manually</div>
+            </div>,
+            { duration: 6000 }
+          );
+        } else {
+          toast.info(
+            <div>
+              <div className="font-semibold">📋 {data.message}</div>
+              <div className="text-sm mt-1">Use the copy buttons to fill the form</div>
+            </div>,
+            { duration: 5000 }
+          );
+        }
         
+        // Show manual copy modal
         setAutoFillData({
           company,
           jobTitle,
           applyLink: data.apply_link || applyLink,
           data: data.auto_fill_data,
-          fieldsFilled: [],
-          fieldsFailed: [],
+          fieldsFilled: data.fields_filled || [],
+          fieldsFailed: data.fields_failed || [],
           playwrightSuccess: false,
           manualMode: true,
+          captchaDetected: data.captcha_detected || false,
           message: data.message,
+          hint: data.hint,
         });
       }
     } catch (error) {
