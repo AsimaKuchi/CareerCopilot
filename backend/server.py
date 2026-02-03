@@ -19,6 +19,9 @@ import io
 import asyncio
 import re
 from bs4 import BeautifulSoup
+
+# Set Playwright browsers path before importing
+os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeout
 import resend
 
