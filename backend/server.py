@@ -3481,12 +3481,28 @@ async def auto_fill_application_data(request: Request, application_id: str):
     elif "ashbyhq.com" in apply_link.lower():
         ats_type = "ashby"
     
+    # Get resume file data for upload
+    resume_file_data = None
+    resume_filename = profile.get("resume_filename", "resume.pdf")
+    resume_raw = profile.get("resume_raw")
+    
+    if resume_raw:
+        # Decrypt if encrypted
+        if isinstance(resume_raw, str) and resume_raw.startswith("gAAAAA"):
+            try:
+                resume_raw = decrypt_field(resume_raw)
+            except:
+                pass
+        resume_file_data = resume_raw
+    
     # Try Playwright automation
     try:
         result = await playwright_auto_fill(
             apply_link=apply_link,
             ats_type=ats_type,
-            auto_fill_data=auto_fill_data
+            auto_fill_data=auto_fill_data,
+            resume_file_data=resume_file_data,
+            resume_filename=resume_filename
         )
         
         if result["captcha_detected"]:
