@@ -1952,6 +1952,42 @@ async def search_jobs(request: Request):
     location = body.get("location", "")
     linkedin_only = body.get("linkedin_only", False)
     
+    # Get user profile to determine country preference
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Determine country code from user's location preference or search location
+    country_code = None
+    location_lower = location.lower() if location else ""
+    
+    # Map common location terms to country codes
+    canada_keywords = ["canada", "toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton", "ontario", "bc", "quebec", "alberta"]
+    us_keywords = ["usa", "united states", "new york", "california", "texas", "florida", "seattle", "san francisco", "los angeles", "chicago"]
+    uk_keywords = ["uk", "united kingdom", "london", "manchester", "birmingham", "england", "scotland"]
+    
+    if any(kw in location_lower for kw in canada_keywords):
+        country_code = "CA"
+    elif any(kw in location_lower for kw in us_keywords):
+        country_code = "US"
+    elif any(kw in location_lower for kw in uk_keywords):
+        country_code = "GB"
+    elif profile:
+        # Fallback to user's profile location preference
+        preferred_locations = profile.get("preferred_locations", [])
+        for loc in preferred_locations:
+            loc_lower = loc.lower()
+            if any(kw in loc_lower for kw in canada_keywords):
+                country_code = "CA"
+                break
+            elif any(kw in loc_lower for kw in us_keywords):
+                country_code = "US"
+                break
+            elif any(kw in loc_lower for kw in uk_keywords):
+                country_code = "GB"
+                break
+    
     headers = {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
@@ -1961,9 +1997,14 @@ async def search_jobs(request: Request):
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {
                 "query": f"{query} {location}".strip(),
-                "num_pages": "2" if linkedin_only else "1",  # Fetch more pages for LinkedIn to ensure enough results after filtering
+                "num_pages": "2" if linkedin_only else "1",
                 "page": "1"
             }
+            
+            # Add country filter if we determined a country
+            if country_code:
+                params["country"] = country_code
+                logger.info(f"JSearch filtering by country: {country_code}")
             
             response = await client.get(
                 "https://jsearch.p.rapidapi.com/search",
@@ -1987,12 +2028,6 @@ async def search_jobs(request: Request):
                 logger.info(f"Filtered to {len(jobs)} LinkedIn jobs")
             else:
                 logger.info(f"Filtered to {len(jobs)} non-Bebee jobs")
-            
-            # Get user profile for matching
-            profile = await db.user_profiles.find_one(
-                {"user_id": user.user_id},
-                {"_id": 0}
-            )
             
             # Get applied job IDs to filter duplicates
             existing_applications = await db.applications.find(
