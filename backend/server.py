@@ -1950,6 +1950,7 @@ async def search_jobs(request: Request):
     body = await request.json()
     query = body.get("query", "")
     location = body.get("location", "")
+    linkedin_only = body.get("linkedin_only", False)
     
     headers = {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
@@ -1960,7 +1961,7 @@ async def search_jobs(request: Request):
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {
                 "query": f"{query} {location}".strip(),
-                "num_pages": "1",
+                "num_pages": "2" if linkedin_only else "1",  # Fetch more pages for LinkedIn to ensure enough results after filtering
                 "page": "1"
             }
             
@@ -1980,7 +1981,12 @@ async def search_jobs(request: Request):
             # Filter out Bebee jobs (poor quality spam)
             jobs = [job for job in jobs if "bebee.com" not in job.get("job_apply_link", "").lower()]
             
-            logger.info(f"Filtered to {len(jobs)} non-Bebee jobs")
+            # Filter for LinkedIn only if requested
+            if linkedin_only:
+                jobs = [job for job in jobs if "linkedin.com" in job.get("job_apply_link", "").lower()]
+                logger.info(f"Filtered to {len(jobs)} LinkedIn jobs")
+            else:
+                logger.info(f"Filtered to {len(jobs)} non-Bebee jobs")
             
             # Get user profile for matching
             profile = await db.user_profiles.find_one(
