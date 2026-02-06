@@ -2620,7 +2620,10 @@ REQUIRED STRUCTURE:
 Output only the cover letter text, no additional commentary."""
     ).with_model("openai", "gpt-5.2")
     
-    skills = ", ".join(profile.get("skills", [])) if profile else "Not specified"
+    # Handle v2 skills format (list of dicts with name, years, level)
+    raw_skills = profile.get("skills", []) if profile else []
+    skill_names = get_skill_names(raw_skills)
+    skills = ", ".join(skill_names) if skill_names else "Not specified"
     experience = profile.get("experience_years", 0) if profile else 0
     resume = profile.get("resume_text", "") if profile else ""
     job_titles = ", ".join(profile.get("job_titles", [])) if profile else "Not specified"
