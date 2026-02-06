@@ -128,11 +128,15 @@ The job matching evaluates candidates against jobs using:
 - [ ] Salary negotiation tips
 - [ ] Video interview practice
 
-## Test Results (Latest: iteration_7.json - February 1, 2025)
+## Test Results (Latest: February 6, 2025)
 - **Backend**: 100% success rate (59/59 tests passed - 36 unit + 23 API tests)
 - **Profile v2 Schema**: All migration functions verified
 - **API Endpoints**: GET/PUT /api/profile, GET /api/autofill/data all passing
+- **Playwright Auto-Fill**: 4/4 tests passed (browser launch, navigation, CAPTCHA detection, field selectors)
 - **Performance**: Job loading ~2s (parallel fetching)
+
+## Recent Bug Fixes (February 6, 2025)
+- **✅ Fixed Playwright Executable Path Error**: The `BrowserType.launch: Executable doesn't exist` error was caused by a version mismatch between the Playwright Python package (v1.57.0, expecting browser build v1200) and the pre-installed browsers (build v1208). Fixed by running `playwright install chromium` to download the correct browser version.
 
 ## Database Schema
 
