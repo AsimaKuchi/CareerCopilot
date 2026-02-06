@@ -2674,7 +2674,10 @@ Provide comprehensive interview preparation including common questions,
 STAR method examples, company research tips, and confidence-building advice."""
     ).with_model("openai", "gpt-5.2")
     
-    skills = ", ".join(profile.get("skills", [])) if profile else "Not specified"
+    # Handle v2 skills format (list of dicts with name, years, level)
+    raw_skills = profile.get("skills", []) if profile else []
+    skill_names = get_skill_names(raw_skills)
+    skills = ", ".join(skill_names) if skill_names else "Not specified"
     
     prompt = f"""You are an expert interview coach creating a professional interview preparation document for a FAANG / enterprise role.
 
