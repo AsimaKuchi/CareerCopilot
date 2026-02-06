@@ -194,8 +194,8 @@ export default function JobSearch({ user }) {
         }
       }
 
-      // Search aggregators (LinkedIn, Indeed, Glassdoor, etc.)
-      if (source === "aggregator" || source === "all") {
+      // Search aggregators (LinkedIn, Indeed, Glassdoor, etc.) or LinkedIn only
+      if (source === "aggregator" || source === "linkedin" || source === "all") {
         try {
           const aggResponse = await fetch(`${API}/jobs/search`, {
             method: "POST",
@@ -204,12 +204,20 @@ export default function JobSearch({ user }) {
             body: JSON.stringify({
               query: searchQuery.trim(),
               location: searchLocation?.trim() || "",
+              linkedin_only: source === "linkedin", // Filter for LinkedIn jobs only
             }),
           });
 
           if (aggResponse.ok) {
             const aggData = await aggResponse.json();
-            allJobs = [...allJobs, ...(aggData.jobs || [])];
+            let aggJobs = aggData.jobs || [];
+            
+            // If linkedin source selected, filter to only LinkedIn jobs client-side as backup
+            if (source === "linkedin") {
+              aggJobs = aggJobs.filter(job => job.is_linkedin);
+            }
+            
+            allJobs = [...allJobs, ...aggJobs];
           }
         } catch (err) {
           console.error("Aggregator search error:", err);
