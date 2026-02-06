@@ -237,12 +237,20 @@ export default function JobSearch({ user }) {
       setJobs(allJobs);
       
       if (allJobs.length === 0) {
-        toast.info("No jobs found. Try different keywords.");
+        if (source === "linkedin") {
+          toast.info("No LinkedIn jobs found. Try different keywords or check other sources.");
+        } else {
+          toast.info("No jobs found. Try different keywords.");
+        }
       } else {
         const qualityCount = allJobs.filter(j => ["greenhouse", "lever", "ashby"].includes(j.source)).length;
-        const aggCount = allJobs.filter(j => j.source === "aggregator").length;
+        const linkedinCount = allJobs.filter(j => j.is_linkedin).length;
+        const aggCount = allJobs.filter(j => j.source === "aggregator" && !j.is_linkedin).length;
+        
         if (source === "all") {
-          toast.success(`Found ${allJobs.length} jobs (${qualityCount} direct, ${aggCount} from aggregators)`);
+          toast.success(`Found ${allJobs.length} jobs (${qualityCount} direct, ${linkedinCount} LinkedIn, ${aggCount} other)`);
+        } else if (source === "linkedin") {
+          toast.success(`Found ${allJobs.length} LinkedIn jobs`);
         } else {
           toast.success(`Found ${allJobs.length} jobs`);
         }
