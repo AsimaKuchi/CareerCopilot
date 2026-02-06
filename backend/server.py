@@ -1530,14 +1530,40 @@ async def search_greenhouse(request: Request):
                 location_words = location_lower.replace(",", " ").split()
                 location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
                 
-                canadian_cities = ["toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton"]
-                if any(city in location_keywords for city in canadian_cities) and "canada" not in location_keywords:
+                # Canadian cities/provinces mapping
+                canadian_keywords = ["toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton", 
+                                    "ontario", "quebec", "bc", "alberta", "manitoba", "saskatchewan"]
+                us_keywords = ["usa", "new york", "california", "texas", "florida", "seattle", 
+                              "san francisco", "los angeles", "chicago", "boston", "denver"]
+                
+                is_canada_search = any(city in location_keywords for city in canadian_keywords) or "canada" in location_keywords
+                is_us_search = any(kw in location_keywords for kw in us_keywords) or "usa" in location_keywords or "united states" in location_lower
+                
+                if is_canada_search and "canada" not in location_keywords:
                     location_keywords.append("canada")
                 
                 if location_keywords:
                     location_match = any(keyword in job_location for keyword in location_keywords)
-                    if not location_match and job_location in ["remote", ""]:
-                        location_match = True
+                    
+                    # For remote jobs: only match if they're available in the user's country
+                    if not location_match and ("remote" in job_location or job_location == ""):
+                        # Check if the remote job has country restrictions
+                        job_location_full = job.get("location", "").lower()
+                        
+                        # If user is searching Canada, only include remote jobs that are:
+                        # 1. Explicitly available in Canada, OR
+                        # 2. Don't have US-only restrictions
+                        if is_canada_search:
+                            has_us_restriction = any(us_kw in job_location_full for us_kw in ["united states", "usa", "us only", "u.s."])
+                            has_canada = "canada" in job_location_full
+                            # Include if it has Canada mentioned OR doesn't have US-only restrictions
+                            location_match = has_canada or (not has_us_restriction and "remote" in job_location_full)
+                        elif is_us_search:
+                            has_canada_restriction = "canada" in job_location_full and "united states" not in job_location_full
+                            location_match = not has_canada_restriction
+                        else:
+                            # No specific country preference, include all remote jobs
+                            location_match = True
             
             if not (query_match and location_match):
                 continue
