@@ -5,7 +5,7 @@ import sys
 
 def test_download_edge_cases():
     """Test download endpoints with edge cases and error conditions"""
-    base_url = "https://quality-jobs.preview.emergentagent.com"
+    base_url = "https://jobfinder-74.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     headers = {

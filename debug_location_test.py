@@ -7,7 +7,7 @@ import time
 def test_location_matching_debug():
     """Debug the location matching for the specific user reported search"""
     
-    base_url = "https://quality-jobs.preview.emergentagent.com"
+    base_url = "https://jobfinder-74.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"

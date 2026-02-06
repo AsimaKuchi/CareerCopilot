@@ -235,7 +235,7 @@ function addFloatingButton() {
     btn.innerHTML = '<span class="jobmatch-spinner"></span> Loading...';
     
     try {
-      const response = await fetch('https://quality-jobs.preview.emergentagent.com/api/autofill/data?url=' + encodeURIComponent(window.location.href), {
+      const response = await fetch('https://jobfinder-74.preview.emergentagent.com/api/autofill/data?url=' + encodeURIComponent(window.location.href), {
         credentials: 'include'
       });
       
@@ -244,7 +244,7 @@ function addFloatingButton() {
         performAutoFill(data);
       } else if (response.status === 401) {
         showNotification('Please log in to JobMatch AI first', 'warning');
-        window.open('https://quality-jobs.preview.emergentagent.com', '_blank');
+        window.open('https://jobfinder-74.preview.emergentagent.com', '_blank');
       } else {
         showNotification('Could not load your data. Please try again.', 'error');
       }
