@@ -553,6 +553,16 @@ export default function JobSearch({ user }) {
                   Quality Boards
                 </button>
                 <button
+                  onClick={() => setJobSource("linkedin")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    jobSource === "linkedin" 
+                      ? "bg-blue-600 text-white" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  LinkedIn
+                </button>
+                <button
                   onClick={() => setJobSource("aggregator")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                     jobSource === "aggregator" 
@@ -560,7 +570,7 @@ export default function JobSearch({ user }) {
                       : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}
                 >
-                  LinkedIn & More
+                  Indeed & More
                 </button>
               </div>
             </div>
@@ -569,9 +579,14 @@ export default function JobSearch({ user }) {
                 Searching 145 companies on Greenhouse, Lever & Ashby
               </p>
             )}
+            {jobSource === "linkedin" && (
+              <p className="text-xs text-gray-400 mb-4">
+                Searching LinkedIn job postings only
+              </p>
+            )}
             {jobSource === "aggregator" && (
               <p className="text-xs text-gray-400 mb-4">
-                Searching LinkedIn, Indeed, Glassdoor, and other job boards
+                Searching Indeed, Glassdoor, ZipRecruiter, and other job boards
               </p>
             )}
             {jobSource === "all" && (
