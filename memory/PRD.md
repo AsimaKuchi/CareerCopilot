@@ -11,7 +11,7 @@ Build a website that helps users find jobs best suited for them based on what in
 
 ## User Choices
 - **AI Provider**: OpenAI GPT-5.2 (via Emergent Universal Key)
-- **Job Data Source**: JSearch API (RapidAPI) + Greenhouse + Lever (real-time scraping)
+- **Job Data Source**: JSearch API + Greenhouse + Lever + SmartRecruiters + Pinpoint (real-time scraping)
 - **Authentication**: Google Social Login (Emergent OAuth)
 - **Design**: Light theme with glassmorphism
 
@@ -22,7 +22,7 @@ Build a website that helps users find jobs best suited for them based on what in
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
 - **AI**: OpenAI GPT-5.2 via emergentintegrations
-- **Job API**: JSearch (RapidAPI) + Greenhouse/Lever APIs
+- **Job API**: JSearch (RapidAPI) + Greenhouse/Lever/SmartRecruiters/Pinpoint APIs
 - **Auth**: Emergent Google OAuth
 
 ### Key Files
@@ -30,12 +30,29 @@ Build a website that helps users find jobs best suited for them based on what in
 /app/backend/server.py          # Main API endpoints
 /app/backend/profile_schema.py  # Profile v2 schema + migration logic
 /app/backend/encryption.py      # AES encryption for sensitive data
+/app/backend/ats_scrapers.py    # SmartRecruiters & Pinpoint scrapers (NEW)
 /app/frontend/src/App.js        # Main React app with routing
 /app/frontend/src/pages/        # All page components
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (February 1, 2025)
+## What's Been Implemented (February 7, 2025)
+
+### Latest Updates ✅
+- **Fixed Cover Letter/Interview Prep Error (520)**: Updated skills handling for v2 schema
+- **Added LinkedIn Job Source Button**: Dedicated filter for LinkedIn-only jobs
+- **Improved Location Filtering**: 
+  - Added country code filtering to JSearch API (CA for Canada)
+  - Client-side filtering to ensure Canadian jobs only for Canadian searches
+  - Updated remote job logic to exclude US-only remote jobs for Canadian users
+- **Fixed CAPTCHA False Positives**: Updated detection to check visible elements only, not raw HTML
+- **New ATS Integrations (SmartRecruiters + Pinpoint)**:
+  - Created `/app/backend/ats_scrapers.py` with scrapers for new platforms
+  - Added 45+ Canadian companies to SmartRecruiters list
+  - Added Pinpoint scraper with public JSON API support
+  - Updated auto-fill field selectors for new ATS types
+  - Added ATS badges in job cards (SmartRecruiters: orange, Pinpoint: cyan)
+  - Added `/api/admin/ats-stats` endpoint for monitoring ingestion
 
 ### MVP Features ✅
 - **Landing Page**: Hero section, features showcase, CTAs with light theme
