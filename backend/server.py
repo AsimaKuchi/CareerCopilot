@@ -1383,10 +1383,10 @@ async def search_greenhouse_jobs(query: str = "", location: str = "", limit: int
     # Filter by query and location
     filtered_jobs = []
     for job in all_jobs:
-        job_title = job.get("title", "").lower()
-        job_company = job.get("company", "").lower()
-        job_dept = job.get("department", "").lower()
-        job_location = job.get("location", "").lower()
+        job_title = (job.get("title") or "").lower()
+        job_company = (job.get("company") or "").lower()
+        job_dept = (job.get("department") or "").lower()
+        job_location = (job.get("location") or "").lower()
         
         # Match query - any word must match title, company, or department
         query_match = not query_words or any(
