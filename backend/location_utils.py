@@ -197,9 +197,20 @@ def parse_location(location_str: str, job_country: str = "", job_state: str = ""
             result["remote_scope"] = "country"
             result["remote_label"] = "Remote (UK)"
     
+    # Helper function to check for word boundary match
+    def word_match(word, text):
+        """Check if word appears as a whole word (not part of another word)."""
+        import re
+        # For short abbreviations (2 chars), require word boundaries
+        if len(word) <= 2:
+            pattern = r'\b' + re.escape(word) + r'\b'
+            return bool(re.search(pattern, text, re.IGNORECASE))
+        # For longer words, simple contains is fine
+        return word in text
+    
     # Detect Canadian city/province
     for city, prov in CANADIAN_CITIES.items():
-        if city in full_location:
+        if word_match(city, full_location):
             result["city"] = city.title()
             result["province"] = prov
             result["country"] = "CA"
@@ -208,10 +219,18 @@ def parse_location(location_str: str, job_country: str = "", job_state: str = ""
                 result["remote_label"] = f"Remote ({city.title()}, {prov})"
             break
     
-    # Detect Canadian province
-    if not result["province"]:
+    # Detect Canadian province - only if not already set by US indicator
+    # Don't override if we've detected this is a US job
+    if not result["province"] and result["country"] != "US":
         for prov_name, prov_code in CANADIAN_PROVINCES.items():
-            if prov_name in full_location:
+            # Skip short abbreviations if this looks like a US location
+            if len(prov_name) <= 2:
+                if not word_match(prov_name, full_location):
+                    continue
+                # Extra check: don't match ON if "united states" is in the string
+                if "united states" in full_location or "usa" in full_location:
+                    continue
+            elif prov_name in full_location:
                 result["province"] = prov_code
                 result["country"] = "CA"
                 if is_remote and result["remote_scope"] == "unknown":
@@ -221,7 +240,7 @@ def parse_location(location_str: str, job_country: str = "", job_state: str = ""
     
     # Detect US state (to potentially exclude)
     for state in US_STATES:
-        if state in full_location:
+        if word_match(state, full_location):
             result["state"] = state.upper() if len(state) == 2 else state.title()
             if not result["country"]:
                 result["country"] = "US"
@@ -229,7 +248,7 @@ def parse_location(location_str: str, job_country: str = "", job_state: str = ""
     
     # Detect US city
     for city in US_CITIES:
-        if city in full_location:
+        if word_match(city, full_location):
             result["city"] = city.title()
             result["country"] = "US"
             break
