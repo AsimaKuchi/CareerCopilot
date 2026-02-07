@@ -121,129 +121,100 @@ def normalize_job(job_data: Dict, ats_type: str) -> Dict:
 
 async def fetch_smartrecruiters_jobs(company_slug: str) -> List[Dict]:
     """
-    Fetch jobs from a SmartRecruiters company career page.
-    
-    Note: SmartRecruiters uses heavy client-side rendering with React.
-    This basic scraper tries to extract job data from the initial page load,
-    but may miss jobs that are loaded dynamically. For full coverage,
-    Playwright-based scraping would be needed.
+    Fetch jobs from SmartRecruiters using their public API.
+    API endpoint: api.smartrecruiters.com/v1/companies/{company}/postings
     """
     jobs = []
+    api_url = f"https://api.smartrecruiters.com/v1/companies/{company_slug}/postings"
     
-    # SmartRecruiters has two URL patterns
-    urls_to_try = [
-        f"https://careers.smartrecruiters.com/{company_slug}",
-        f"https://jobs.smartrecruiters.com/{company_slug}"
-    ]
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Fetch first page
+            params = {"limit": 100, "offset": 0}
+            response = await client.get(
+                api_url,
+                params=params,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                    "Accept": "application/json"
+                }
+            )
+            
+            if response.status_code != 200:
+                logger.debug(f"SmartRecruiters {company_slug}: HTTP {response.status_code}")
+                return jobs
+            
+            data = response.json()
+            postings = data.get("content", [])
+            total_found = data.get("totalFound", 0)
+            
+            logger.info(f"SmartRecruiters {company_slug}: {total_found} total jobs, processing {len(postings)}")
+            
+            for posting in postings:
+                # Extract location info
+                location_data = posting.get("location", {})
+                city = location_data.get("city", "")
+                region = location_data.get("region", "")
+                country = location_data.get("country", "")
+                remote = location_data.get("remote", False)
+                
+                location_str = ", ".join(filter(None, [city, region, country]))
+                if remote:
+                    location_str = f"Remote - {location_str}" if location_str else "Remote"
+                
+                # Get description
+                job_ad = posting.get("jobAd", {})
+                description = ""
+                sections = job_ad.get("sections", {})
+                if sections:
+                    # Combine job description sections
+                    desc_parts = []
+                    for section_name in ["jobDescription", "qualifications", "additionalInformation"]:
+                        section = sections.get(section_name, {})
+                        if section.get("text"):
+                            desc_parts.append(section["text"])
+                    description = "\n".join(desc_parts)
+                
+                # Clean HTML from description
+                if description:
+                    soup = BeautifulSoup(description, 'html.parser')
+                    description = soup.get_text(separator=" ", strip=True)
+                
+                # Check if it's a Canadian job
+                if is_canadian_job(location_str, description):
+                    # Get employment type
+                    type_of_employment = posting.get("typeOfEmployment", {})
+                    employment_type = type_of_employment.get("label") if isinstance(type_of_employment, dict) else str(type_of_employment)
+                    
+                    # Get department
+                    department = posting.get("department", {})
+                    dept_name = department.get("label") if isinstance(department, dict) else str(department) if department else None
+                    
+                    # Build apply link
+                    posting_id = posting.get("id") or posting.get("uuid")
+                    ref_number = posting.get("refNumber", "")
+                    apply_link = f"https://jobs.smartrecruiters.com/{company_slug}/{posting_id}"
+                    if ref_number:
+                        apply_link = f"https://jobs.smartrecruiters.com/{company_slug}/{posting_id}-{ref_number}"
+                    
+                    jobs.append(normalize_job({
+                        "job_id": f"sr_{company_slug}_{posting_id}",
+                        "title": posting.get("name"),
+                        "company": posting.get("company", {}).get("name", company_slug),
+                        "location": location_str,
+                        "description": description[:500] + "..." if len(description) > 500 else description,
+                        "full_description": description,
+                        "apply_link": apply_link,
+                        "posted_at": posting.get("releasedDate"),
+                        "employment_type": employment_type,
+                        "department": dept_name,
+                    }, "smartrecruiters"))
+            
+            logger.info(f"SmartRecruiters {company_slug}: Found {len(jobs)} Canadian jobs")
+            
+    except Exception as e:
+        logger.error(f"SmartRecruiters {company_slug} error: {str(e)}")
     
-    for base_url in urls_to_try:
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
-                    base_url,
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-                    },
-                    follow_redirects=True
-                )
-                
-                if response.status_code != 200:
-                    continue
-                
-                html = response.text
-                soup = BeautifulSoup(html, 'html.parser')
-                
-                # Extract company name from page
-                company_name = company_slug.replace("-", " ").replace("_", " ")
-                title_tag = soup.find('title')
-                if title_tag and title_tag.string:
-                    title_match = re.search(r'Careers at (.+?)(?:\s*\||$)', title_tag.string, re.IGNORECASE)
-                    if title_match:
-                        company_name = title_match.group(1).strip()
-                
-                # Look for job listings in the HTML
-                # SmartRecruiters uses various patterns
-                
-                # Pattern 1: Look for job links
-                job_links = soup.find_all('a', href=re.compile(r'/\d+[-\w]*$'))
-                
-                for link in job_links:
-                    href = link.get('href', '')
-                    if not href or '/privacy' in href or '/cookies' in href:
-                        continue
-                    
-                    # Extract job title from link text or parent
-                    title_text = link.get_text(strip=True)
-                    if not title_text or len(title_text) < 5:
-                        continue
-                    
-                    # Try to find location nearby
-                    parent = link.find_parent(['li', 'div', 'article'])
-                    location = ""
-                    if parent:
-                        location_elem = parent.find(class_=re.compile(r'location', re.I))
-                        if location_elem:
-                            location = location_elem.get_text(strip=True)
-                    
-                    # Check if Canadian job
-                    if is_canadian_job(location, ""):
-                        job_id = href.split('/')[-1]
-                        apply_link = href if href.startswith('http') else f"{base_url}{href}"
-                        
-                        jobs.append(normalize_job({
-                            "job_id": f"sr_{company_slug}_{job_id}",
-                            "title": title_text,
-                            "company": company_name,
-                            "location": location,
-                            "description": "",
-                            "apply_link": apply_link,
-                        }, "smartrecruiters"))
-                
-                # Pattern 2: Look for JSON data in script tags
-                import json
-                script_tags = soup.find_all('script', type='application/json')
-                for script in script_tags:
-                    try:
-                        data = json.loads(script.string or '{}')
-                        if isinstance(data, dict):
-                            # Check various possible structures
-                            job_list = data.get('jobs', []) or data.get('postings', []) or data.get('content', [])
-                            if not job_list and 'data' in data:
-                                job_list = data['data'] if isinstance(data['data'], list) else []
-                            
-                            for job in job_list:
-                                if not isinstance(job, dict):
-                                    continue
-                                    
-                                job_location = job.get('location', {})
-                                if isinstance(job_location, dict):
-                                    location_str = f"{job_location.get('city', '')}, {job_location.get('region', '')}".strip(", ")
-                                else:
-                                    location_str = str(job_location) if job_location else ""
-                                
-                                if is_canadian_job(location_str, job.get('description', '')):
-                                    jobs.append(normalize_job({
-                                        "job_id": f"sr_{company_slug}_{job.get('id', job.get('uuid', ''))}",
-                                        "title": job.get('name') or job.get('title'),
-                                        "company": company_name,
-                                        "location": location_str,
-                                        "description": job.get('description', ''),
-                                        "apply_link": job.get('applyUrl') or f"{base_url}/{job.get('id')}",
-                                        "employment_type": job.get('typeOfEmployment'),
-                                        "department": job.get('department', {}).get('label') if isinstance(job.get('department'), dict) else job.get('department'),
-                                    }, "smartrecruiters"))
-                    except (json.JSONDecodeError, TypeError):
-                        continue
-                
-                if jobs:
-                    break  # Found jobs, no need to try other URL
-                
-        except Exception as e:
-            logger.debug(f"SmartRecruiters {company_slug} ({base_url}): {str(e)}")
-            continue
-    
-    logger.info(f"SmartRecruiters {company_slug}: Found {len(jobs)} Canadian jobs")
     return jobs
 
 
