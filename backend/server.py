@@ -3685,19 +3685,55 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 await page.goto(apply_link, wait_until="networkidle", timeout=30000)
                 await asyncio.sleep(2)
                 
-                # Check for CAPTCHA
+                # Check for CAPTCHA - only detect VISIBLE captcha elements, not just any mention in HTML
                 page_content = await page.content()
                 page_content_lower = page_content.lower()
                 
-                captcha_indicators = [
-                    'captcha', 'recaptcha', 'hcaptcha', 'turnstile',
-                    'g-recaptcha', 'cf-turnstile', 'challenge-form',
-                    'verify you are human', 'prove you are not a robot'
+                # First check for actual visible CAPTCHA elements (iframes, divs with specific classes)
+                captcha_selectors = [
+                    'iframe[src*="recaptcha"]',
+                    'iframe[src*="hcaptcha"]', 
+                    'iframe[src*="turnstile"]',
+                    '.g-recaptcha:visible',
+                    '.h-captcha:visible',
+                    '[data-sitekey]',
+                    '.cf-turnstile:visible',
                 ]
                 
-                for indicator in captcha_indicators:
-                    if indicator in page_content_lower:
-                        captcha_detected = True
+                captcha_detected = False
+                for selector in captcha_selectors:
+                    try:
+                        element = await page.query_selector(selector)
+                        if element:
+                            is_visible = await element.is_visible()
+                            if is_visible:
+                                captcha_detected = True
+                                logger.info(f"CAPTCHA detected via selector: {selector}")
+                                break
+                    except:
+                        continue
+                
+                # Only if no visible captcha element found, check for challenge text in visible content
+                if not captcha_detected:
+                    # Check for explicit challenge text that would block the user
+                    challenge_phrases = [
+                        'verify you are human',
+                        'prove you are not a robot',
+                        'complete the security check',
+                        'please verify you are a human'
+                    ]
+                    
+                    # Get visible text only (not HTML source)
+                    try:
+                        visible_text = await page.inner_text('body')
+                        visible_text_lower = visible_text.lower()
+                        for phrase in challenge_phrases:
+                            if phrase in visible_text_lower:
+                                captcha_detected = True
+                                logger.info(f"CAPTCHA detected via visible text: {phrase}")
+                                break
+                    except:
+                        pass
                         logger.info(f"CAPTCHA detected: {indicator}")
                         break
                 
