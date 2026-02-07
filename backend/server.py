@@ -4844,6 +4844,55 @@ async def get_dashboard_stats(request: Request):
     }
 
 # ========================
+# ATS INGESTION STATS
+# ========================
+
+@api_router.get("/admin/ats-stats")
+async def get_ats_stats(request: Request):
+    """Get job ingestion statistics per ATS platform."""
+    user = await get_current_user(request)
+    
+    # Get job counts per ATS from cache
+    pipeline = [
+        {"$unwind": "$jobs"},
+        {"$group": {
+            "_id": "$jobs.source",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}}
+    ]
+    
+    ats_counts = {}
+    async for doc in db.job_cache.aggregate(pipeline):
+        ats_counts[doc["_id"]] = doc["count"]
+    
+    # Also get from applications
+    app_pipeline = [
+        {"$group": {
+            "_id": "$ats_type",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}}
+    ]
+    
+    app_ats_counts = {}
+    async for doc in db.applications.aggregate(app_pipeline):
+        if doc["_id"]:
+            app_ats_counts[doc["_id"]] = doc["count"]
+    
+    return {
+        "jobs_by_ats": ats_counts,
+        "applications_by_ats": app_ats_counts,
+        "configured_companies": {
+            "greenhouse": len(GREENHOUSE_COMPANIES),
+            "lever": len(LEVER_COMPANIES),
+            "smartrecruiters": len(SMARTRECRUITERS_COMPANIES),
+            "pinpoint": len(PINPOINT_COMPANIES),
+        },
+        "total_companies": len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES) + len(SMARTRECRUITERS_COMPANIES) + len(PINPOINT_COMPANIES)
+    }
+
+# ========================
 # HEALTH CHECK
 # ========================
 
