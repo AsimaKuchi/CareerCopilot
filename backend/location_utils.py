@@ -314,14 +314,14 @@ def is_job_valid_for_canadian_search(parsed_location: Dict, user_city: str = Non
     
     # Non-remote job (office or hybrid) - must be in Canada
     if parsed_location["country"] == "CA":
-        # Check city match if user specified a city
-        if user_city_lower:
-            job_city = (parsed_location["city"] or "").lower()
-            if job_city and job_city != user_city_lower:
-                # Check if same province at least
-                if user_province_upper and parsed_location["province"] == user_province_upper:
-                    return True, f"Office job in {parsed_location['city']}, {parsed_location['province']}"
-                return False, f"Office job in {parsed_location['city']}, not {user_city.title()}"
+        # For now, accept any Canadian job (user may be willing to relocate within Canada)
+        # In future, could add strict mode to filter by exact city
+        job_city = parsed_location["city"] or ""
+        job_province = parsed_location["province"] or ""
+        if job_city and job_province:
+            return True, f"Office/hybrid job in {job_city}, {job_province}"
+        elif job_province:
+            return True, f"Office/hybrid job in {job_province}, Canada"
         return True, "Office/hybrid job in Canada"
     
     # No country detected - check for Canadian indicators
