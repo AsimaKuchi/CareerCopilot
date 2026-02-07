@@ -5249,6 +5249,10 @@ async def scheduled_job_ingestion():
 @app.on_event("startup")
 async def start_scheduler():
     """Start the job scheduler on app startup."""
+    
+    # Ensure Playwright browsers are installed
+    await ensure_playwright_browsers()
+    
     # Run job ingestion every 2 hours
     scheduler.add_job(
         scheduled_job_ingestion,
@@ -5265,6 +5269,44 @@ async def start_scheduler():
     if job_count == 0:
         logger.info("Database empty - running initial job ingestion...")
         asyncio.create_task(ingest_all_jobs())
+
+
+async def ensure_playwright_browsers():
+    """Ensure Playwright browsers are installed. Auto-install if missing."""
+    import subprocess
+    
+    browser_path = "/pw-browsers/chromium-1200"
+    headless_shell_path = "/pw-browsers/chromium_headless_shell-1200"
+    
+    # Check if browsers exist
+    browsers_exist = os.path.exists(browser_path) or os.path.exists(headless_shell_path)
+    
+    if not browsers_exist:
+        logger.info("🔧 Playwright browsers not found. Installing...")
+        try:
+            # Set environment variable
+            env = os.environ.copy()
+            env['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
+            
+            # Install chromium
+            result = subprocess.run(
+                ['playwright', 'install', 'chromium'],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            
+            if result.returncode == 0:
+                logger.info("✅ Playwright browsers installed successfully")
+            else:
+                logger.error(f"❌ Playwright browser installation failed: {result.stderr}")
+        except subprocess.TimeoutExpired:
+            logger.error("❌ Playwright browser installation timed out")
+        except Exception as e:
+            logger.error(f"❌ Playwright browser installation error: {e}")
+    else:
+        logger.info("✅ Playwright browsers already installed")
 
 @app.on_event("shutdown")
 async def shutdown_scheduler():
