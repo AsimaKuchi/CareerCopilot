@@ -3609,12 +3609,17 @@ async def auto_fill_application_data(request: Request, application_id: str):
     
     # Determine ATS type
     ats_type = "unknown"
-    if "greenhouse.io" in apply_link.lower():
+    apply_link_lower = apply_link.lower()
+    if "greenhouse.io" in apply_link_lower or "boards.greenhouse" in apply_link_lower:
         ats_type = "greenhouse"
-    elif "lever.co" in apply_link.lower() or "jobs.lever" in apply_link.lower():
+    elif "lever.co" in apply_link_lower or "jobs.lever" in apply_link_lower:
         ats_type = "lever"
-    elif "ashbyhq.com" in apply_link.lower():
+    elif "ashbyhq.com" in apply_link_lower:
         ats_type = "ashby"
+    elif "smartrecruiters.com" in apply_link_lower or "jobs.smartrecruiters" in apply_link_lower:
+        ats_type = "smartrecruiters"
+    elif "pinpointhq.com" in apply_link_lower:
+        ats_type = "pinpoint"
     
     # Get resume file data for upload
     resume_file_data = None
