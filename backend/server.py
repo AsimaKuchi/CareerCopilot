@@ -50,6 +50,15 @@ from ats_scrapers import (
     PINPOINT_COMPANIES,
 )
 
+# Location parsing utilities
+from location_utils import (
+    parse_location,
+    is_job_valid_for_canadian_search,
+    get_remote_label_for_display,
+    CANADIAN_CITIES,
+    CANADIAN_PROVINCES,
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
