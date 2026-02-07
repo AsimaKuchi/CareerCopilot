@@ -3923,6 +3923,42 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
     captcha_detected = False
     temp_resume_path = None
     
+    # Ensure browsers are installed before attempting to use Playwright
+    browser_path = "/pw-browsers/chromium-1200"
+    headless_shell_path = "/pw-browsers/chromium_headless_shell-1200"
+    
+    if not os.path.exists(browser_path) and not os.path.exists(headless_shell_path):
+        logger.warning("Playwright browsers not found, attempting to install...")
+        try:
+            import subprocess
+            env = os.environ.copy()
+            env['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
+            result = subprocess.run(
+                ['playwright', 'install', 'chromium'],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            if result.returncode != 0:
+                return {
+                    "success": False,
+                    "captcha_detected": False,
+                    "fields_filled": [],
+                    "fields_failed": [],
+                    "error": "Browser installation failed. Please try again or use manual mode."
+                }
+            logger.info("Playwright browsers installed successfully")
+        except Exception as e:
+            logger.error(f"Browser installation error: {e}")
+            return {
+                "success": False,
+                "captcha_detected": False,
+                "fields_filled": [],
+                "fields_failed": [],
+                "error": f"Browser setup failed: {str(e)}. Please use manual mode."
+            }
+    
     try:
         # Create temp file for resume if we have data
         if resume_file_data:
