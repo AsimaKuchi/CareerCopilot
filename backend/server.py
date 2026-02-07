@@ -2632,6 +2632,54 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     else:
         match_reasoning = f"{match_label}: {', '.join(risks[:2]) if risks else 'Significant gaps detected'}. {decision_summary}"
     
+    # Build resume-grounded strengths for detailed analysis
+    grounded_strengths = []
+    
+    # Extract specific resume evidence for each strength
+    if has_resume:
+        # Find specific metrics and achievements from resume
+        resume_lines = profile.get("resume_text", "").split('\n')
+        resume_bullets = [line.strip() for line in resume_lines if line.strip() and (line.strip().startswith('-') or line.strip().startswith('•') or any(char.isdigit() for char in line))]
+        
+        # Skill-based grounded strengths
+        for skill in all_skills[:3]:
+            # Find resume evidence for this skill
+            skill_evidence = None
+            for bullet in resume_bullets:
+                if skill.lower() in bullet.lower():
+                    skill_evidence = bullet[:150] + "..." if len(bullet) > 150 else bullet
+                    break
+            
+            if skill_evidence:
+                grounded_strengths.append({
+                    "requirement": f"Job requires {skill}",
+                    "evidence": skill_evidence,
+                    "match_reason": f"Your resume demonstrates hands-on experience with {skill}"
+                })
+            else:
+                grounded_strengths.append({
+                    "requirement": f"Job requires {skill}",
+                    "evidence": f"{skill.title()} listed in your skills profile",
+                    "match_reason": f"Direct skill alignment with position requirements"
+                })
+        
+        # Experience/seniority grounded strength
+        if exp_score >= 15:
+            years_text = f"{user_years}+ years" if user_years else "relevant experience"
+            grounded_strengths.append({
+                "requirement": f"Position targets {job_seniority_name}-level candidates",
+                "evidence": f"Your profile indicates {years_text} of experience",
+                "match_reason": f"Your seniority level ({user_seniority or 'mid'}) aligns with this {job_seniority_name} role"
+            })
+        
+        # Role alignment grounded strength
+        if role_matched and target_roles:
+            grounded_strengths.append({
+                "requirement": f"Hiring for {job_title_display}",
+                "evidence": f"Your target role: {target_roles[0].title()}",
+                "match_reason": "Direct alignment between your career goals and this position"
+            })
+    
     return {
         "score": score,
         "recommendation": recommendation,
@@ -2639,13 +2687,17 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         "confidence": confidence,
         "risk": risk,
         "decision_summary": decision_summary,
-        "strengths": strengths[:3],  # Max 3
+        "strengths": strengths[:3],  # Max 3 (legacy format)
+        "grounded_strengths": grounded_strengths[:5],  # New: resume-grounded strengths
         "gaps": (risks + gaps)[:2],  # Max 2, prioritize risks
         "match_reasoning": match_reasoning,
         "value_add": value_add,
         "skip_reason": None if score >= 55 else "Below recommended match threshold",
         "auto_apply_blocked": auto_apply_blocked,
-        "auto_apply_reason": auto_apply_reason
+        "auto_apply_reason": auto_apply_reason,
+        "matched_skills": all_skills[:5],  # Expose matched skills
+        "job_seniority": job_seniority_name,
+        "user_seniority": user_seniority or "not specified",
     }
 
 
