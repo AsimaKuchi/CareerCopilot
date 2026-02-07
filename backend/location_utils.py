@@ -180,22 +180,23 @@ def parse_location(location_str: str, job_country: str = "", job_state: str = ""
             result["remote_scope"] = "unknown"
             result["remote_label"] = "Remote"
     
-    # Detect country
-    if "canada" in full_location or job_country_lower in ["ca", "canada"]:
-        result["country"] = "CA"
-        if is_remote and result["remote_scope"] == "unknown":
-            result["remote_scope"] = "country"
-            result["remote_label"] = "Remote (Canada)"
-    elif "united states" in full_location or "usa" in full_location or job_country_lower in ["us", "usa", "united states"]:
-        result["country"] = "US"
-        if is_remote and result["remote_scope"] == "unknown":
-            result["remote_scope"] = "country"
-            result["remote_label"] = "Remote (US)"
-    elif "united kingdom" in full_location or "uk" in full_location or job_country_lower in ["uk", "gb", "united kingdom"]:
-        result["country"] = "GB"
-        if is_remote and result["remote_scope"] == "unknown":
-            result["remote_scope"] = "country"
-            result["remote_label"] = "Remote (UK)"
+    # Detect country - only if not already set by remote indicators
+    if not result["country"]:
+        if "canada" in full_location or job_country_lower in ["ca", "canada"]:
+            result["country"] = "CA"
+            if is_remote and result["remote_scope"] == "unknown":
+                result["remote_scope"] = "country"
+                result["remote_label"] = "Remote (Canada)"
+        elif "united states" in full_location or "usa" in full_location or job_country_lower in ["us", "usa", "united states"]:
+            result["country"] = "US"
+            if is_remote and result["remote_scope"] == "unknown":
+                result["remote_scope"] = "country"
+                result["remote_label"] = "Remote (US)"
+        elif "united kingdom" in full_location or "uk" in full_location or job_country_lower in ["uk", "gb", "united kingdom"]:
+            result["country"] = "GB"
+            if is_remote and result["remote_scope"] == "unknown":
+                result["remote_scope"] = "country"
+                result["remote_label"] = "Remote (UK)"
     
     # Helper function to check for word boundary match
     def word_match(word, text):
