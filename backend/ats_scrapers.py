@@ -71,6 +71,21 @@ def is_canadian_job(location: str, description: str = "") -> bool:
     location_lower = location.lower()
     desc_lower = (description or "").lower()
     
+    # First check for non-Canadian country indicators - exclude these
+    non_canadian_indicators = [
+        "united kingdom", "uk", ", gb", "england", "scotland", "wales",
+        "united states", "usa", ", us", "america",
+        "germany", "france", "spain", "italy", "netherlands", "australia",
+        "india", "singapore", "japan", "china", "brazil", "mexico"
+    ]
+    
+    for indicator in non_canadian_indicators:
+        if indicator in location_lower:
+            # Exception: "Remote - US/Canada" or similar should still pass
+            if "canada" in location_lower:
+                break
+            return False
+    
     # Check for Canadian location keywords
     for loc in CANADIAN_LOCATIONS:
         if loc in location_lower:
