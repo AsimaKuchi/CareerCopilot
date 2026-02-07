@@ -39,9 +39,17 @@ Build a website that helps users find jobs best suited for them based on what in
 ## What's Been Implemented (February 7, 2025)
 
 ### Latest Updates ✅
+- **Resume-Grounded Match Analysis** (NEW):
+  - Redesigned match analysis to be grounded in actual resume content
+  - Each strength now includes: Job requirement → Resume evidence → Match reason
+  - No more generic phrases like "Strong role alignment" or "Experience aligns well"
+  - New `grounded_strengths` field with evidence-based analysis
+  - New `/api/ai/detailed-match-analysis` endpoint for AI-powered deep analysis
+  - Frontend updated to display structured evidence with visual hierarchy
+  - Added matched skills display with badges
 - **Fixed Cover Letter/Interview Prep Error (520)**: Updated skills handling for v2 schema
 - **Added LinkedIn Job Source Button**: Dedicated filter for LinkedIn-only jobs
-- **Comprehensive Location Filtering** (NEW):
+- **Comprehensive Location Filtering**:
   - Created `/app/backend/location_utils.py` with structured location parsing
   - Remote jobs now have proper scope: city, province, country, continent, or global
   - Canadian searches exclude Global/Worldwide remote jobs
@@ -51,13 +59,10 @@ Build a website that helps users find jobs best suited for them based on what in
   - All Canadian cities/provinces mapped for accurate detection
   - US states/cities mapped for exclusion
 - **Fixed CAPTCHA False Positives**: Updated detection to check visible elements only, not raw HTML
-- **New ATS Integrations (SmartRecruiters + Pinpoint)**:
-  - Created `/app/backend/ats_scrapers.py` with scrapers for new platforms
-  - Added 45+ Canadian companies to SmartRecruiters list
-  - Added Pinpoint scraper with public JSON API support
-  - Updated auto-fill field selectors for new ATS types
-  - Added ATS badges in job cards (SmartRecruiters: orange, Pinpoint: cyan)
-  - Added `/api/admin/ats-stats` endpoint for monitoring ingestion
+- **SmartRecruiters Integration Fixed**:
+  - Updated to use SmartRecruiters Public API
+  - 36+ Canadian jobs now being fetched
+  - Fixed location filter to exclude UK jobs (London, UK was matching London, ON)
 
 ### MVP Features ✅
 - **Landing Page**: Hero section, features showcase, CTAs with light theme
