@@ -1251,7 +1251,7 @@ async def fetch_all_jobs_parallel() -> List[Dict]:
     """Fetch jobs from all platforms in parallel batches for speed."""
     all_jobs = []
     
-    # Prepare all fetch tasks
+    # Prepare all fetch tasks for Greenhouse and Lever
     tasks = []
     for company in GREENHOUSE_COMPANIES:
         tasks.append(("greenhouse", company, fetch_greenhouse_company_jobs(company)))
@@ -1259,10 +1259,10 @@ async def fetch_all_jobs_parallel() -> List[Dict]:
         tasks.append(("lever", company, fetch_lever_company_jobs(company)))
     # Skip Ashby for now - requires Playwright
     
-    logger.info(f"Fetching from {len(tasks)} companies in parallel...")
+    logger.info(f"Fetching from {len(tasks)} Greenhouse/Lever companies in parallel...")
     start_time = datetime.now(timezone.utc)
     
-    # Process in batches for controlled parallelism
+    # Process Greenhouse/Lever in batches for controlled parallelism
     batch_size = PARALLEL_BATCH_SIZE
     for i in range(0, len(tasks), batch_size):
         batch = tasks[i:i + batch_size]
@@ -1277,6 +1277,16 @@ async def fetch_all_jobs_parallel() -> List[Dict]:
                 logger.debug(f"  {platform}/{company}: {len(result)} jobs")
             elif isinstance(result, Exception):
                 logger.debug(f"  {platform}/{company}: error - {type(result).__name__}")
+    
+    # Fetch from new ATS platforms (SmartRecruiters, Pinpoint)
+    try:
+        logger.info("Fetching from SmartRecruiters and Pinpoint...")
+        new_ats_jobs = await fetch_all_new_ats_jobs_flat()
+        if new_ats_jobs:
+            all_jobs.extend(new_ats_jobs)
+            logger.info(f"Added {len(new_ats_jobs)} jobs from SmartRecruiters/Pinpoint")
+    except Exception as e:
+        logger.error(f"Error fetching from new ATS platforms: {e}")
     
     elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
     logger.info(f"Parallel fetch complete: {len(all_jobs)} jobs in {elapsed:.1f}s")
