@@ -2789,6 +2789,128 @@ Return the concise, one-page optimized resume now:"""
         logger.error(f"Resume optimization error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to optimize resume")
 
+
+class DetailedMatchRequest(BaseModel):
+    job_title: str
+    company_name: str
+    job_description: str
+
+
+@api_router.post("/ai/detailed-match-analysis")
+async def generate_detailed_match_analysis(request: Request, req: DetailedMatchRequest):
+    """
+    Generate resume-grounded match analysis.
+    Every strength must reference specific resume evidence and job requirements.
+    """
+    user = await get_current_user(request)
+    
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not profile:
+        raise HTTPException(status_code=400, detail="Please complete your profile first")
+    
+    resume_text = profile.get("resume_text", "")
+    if not resume_text or len(resume_text) < 100:
+        raise HTTPException(status_code=400, detail="Please upload your resume for detailed analysis")
+    
+    # Get skills with years for context
+    skills = profile.get("skills", [])
+    skills_text = ""
+    if skills:
+        if isinstance(skills[0], dict):
+            skills_text = ", ".join([f"{s.get('name', '')} ({s.get('years', 0)} years)" for s in skills])
+        else:
+            skills_text = ", ".join(skills)
+    
+    experience_years = profile.get("experience_years", 0)
+    target_roles = profile.get("job_titles", [])
+    seniority = profile.get("seniority_level", "mid")
+    
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"match_analysis_{user.user_id}_{uuid.uuid4().hex[:8]}",
+        system_message="""You are an expert career analyst who provides evidence-based job match analysis.
+
+CRITICAL RULES:
+1. Every strength MUST reference specific evidence from the resume
+2. Every strength MUST reference a specific job requirement
+3. NO generic phrases like "Strong role alignment", "Experience aligns well", "Good fit"
+4. If resume evidence is weak or missing for a requirement, say so explicitly
+5. Do NOT fabricate or assume experience not in the resume
+6. Prefer fewer, higher-quality bullets over generic coverage
+
+FORMAT for each strength bullet:
+[Job requirement] → [Resume evidence] → [Why it matters]
+
+Example of GOOD analysis:
+"SQL-based analysis required → Resume shows 'Built SQL queries for performance reporting and trend analysis' → Direct skill match for analytical requirements"
+
+Example of BAD analysis (DO NOT DO THIS):
+"Strong role alignment: Your experience aligns well with this position" 
+"""
+    ).with_model("openai", "gpt-5.2")
+    
+    prompt = f"""Analyze this job match based on the candidate's ACTUAL resume content.
+
+JOB DETAILS:
+- Title: {req.job_title}
+- Company: {req.company_name}
+- Description: {req.job_description}
+
+CANDIDATE PROFILE:
+- Experience: {experience_years} years
+- Seniority Level: {seniority}
+- Target Roles: {', '.join(target_roles) if target_roles else 'Not specified'}
+- Skills: {skills_text if skills_text else 'Not specified'}
+
+CANDIDATE RESUME (use this as evidence):
+{resume_text}
+
+GENERATE A RESUME-GROUNDED MATCH ANALYSIS:
+
+1. **Match Summary** (1-2 sentences)
+   Explain why this role fits based on SPECIFIC resume evidence, not generic statements.
+
+2. **Strengths** (3-5 bullets, ONLY if evidence exists)
+   Each bullet MUST follow this format:
+   [Specific job requirement] → [Specific resume bullet/experience] → [Why this matters for the role]
+   
+   Focus on:
+   - Tools/technologies mentioned in both job and resume
+   - Metrics/outcomes from resume that match job needs
+   - Domain experience that aligns
+   - Relevant certifications or education
+
+3. **Gaps/Concerns** (1-3 bullets, be honest)
+   List requirements from the job description where:
+   - Resume evidence is weak or missing
+   - Experience level may not match
+   - Skills need development
+
+4. **Recommendation**
+   Should the candidate apply? Why or why not based on evidence?
+
+IMPORTANT: Be specific and honest. Reference actual text from the resume. If you can't find evidence for something, say "Resume does not demonstrate..." rather than making assumptions."""
+
+    try:
+        response = await chat.send_message(UserMessage(text=prompt))
+        return {
+            "detailed_analysis": response,
+            "job_title": req.job_title,
+            "company": req.company_name,
+            "skills_analyzed": skills_text,
+            "experience_years": experience_years
+        }
+    except Exception as e:
+        logger.error(f"Detailed match analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate detailed analysis")
+
+
 @api_router.post("/ai/cover-letter")
 async def generate_cover_letter(request: Request, req: GenerateCoverLetterRequest):
     """Generate personalized cover letter."""
