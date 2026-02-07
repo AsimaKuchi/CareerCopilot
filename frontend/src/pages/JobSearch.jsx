@@ -833,8 +833,26 @@ export default function JobSearch({ user }) {
 
                       {isExpanded && (
                         <div className="mb-4 p-4 rounded-lg bg-white/5 border border-white/10 space-y-3">
-                          {/* Strengths */}
-                          {job.match_strengths?.length > 0 && (
+                          {/* Grounded Strengths (new format with evidence) */}
+                          {job.grounded_strengths?.length > 0 ? (
+                            <div>
+                              <h5 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-1">
+                                <CheckCircle className="w-4 h-4" /> Resume-Grounded Strengths
+                              </h5>
+                              <ul className="space-y-3">
+                                {job.grounded_strengths.map((s, idx) => (
+                                  <li key={idx} className="text-sm bg-emerald-500/5 p-2 rounded border-l-2 border-emerald-500/50">
+                                    <div className="text-emerald-300 font-medium">{s.requirement}</div>
+                                    <div className="text-muted-foreground mt-1">
+                                      <span className="text-gray-400">Evidence:</span> {s.evidence}
+                                    </div>
+                                    <div className="text-emerald-400/80 text-xs mt-1 italic">{s.match_reason}</div>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : job.match_strengths?.length > 0 ? (
+                            /* Fallback to old format if grounded_strengths not available */
                             <div>
                               <h5 className="text-sm font-medium text-emerald-400 mb-1 flex items-center gap-1">
                                 <CheckCircle className="w-4 h-4" /> Strengths
@@ -844,6 +862,22 @@ export default function JobSearch({ user }) {
                                   <li key={idx} className="text-sm text-muted-foreground pl-5">• {s}</li>
                                 ))}
                               </ul>
+                            </div>
+                          ) : null}
+                          
+                          {/* Matched Skills */}
+                          {job.matched_skills?.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium text-blue-400 mb-1 flex items-center gap-1">
+                                <Zap className="w-4 h-4" /> Matched Skills
+                              </h5>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {job.matched_skills.map((skill, idx) => (
+                                  <span key={idx} className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           )}
                           
