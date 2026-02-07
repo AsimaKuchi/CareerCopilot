@@ -740,6 +740,16 @@ export default function JobSearch({ user }) {
                                 Ashby
                               </Badge>
                             )}
+                            {job.source === "smartrecruiters" && (
+                              <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0 text-[10px]">
+                                SmartRecruiters
+                              </Badge>
+                            )}
+                            {job.source === "pinpoint" && (
+                              <Badge className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-1.5 py-0 text-[10px]">
+                                Pinpoint
+                              </Badge>
+                            )}
                             {job.is_linkedin && (
                               <Badge className="bg-blue-600/20 text-blue-300 border border-blue-600/30 px-1.5 py-0 text-[10px]">
                                 🔒 LinkedIn
