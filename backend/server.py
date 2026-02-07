@@ -3306,6 +3306,10 @@ async def get_autofill_payload(request: Request, application_id: str):
         ats_type = "smartrecruiters"
         ats_confidence = "high"
         ats_detected_from = "domain"
+    elif "pinpointhq.com" in apply_link_lower:
+        ats_type = "pinpoint"
+        ats_confidence = "high"
+        ats_detected_from = "domain"
     elif "jobvite.com" in apply_link_lower:
         ats_type = "jobvite"
         ats_confidence = "high"
