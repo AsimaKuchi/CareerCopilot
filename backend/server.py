@@ -3745,18 +3745,30 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                         "error": "CAPTCHA detected"
                     }
                 
-                # Check for login requirement
-                login_indicators = ['sign in', 'log in', 'login required', 'please sign in']
-                for indicator in login_indicators:
-                    if indicator in page_content_lower:
-                        await browser.close()
-                        return {
-                            "success": False,
-                            "captcha_detected": False,
-                            "fields_filled": [],
-                            "fields_failed": [],
-                            "error": "Login required - please apply directly"
-                        }
+                # Check for login requirement - use visible text, not raw HTML
+                # Many job sites have "sign in" links but don't require login to apply
+                login_blockers = [
+                    'login required',
+                    'please sign in to continue',
+                    'you must be logged in',
+                    'sign in to apply'
+                ]
+                
+                try:
+                    visible_text = await page.inner_text('body')
+                    visible_text_lower = visible_text.lower()
+                    for blocker in login_blockers:
+                        if blocker in visible_text_lower:
+                            await browser.close()
+                            return {
+                                "success": False,
+                                "captcha_detected": False,
+                                "fields_filled": [],
+                                "fields_failed": [],
+                                "error": "Login required - please apply directly"
+                            }
+                except:
+                    pass
                 
                 # Define field selectors based on ATS type
                 field_selectors = get_field_selectors(ats_type)
