@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # ========================
 
 # SmartRecruiters - Canadian companies with active job boards
-# Format: company slug as it appears in jobs.smartrecruiters.com/{slug}
+# Format: company slug as it appears in jobs.smartrecruiters.com/{slug} or careers.smartrecruiters.com/{slug}
 SMARTRECRUITERS_COMPANIES = [
     # Major Canadian Tech Companies
     "Shopify5",  # Shopify
@@ -52,6 +52,25 @@ SMARTRECRUITERS_COMPANIES = [
     "SkipTheDishes",
     "Ritual",
     "League",
+    # Additional verified Canadian companies
+    "ampleinsightinc",  # Ample Insight Inc. (verified)
+    "CSGROUP/cscanada",  # CS GROUP Canada (verified)
+    "Indigo",  # Indigo Books (verified)
+    # Enterprise/Large Canadian companies
+    "RBC",
+    "TD",
+    "BMO",
+    "ScotiabankGroup",
+    "CIBC",
+    "SunLife",
+    "ManulifeFinancialCorporation",
+    "Telus",
+    "Bell",
+    "Rogers",
+    "LoblawCompaniesLimited",
+    # Canadian Crown Corporations & Government
+    "CanadaPost",
+    "VIARail",
 ]
 
 # Pinpoint - Canadian companies with active job boards
