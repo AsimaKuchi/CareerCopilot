@@ -3734,8 +3734,6 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                 break
                     except:
                         pass
-                        logger.info(f"CAPTCHA detected: {indicator}")
-                        break
                 
                 if captcha_detected:
                     await browser.close()
