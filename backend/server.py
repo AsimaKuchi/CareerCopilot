@@ -5310,6 +5310,7 @@ async def start_scheduler():
 async def ensure_playwright_browsers():
     """Ensure Playwright browsers are installed. Auto-install if missing."""
     import subprocess
+    import sys
     
     browser_path = "/pw-browsers/chromium-1200"
     headless_shell_path = "/pw-browsers/chromium_headless_shell-1200"
@@ -5324,13 +5325,13 @@ async def ensure_playwright_browsers():
             env = os.environ.copy()
             env['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
             
-            # Install chromium
+            # Install chromium using python -m playwright
             result = subprocess.run(
-                ['playwright', 'install', 'chromium'],
+                [sys.executable, '-m', 'playwright', 'install', 'chromium'],
                 env=env,
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=180
             )
             
             if result.returncode == 0:
