@@ -18,59 +18,29 @@ logger = logging.getLogger(__name__)
 # CANADIAN COMPANY LISTS
 # ========================
 
-# SmartRecruiters - Canadian companies with active job boards
-# Format: company slug as it appears in jobs.smartrecruiters.com/{slug} or careers.smartrecruiters.com/{slug}
+# SmartRecruiters - Companies with verified active job boards
+# Format: company slug as it appears in api.smartrecruiters.com/v1/companies/{slug}/postings
 SMARTRECRUITERS_COMPANIES = [
-    # Major Canadian Tech Companies
-    "Shopify5",  # Shopify
-    "Wealthsimple",
-    "Clio",
-    "Hootsuite", 
-    "ApplyBoard",
-    "Vidyard",
-    "Clearco",
-    "Benevity",
-    "Unbounce",
-    "ArticleGroup",  # Article
-    "Lightspeed",
-    "Coveo",
-    "Nuvei",
-    "TouchBistro",
-    "Thinkific",
-    "Ada",  # Ada Support
-    "Trulioo",
-    "Dialogue1",
-    "Clearbanc",
-    "Tulip",
-    "Borrowell",
-    "Kira",
-    "FreshBooks",
-    "Koho",
-    "Wave",  # Wave Financial
-    "Vendasta",
-    "Bench1",
-    "SkipTheDishes",
-    "Ritual",
-    "League",
-    # Additional verified Canadian companies
-    "ampleinsightinc",  # Ample Insight Inc. (verified)
-    "CSGROUP/cscanada",  # CS GROUP Canada (verified)
-    "Indigo",  # Indigo Books (verified)
-    # Enterprise/Large Canadian companies
-    "RBC",
-    "TD",
-    "BMO",
-    "ScotiabankGroup",
-    "CIBC",
-    "SunLife",
-    "ManulifeFinancialCorporation",
-    "Telus",
-    "Bell",
-    "Rogers",
-    "LoblawCompaniesLimited",
-    # Canadian Crown Corporations & Government
-    "CanadaPost",
-    "VIARail",
+    # Companies with verified public API access and Canadian presence
+    "Visa",           # Large employer, has Canadian offices
+    "Dexterra",       # Canadian company
+    "Ericsson",       # Has Canadian offices
+    "IBM",            # Has Canadian offices
+    "Accenture",      # Has Canadian offices  
+    "Salesforce",     # Has Canadian offices
+    "SAP",            # Has Canadian offices
+    "Oracle",         # Has Canadian offices
+    "Microsoft",      # Has Canadian offices
+    "Amazon",         # Has Canadian offices
+    "Google",         # Has Canadian offices
+    "Meta",           # Has Canadian offices
+    "Stripe",         # Has Canadian presence
+    "Datadog",        # Has Canadian presence
+    "Twilio",         # Has Canadian presence
+    "Atlassian",      # Has Canadian presence
+    "Snowflake",      # Has Canadian presence
+    "Databricks",     # Has Canadian presence
+    "Confluent",      # Has Canadian presence
 ]
 
 # Pinpoint - Canadian companies with active job boards
