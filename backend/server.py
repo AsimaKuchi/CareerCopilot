@@ -1526,10 +1526,10 @@ async def search_greenhouse(request: Request):
             if not is_english_job(job.get("title", "")):
                 continue
             
-            job_title = job.get("title", "").lower()
-            job_company = job.get("company", "").lower()
-            job_dept = job.get("department", "").lower()
-            job_location = job.get("location", "").lower()
+            job_title = (job.get("title") or "").lower()
+            job_company = (job.get("company") or "").lower()
+            job_dept = (job.get("department") or "").lower()
+            job_location = (job.get("location") or "").lower()
             search_text = f"{job_title} {job_company} {job_dept}"
             
             # Query match logic
