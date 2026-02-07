@@ -46,6 +46,7 @@ import {
   ChevronUp,
   Target,
   Copy,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
