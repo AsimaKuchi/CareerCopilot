@@ -2048,12 +2048,52 @@ async def search_jobs(request: Request):
             # Filter out Bebee jobs (poor quality spam)
             jobs = [job for job in jobs if "bebee.com" not in job.get("job_apply_link", "").lower()]
             
+            # Filter by country if we have a country preference
+            if country_code:
+                # Map country codes to country names that might appear in job data
+                country_names = {
+                    "CA": ["canada", "ca"],
+                    "US": ["united states", "usa", "us"],
+                    "GB": ["united kingdom", "uk", "gb", "england", "scotland", "wales"]
+                }
+                
+                allowed_countries = country_names.get(country_code, [])
+                filtered_jobs = []
+                
+                for job in jobs:
+                    job_country = (job.get("job_country") or "").lower()
+                    job_state = (job.get("job_state") or "").lower()
+                    job_city = (job.get("job_city") or "").lower()
+                    job_location_full = f"{job_city} {job_state} {job_country}".lower()
+                    
+                    # Check if job is in the allowed country
+                    is_allowed = any(c in job_country for c in allowed_countries)
+                    
+                    # For Canada searches, also check province names
+                    if country_code == "CA" and not is_allowed:
+                        canadian_provinces = ["ontario", "quebec", "british columbia", "alberta", "manitoba", 
+                                             "saskatchewan", "nova scotia", "new brunswick", "newfoundland",
+                                             "prince edward island", "yukon", "nunavut", "northwest territories"]
+                        is_allowed = any(prov in job_location_full for prov in canadian_provinces)
+                    
+                    # For US searches, check state abbreviations
+                    if country_code == "US" and not is_allowed:
+                        us_states = ["ny", "ca", "tx", "fl", "wa", "il", "ma", "co", "ga", "nc", "pa", "oh", "mi", "az"]
+                        # Only match if it's clearly a US state, not just letters in a name
+                        is_allowed = job_country in ["us", "usa", "united states"] or any(f", {st}" in job_location_full or f" {st}," in job_location_full for st in us_states)
+                    
+                    if is_allowed:
+                        filtered_jobs.append(job)
+                
+                logger.info(f"Filtered from {len(jobs)} to {len(filtered_jobs)} jobs for country {country_code}")
+                jobs = filtered_jobs
+            
             # Filter for LinkedIn only if requested
             if linkedin_only:
                 jobs = [job for job in jobs if "linkedin.com" in job.get("job_apply_link", "").lower()]
                 logger.info(f"Filtered to {len(jobs)} LinkedIn jobs")
             else:
-                logger.info(f"Filtered to {len(jobs)} non-Bebee jobs")
+                logger.info(f"Filtered to {len(jobs)} jobs")
             
             # Get applied job IDs to filter duplicates
             existing_applications = await db.applications.find(
