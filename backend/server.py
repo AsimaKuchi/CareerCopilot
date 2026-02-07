@@ -2076,44 +2076,63 @@ async def search_jobs(request: Request):
             # Filter out Bebee jobs (poor quality spam)
             jobs = [job for job in jobs if "bebee.com" not in job.get("job_apply_link", "").lower()]
             
-            # Filter by country if we have a country preference
-            if country_code:
-                # Map country codes to country names that might appear in job data
-                country_names = {
-                    "CA": ["canada", "ca"],
-                    "US": ["united states", "usa", "us"],
-                    "GB": ["united kingdom", "uk", "gb", "england", "scotland", "wales"]
-                }
-                
-                allowed_countries = country_names.get(country_code, [])
+            # Extract user's city and province for location filtering
+            user_city = None
+            user_province = None
+            if location_lower:
+                # Parse the search location to get city/province
+                for city, prov in CANADIAN_CITIES.items():
+                    if city in location_lower:
+                        user_city = city
+                        user_province = prov
+                        break
+                if not user_province:
+                    for prov_name, prov_code in CANADIAN_PROVINCES.items():
+                        if len(prov_name) > 2 and prov_name in location_lower:
+                            user_province = prov_code
+                            break
+            
+            # Filter jobs using comprehensive location parsing
+            if country_code == "CA":
                 filtered_jobs = []
                 
                 for job in jobs:
-                    job_country = (job.get("job_country") or "").lower()
-                    job_state = (job.get("job_state") or "").lower()
-                    job_city = (job.get("job_city") or "").lower()
-                    job_location_full = f"{job_city} {job_state} {job_country}".lower()
+                    job_location = job.get("job_city", "") or ""
+                    if job.get("job_state"):
+                        job_location += f", {job.get('job_state')}"
+                    if job.get("job_country"):
+                        job_location += f", {job.get('job_country')}"
                     
-                    # Check if job is in the allowed country
-                    is_allowed = any(c in job_country for c in allowed_countries)
+                    # Also check the job employment type for remote indicators
+                    is_remote = job.get("job_is_remote", False)
+                    if is_remote:
+                        job_location = f"Remote - {job_location}" if job_location else "Remote"
                     
-                    # For Canada searches, also check province names
-                    if country_code == "CA" and not is_allowed:
-                        canadian_provinces = ["ontario", "quebec", "british columbia", "alberta", "manitoba", 
-                                             "saskatchewan", "nova scotia", "new brunswick", "newfoundland",
-                                             "prince edward island", "yukon", "nunavut", "northwest territories"]
-                        is_allowed = any(prov in job_location_full for prov in canadian_provinces)
+                    # Parse the location
+                    parsed = parse_location(
+                        job_location,
+                        job_country=job.get("job_country", ""),
+                        job_state=job.get("job_state", ""),
+                        job_city=job.get("job_city", "")
+                    )
                     
-                    # For US searches, check state abbreviations
-                    if country_code == "US" and not is_allowed:
-                        us_states = ["ny", "ca", "tx", "fl", "wa", "il", "ma", "co", "ga", "nc", "pa", "oh", "mi", "az"]
-                        # Only match if it's clearly a US state, not just letters in a name
-                        is_allowed = job_country in ["us", "usa", "united states"] or any(f", {st}" in job_location_full or f" {st}," in job_location_full for st in us_states)
+                    # Check if valid for Canadian search
+                    is_valid, reason = is_job_valid_for_canadian_search(
+                        parsed, 
+                        user_city=user_city,
+                        user_province=user_province
+                    )
                     
-                    if is_allowed:
+                    if is_valid:
+                        # Add parsed location info to job
+                        job["parsed_location"] = parsed
+                        job["remote_label"] = get_remote_label_for_display(parsed)
+                        job["location_filter_reason"] = reason
                         filtered_jobs.append(job)
+                    else:
+                        logger.debug(f"Filtered out job: {job.get('job_title')} - {reason}")
                 
-                logger.info(f"Filtered from {len(jobs)} to {len(filtered_jobs)} jobs for country {country_code}")
+                logger.info(f"Location filter: {len(jobs)} -> {len(filtered_jobs)} jobs for {user_city or user_province or 'Canada'}")
                 jobs = filtered_jobs
             
             # Filter for LinkedIn only if requested
