@@ -3931,14 +3931,15 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
         logger.warning("Playwright browsers not found, attempting to install...")
         try:
             import subprocess
+            import sys
             env = os.environ.copy()
             env['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
             result = subprocess.run(
-                ['playwright', 'install', 'chromium'],
+                [sys.executable, '-m', 'playwright', 'install', 'chromium'],
                 env=env,
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=180
             )
             if result.returncode != 0:
                 return {
