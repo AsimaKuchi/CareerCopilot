@@ -786,10 +786,18 @@ export default function JobSearch({ user }) {
                             <span className="capitalize">{job.employment_type.toLowerCase().replace('_', '-')}</span>
                           </div>
                         )}
-                        {job.is_remote && (
+                        {/* Show remote label with scope */}
+                        {(job.remote_label || job.is_remote || job.job_is_remote) && (
                           <div className="flex items-center gap-1 text-emerald-400">
                             <Globe className="w-4 h-4" />
-                            <span>Remote</span>
+                            <span>{job.remote_label || "Remote"}</span>
+                          </div>
+                        )}
+                        {/* Show hybrid indicator */}
+                        {job.parsed_location?.is_hybrid && (
+                          <div className="flex items-center gap-1 text-blue-400">
+                            <Building className="w-4 h-4" />
+                            <span>Hybrid</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1">
