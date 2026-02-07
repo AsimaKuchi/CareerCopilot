@@ -4038,6 +4038,45 @@ def get_field_selectors(ats_type: str) -> dict:
         # Ashby uses aria-labels
         for field in common:
             common[field].append(f'input[aria-label*="{field.replace("_", " ")}" i]')
+    elif ats_type == "smartrecruiters":
+        # SmartRecruiters uses data-test attributes and specific class names
+        common["first_name"].extend([
+            'input[data-test="first-name"]',
+            'input[class*="firstName"]',
+        ])
+        common["last_name"].extend([
+            'input[data-test="last-name"]',
+            'input[class*="lastName"]',
+        ])
+        common["email"].extend([
+            'input[data-test="email"]',
+        ])
+        common["phone"].extend([
+            'input[data-test="phone"]',
+        ])
+    elif ats_type == "pinpoint":
+        # Pinpoint uses standard naming with some variations
+        common["first_name"].extend([
+            'input[name="candidate[first_name]"]',
+            'input[id="candidate_first_name"]',
+        ])
+        common["last_name"].extend([
+            'input[name="candidate[last_name]"]',
+            'input[id="candidate_last_name"]',
+        ])
+        common["email"].extend([
+            'input[name="candidate[email]"]',
+            'input[id="candidate_email"]',
+        ])
+        common["phone"].extend([
+            'input[name="candidate[phone]"]',
+            'input[id="candidate_phone"]',
+        ])
+    elif ats_type == "unknown":
+        # For unknown ATS, add more generic selectors
+        for field in common:
+            common[field].append(f'input[name*="{field}" i]')
+            common[field].append(f'input[id*="{field}" i]')
     
     return common
 
