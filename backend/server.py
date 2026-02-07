@@ -1552,46 +1552,49 @@ async def search_greenhouse(request: Request):
                     # Single word - broad matching
                     query_match = any(word in search_text for word in query_words)
             
-            # Location match logic
+            # Location match logic using comprehensive location parsing
             location_match = True
             if location_lower:
-                location_words = location_lower.replace(",", " ").split()
-                location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
+                # Extract user's city and province from search
+                user_city = None
+                user_province = None
+                for city, prov in CANADIAN_CITIES.items():
+                    if city in location_lower:
+                        user_city = city
+                        user_province = prov
+                        break
+                if not user_province:
+                    for prov_name, prov_code in CANADIAN_PROVINCES.items():
+                        if len(prov_name) > 2 and prov_name in location_lower:
+                            user_province = prov_code
+                            break
                 
-                # Canadian cities/provinces mapping
-                canadian_keywords = ["toronto", "vancouver", "montreal", "ottawa", "calgary", "edmonton", 
-                                    "ontario", "quebec", "bc", "alberta", "manitoba", "saskatchewan"]
-                us_keywords = ["usa", "new york", "california", "texas", "florida", "seattle", 
-                              "san francisco", "los angeles", "chicago", "boston", "denver"]
+                # Check if this is a Canadian search
+                is_canada_search = user_city or user_province or "canada" in location_lower
                 
-                is_canada_search = any(city in location_keywords for city in canadian_keywords) or "canada" in location_keywords
-                is_us_search = any(kw in location_keywords for kw in us_keywords) or "usa" in location_keywords or "united states" in location_lower
-                
-                if is_canada_search and "canada" not in location_keywords:
-                    location_keywords.append("canada")
-                
-                if location_keywords:
-                    location_match = any(keyword in job_location for keyword in location_keywords)
+                if is_canada_search:
+                    # Parse the job location
+                    parsed = parse_location(job.get("location", ""))
                     
-                    # For remote jobs: only match if they're available in the user's country
-                    if not location_match and ("remote" in job_location or job_location == ""):
-                        # Check if the remote job has country restrictions
-                        job_location_full = job.get("location", "").lower()
-                        
-                        # If user is searching Canada, only include remote jobs that are:
-                        # 1. Explicitly available in Canada, OR
-                        # 2. Don't have US-only restrictions
-                        if is_canada_search:
-                            has_us_restriction = any(us_kw in job_location_full for us_kw in ["united states", "usa", "us only", "u.s."])
-                            has_canada = "canada" in job_location_full
-                            # Include if it has Canada mentioned OR doesn't have US-only restrictions
-                            location_match = has_canada or (not has_us_restriction and "remote" in job_location_full)
-                        elif is_us_search:
-                            has_canada_restriction = "canada" in job_location_full and "united states" not in job_location_full
-                            location_match = not has_canada_restriction
-                        else:
-                            # No specific country preference, include all remote jobs
-                            location_match = True
+                    # Check if valid for Canadian search
+                    is_valid, reason = is_job_valid_for_canadian_search(
+                        parsed,
+                        user_city=user_city,
+                        user_province=user_province
+                    )
+                    
+                    location_match = is_valid
+                    
+                    if is_valid:
+                        # Add parsed location info to job
+                        job["parsed_location"] = parsed
+                        job["remote_label"] = get_remote_label_for_display(parsed)
+                        job["location_filter_reason"] = reason
+                else:
+                    # Non-Canadian search - use simple keyword matching
+                    location_words = location_lower.replace(",", " ").split()
+                    location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
+                    location_match = any(keyword in job_location for keyword in location_keywords) if location_keywords else True
             
             if not (query_match and location_match):
                 continue
