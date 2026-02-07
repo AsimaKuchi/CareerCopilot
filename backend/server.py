@@ -41,6 +41,15 @@ from profile_schema import (
     get_skill_names,
 )
 
+# ATS Scrapers for SmartRecruiters, Pinpoint, etc.
+from ats_scrapers import (
+    fetch_all_new_ats_jobs_flat,
+    fetch_all_smartrecruiters_jobs,
+    fetch_all_pinpoint_jobs,
+    SMARTRECRUITERS_COMPANIES,
+    PINPOINT_COMPANIES,
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
