@@ -43,12 +43,13 @@ SMARTRECRUITERS_COMPANIES = [
     "Confluent",      # Has Canadian presence
 ]
 
-# Pinpoint - Canadian companies with active job boards
+# Pinpoint - Companies with verified Canadian presence
 # Format: subdomain as it appears in {subdomain}.pinpointhq.com
+# Note: Pinpoint is less common in Canada - add companies as they're discovered
 PINPOINT_COMPANIES = [
-    # Note: Pinpoint is less common in Canada, these are known users
-    "workwithus",  # Pinpoint's own board (for testing)
-    # Add more Canadian companies as they're discovered
+    # Most Pinpoint users are UK-based
+    # Add Canadian companies here as they're found
+    # "example-canadian-company",
 ]
 
 # Canadian provinces and cities for location filtering
