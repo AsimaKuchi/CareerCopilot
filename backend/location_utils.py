@@ -102,6 +102,7 @@ US_ONLY_REMOTE_INDICATORS = [
     "remote - us", "us remote", "remote (us)", "usa remote", "remote - usa",
     "remote (usa)", "us only", "usa only", "united states only",
     "remote - united states", "us-based remote", "remote us only",
+    "remote - united states only", "united states remote",
 ]
 
 
