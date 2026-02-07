@@ -41,10 +41,15 @@ Build a website that helps users find jobs best suited for them based on what in
 ### Latest Updates ✅
 - **Fixed Cover Letter/Interview Prep Error (520)**: Updated skills handling for v2 schema
 - **Added LinkedIn Job Source Button**: Dedicated filter for LinkedIn-only jobs
-- **Improved Location Filtering**: 
-  - Added country code filtering to JSearch API (CA for Canada)
-  - Client-side filtering to ensure Canadian jobs only for Canadian searches
-  - Updated remote job logic to exclude US-only remote jobs for Canadian users
+- **Comprehensive Location Filtering** (NEW):
+  - Created `/app/backend/location_utils.py` with structured location parsing
+  - Remote jobs now have proper scope: city, province, country, continent, or global
+  - Canadian searches exclude Global/Worldwide remote jobs
+  - Canadian searches exclude US-only remote jobs
+  - Remote jobs display scope labels: "Remote (Canada)", "Remote (North America)", etc.
+  - Hybrid jobs properly detected and labeled
+  - All Canadian cities/provinces mapped for accurate detection
+  - US states/cities mapped for exclusion
 - **Fixed CAPTCHA False Positives**: Updated detection to check visible elements only, not raw HTML
 - **New ATS Integrations (SmartRecruiters + Pinpoint)**:
   - Created `/app/backend/ats_scrapers.py` with scrapers for new platforms
