@@ -592,7 +592,7 @@ export default function JobSearch({ user }) {
             </div>
             {jobSource === "quality" && (
               <p className="text-xs text-gray-400 mb-4">
-                Searching 145 companies on Greenhouse, Lever & Ashby
+                Searching 175+ companies on Greenhouse, Lever, Ashby, SmartRecruiters & Pinpoint
               </p>
             )}
             {jobSource === "linkedin" && (
