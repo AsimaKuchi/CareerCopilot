@@ -508,16 +508,30 @@ export default function Applications({ user }) {
       const data = await response.json();
 
       if (data.submitted) {
-        // Successfully submitted!
-        toast.success(
-          <div>
-            <div className="font-semibold">🎉 Application Submitted!</div>
-            <div className="text-sm mt-1">
-              {data.fields_filled?.length || 0} fields filled and submitted to {company}
-            </div>
-          </div>,
-          { duration: 8000 }
-        );
+        // Submit button was clicked - but check if it was confirmed
+        const isConfirmed = data.submission_confirmed;
+        
+        if (isConfirmed) {
+          toast.success(
+            <div>
+              <div className="font-semibold">🎉 Application Likely Submitted!</div>
+              <div className="text-sm mt-1">
+                {data.fields_filled?.length || 0} fields filled. Check your email for confirmation from {company}.
+              </div>
+            </div>,
+            { duration: 10000 }
+          );
+        } else {
+          toast.warning(
+            <div>
+              <div className="font-semibold">⚠️ Submit Clicked - Verify via Email</div>
+              <div className="text-sm mt-1">
+                Form submitted but confirmation page not detected. Please check your email.
+              </div>
+            </div>,
+            { duration: 10000 }
+          );
+        }
         
         // Update the local application state
         setApplications((apps) =>
@@ -528,7 +542,7 @@ export default function Applications({ user }) {
           )
         );
         
-        // Show the data modal with submission details
+        // Show the data modal with submission details and screenshot
         setAutoFillData({
           company,
           jobTitle,
@@ -539,8 +553,13 @@ export default function Applications({ user }) {
           playwrightSuccess: true,
           manualMode: false,
           captchaDetected: false,
-          message: `✅ Application submitted successfully! ${data.fields_filled?.length || 0} fields were filled.`,
+          message: isConfirmed 
+            ? `✅ Submit clicked and confirmation detected! Check email for final confirmation.`
+            : `⚠️ Submit clicked but confirmation not detected. Please verify via email.`,
           submitted: true,
+          submissionConfirmed: isConfirmed,
+          finalUrl: data.final_url,
+          screenshot: data.screenshot,
         });
       } else if (data.success) {
         // Filled but not submitted (maybe submit button not found)
