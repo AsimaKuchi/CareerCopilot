@@ -1198,6 +1198,55 @@ export default function Applications({ user }) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Auto-Fill & Submit Confirmation Modal */}
+      <AlertDialog open={!!confirmSubmit} onOpenChange={() => setConfirmSubmit(null)}>
+        <AlertDialogContent className="bg-background border-white/10 max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-purple-400" />
+              Confirm Auto-Submit
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You're about to auto-fill <strong>AND</strong> submit your application to:
+              </p>
+              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <div className="font-semibold text-foreground">{confirmSubmit?.jobTitle}</div>
+                <div className="text-sm text-muted-foreground">{confirmSubmit?.company}</div>
+              </div>
+              <div className="text-amber-400 text-sm">
+                ⚠️ This action will submit your application automatically. Make sure your profile is complete and accurate.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="border-white/10">Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const { applicationId, jobTitle, company, applyLink } = confirmSubmit;
+                setConfirmSubmit(null);
+                handleAutoFill(applicationId, jobTitle, company, applyLink);
+              }}
+              className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Fill Only (No Submit)
+            </Button>
+            <AlertDialogAction
+              onClick={() => {
+                const { applicationId, jobTitle, company, applyLink } = confirmSubmit;
+                handleAutoFillAndSubmit(applicationId, jobTitle, company, applyLink);
+              }}
+              className="bg-purple-500 hover:bg-purple-600"
+            >
+              <Rocket className="w-4 h-4 mr-2" />
+              Fill & Submit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={!!reviewApp} onOpenChange={() => setReviewApp(null)}>
         <DialogContent className="bg-background border-white/10 max-w-4xl max-h-[90vh]">
           <DialogHeader>
