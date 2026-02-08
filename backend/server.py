@@ -3741,18 +3741,23 @@ async def get_autofill_payload(request: Request, application_id: str):
     
     return response
 
+class AutoFillRequest(BaseModel):
+    submit_form: bool = False  # If True, will attempt to click submit after filling
+
 @api_router.post("/applications/{application_id}/auto-fill")
-async def auto_fill_application_data(request: Request, application_id: str):
+async def auto_fill_application_data(request: Request, application_id: str, body: AutoFillRequest = None):
     """
     Auto-fill a job application using Playwright.
     
     Flow:
     1. Try server-side Playwright automation
     2. If CAPTCHA detected → Return data for user to complete manually
-    3. If success → Return filled fields
+    3. If submit_form=True → Also click submit button
+    4. Return filled fields and submission status
     
     The user can always fall back to manual copy mode.
     """
+    submit_form = body.submit_form if body else False
     user = await get_current_user(request)
     
     # Get application
