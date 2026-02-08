@@ -3996,12 +3996,13 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 await asyncio.sleep(2)
                 
                 # Check for CAPTCHA - ONLY detect ACTIVE, BLOCKING captcha challenges
-                # Do NOT trigger on background reCAPTCHA scripts that aren't being used
+                # Do NOT trigger on background reCAPTCHA scripts or "Protected by reCAPTCHA" badges
                 captcha_detected = False
                 
                 try:
                     # Strategy 1: Check for visible CAPTCHA iframes (most reliable)
                     # These specific iframe URLs only appear when CAPTCHA is actually shown
+                    # reCAPTCHA v3 badges do NOT use these URLs
                     captcha_iframe_selectors = [
                         'iframe[src*="recaptcha"][src*="/anchor"]',  # Active reCAPTCHA checkbox
                         'iframe[src*="recaptcha"][src*="/bframe"]',  # Active reCAPTCHA challenge
@@ -4016,8 +4017,10 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                 is_visible = await element.is_visible()
                                 if is_visible:
                                     # Double-check it's actually rendered and taking space
+                                    # reCAPTCHA v2 challenges are typically 300x75px or larger
+                                    # The small "Protected by reCAPTCHA" badge is only ~256x60px
                                     box = await element.bounding_box()
-                                    if box and box['width'] > 0 and box['height'] > 0:
+                                    if box and box['width'] > 270 and box['height'] > 70:
                                         captcha_detected = True
                                         logger.info(f"✋ ACTIVE CAPTCHA detected: {selector}")
                                         break
@@ -4025,6 +4028,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                             continue
                     
                     # Strategy 2: Check for visible CAPTCHA container divs (secondary check)
+                    # Skip small containers - those are likely just badges
                     if not captcha_detected:
                         container_selectors = [
                             '.g-recaptcha',
@@ -4039,9 +4043,10 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                     is_visible = await element.is_visible()
                                     if is_visible:
                                         # Check if it has actual content (not just hidden script container)
-                                        # Real CAPTCHAs are at least 300x75px
+                                        # Real CAPTCHA challenges are at least 300x75px
+                                        # The "Protected by reCAPTCHA" badge is much smaller (~256x60)
                                         box = await element.bounding_box()
-                                        if box and box['width'] > 100 and box['height'] > 50:
+                                        if box and box['width'] > 280 and box['height'] > 70:
                                             captcha_detected = True
                                             logger.info(f"✋ ACTIVE CAPTCHA container detected: {selector}")
                                             break
@@ -4050,6 +4055,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                     
                     # Strategy 3: Check for explicit blocking challenge text (last resort)
                     # ONLY ultra-specific phrases that actually block user access
+                    # Do NOT trigger on "Protected by reCAPTCHA" or "Privacy - Terms" text
                     if not captcha_detected:
                         try:
                             visible_text = await page.inner_text('body')
@@ -4057,6 +4063,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                             
                             # Only these extremely specific blocking phrases
                             # Generic phrases like "verify you are human" are removed to prevent false positives
+                            # "protected by recaptcha" is NOT a blocking phrase - it's just a badge
                             blocking_phrases = [
                                 'complete the captcha to continue',
                                 'complete the security check to continue',
