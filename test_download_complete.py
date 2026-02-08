@@ -6,7 +6,7 @@ import json
 
 def test_download_with_data():
     """Test download endpoints by creating application with resume and cover letter data"""
-    base_url = "https://jobfinder-74.preview.emergentagent.com"
+    base_url = "https://resume-first-jobs-1.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     headers = {
