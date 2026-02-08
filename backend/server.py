@@ -4554,30 +4554,34 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 
                 # ========================================
                 # AUTO-SUBMIT: Find and click submit button
+                # Only if submit_form=True (user confirmed)
                 # ========================================
                 submit_clicked = False
                 submit_error = None
                 
-                # Wait a moment for form validation
-                await asyncio.sleep(1)
-                
-                # Submit button selectors (common patterns across ATS platforms)
-                submit_selectors = [
-                    # Standard submit buttons
-                    'button[type="submit"]',
-                    'input[type="submit"]',
+                if submit_form:
+                    logger.info("🚀 submit_form=True - Attempting to submit application...")
                     
-                    # Text-based buttons
-                    'button:has-text("Submit Application")',
-                    'button:has-text("Submit")',
-                    'button:has-text("Apply")',
-                    'button:has-text("Apply Now")',
-                    'button:has-text("Send Application")',
-                    'button:has-text("Complete Application")',
+                    # Wait a moment for form validation
+                    await asyncio.sleep(1)
                     
-                    # ID/class based
-                    'button[id*="submit" i]',
-                    'button[class*="submit" i]',
+                    # Submit button selectors (common patterns across ATS platforms)
+                    submit_selectors = [
+                        # Standard submit buttons
+                        'button[type="submit"]',
+                        'input[type="submit"]',
+                        
+                        # Text-based buttons
+                        'button:has-text("Submit Application")',
+                        'button:has-text("Submit")',
+                        'button:has-text("Apply")',
+                        'button:has-text("Apply Now")',
+                        'button:has-text("Send Application")',
+                        'button:has-text("Complete Application")',
+                        
+                        # ID/class based
+                        'button[id*="submit" i]',
+                        'button[class*="submit" i]',
                     '#submit-btn',
                     '#submit_app',
                     '.submit-button',
