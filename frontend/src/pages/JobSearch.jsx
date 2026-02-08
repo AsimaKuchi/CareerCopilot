@@ -964,6 +964,14 @@ export default function JobSearch({ user }) {
                           Analyze Match
                         </Button>
                         <Button
+                          onClick={() => handleInterviewPrep(job)}
+                          className="bg-emerald-500 hover:bg-emerald-600"
+                          data-testid={`interview-prep-btn-${i}`}
+                        >
+                          <GraduationCap className="w-4 h-4 mr-2" />
+                          Interview Prep
+                        </Button>
+                        <Button
                           data-testid={`apply-btn-${i}`}
                           onClick={() => handleApplyClick(job)}
                           className="bg-indigo-500 hover:bg-indigo-600"
