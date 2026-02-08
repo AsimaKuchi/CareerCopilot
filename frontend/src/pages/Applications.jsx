@@ -1229,13 +1229,35 @@ export default function Applications({ user }) {
                               <Send className="w-4 h-4 mr-1" />
                               Submit Manually
                             </Button>
+                            <Button
+                              data-testid={`interview-prep-approved-btn-${i}`}
+                              size="sm"
+                              onClick={() => handleInterviewPrep(app)}
+                              className="bg-emerald-500 hover:bg-emerald-600"
+                              title="Get interview preparation materials"
+                            >
+                              <GraduationCap className="w-4 h-4 mr-1" />
+                              Interview Prep
+                            </Button>
                           </>
                         )}
 
                         {app.status === "applied" && (
-                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 px-3 py-1">
-                            ✓ Applied
-                          </Badge>
+                          <>
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 px-3 py-1">
+                              ✓ Applied
+                            </Badge>
+                            <Button
+                              data-testid={`interview-prep-applied-btn-${i}`}
+                              size="sm"
+                              onClick={() => handleInterviewPrep(app)}
+                              className="bg-emerald-500 hover:bg-emerald-600"
+                              title="Prepare for your interview"
+                            >
+                              <GraduationCap className="w-4 h-4 mr-1" />
+                              Interview Prep
+                            </Button>
+                          </>
                         )}
 
                         <Button
