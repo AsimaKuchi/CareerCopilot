@@ -1092,12 +1092,12 @@ export default function Applications({ user }) {
                                 data-testid={`auto-fill-approved-btn-${i}`}
                                 size="sm"
                                 onClick={() =>
-                                  handleAutoFill(
-                                    app.application_id,
-                                    app.job_title,
-                                    app.company,
-                                    app.apply_link
-                                  )
+                                  setConfirmSubmit({
+                                    applicationId: app.application_id,
+                                    jobTitle: app.job_title,
+                                    company: app.company,
+                                    applyLink: app.apply_link,
+                                  })
                                 }
                                 disabled={actionLoading === app.application_id}
                                 className="bg-purple-500 hover:bg-purple-600"
@@ -1107,7 +1107,7 @@ export default function Applications({ user }) {
                                 ) : (
                                   <>
                                     <Rocket className="w-4 h-4 mr-1" />
-                                    Auto-Fill
+                                    Auto-Apply
                                   </>
                                 )}
                               </Button>
