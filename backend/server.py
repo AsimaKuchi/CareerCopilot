@@ -4042,7 +4042,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                     logger.error(f"CAPTCHA detection error: {e}")
                     captcha_detected = False
 
-logger.info(f"🔍 CAPTCHA check: {'CAPTCHA FOUND' if captcha_detected else 'No CAPTCHA - proceeding'}")
+                logger.info(f"CAPTCHA check: {'CAPTCHA FOUND' if captcha_detected else 'No CAPTCHA - proceeding'}")
                 
                 if captcha_detected:
                     await browser.close()
