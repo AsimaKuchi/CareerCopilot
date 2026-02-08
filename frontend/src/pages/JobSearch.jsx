@@ -1277,97 +1277,173 @@ export default function JobSearch({ user }) {
 
       {/* Interview Prep Dialog */}
       <Dialog open={showInterviewPrep} onOpenChange={setShowInterviewPrep}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-400">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-gray-50">
+          <DialogHeader className="bg-white rounded-t-lg px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-indigo-600">
               <GraduationCap className="w-5 h-5" />
               Interview Preparation
             </DialogTitle>
             <DialogDescription>
               {interviewPrepJob && (
-                <span>
-                  Tailored prep for <strong>{interviewPrepJob.job_title || interviewPrepJob.title}</strong> at{" "}
-                  <strong>{interviewPrepJob.employer_name || interviewPrepJob.company}</strong>
+                <span className="text-gray-600">
+                  Tailored prep for <strong className="text-gray-900">{interviewPrepJob.job_title || interviewPrepJob.title}</strong> at{" "}
+                  <strong className="text-gray-900">{interviewPrepJob.employer_name || interviewPrepJob.company}</strong>
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
 
           {interviewPrepLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-400 mb-4" />
-              <p className="text-muted-foreground">Generating your personalized interview prep...</p>
-              <p className="text-sm text-muted-foreground mt-2">This may take 15-30 seconds</p>
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-b-lg">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
+              <p className="text-gray-600">Generating your personalized interview prep...</p>
+              <p className="text-sm text-gray-400 mt-2">This may take 15-30 seconds</p>
             </div>
           ) : interviewPrepMaterials ? (
-            <ScrollArea className="flex-1 pr-4">
-              <div className="prose prose-invert max-w-none">
-                {/* Parse and render markdown content */}
-                {interviewPrepMaterials.split('\n').map((line, idx) => {
-                  // Section headers (numbered, all caps)
-                  if (/^\d+\.\s+[A-Z\s]+$/.test(line.trim())) {
+            <ScrollArea className="flex-1 bg-white">
+              <div className="p-6 space-y-6">
+                {(() => {
+                  // Parse the prep materials into sections
+                  const cleanText = interviewPrepMaterials
+                    .replace(/\*\*/g, '')
+                    .replace(/\*/g, '')
+                    .replace(/#{1,4}\s*/g, '')
+                    .replace(/---/g, '')
+                    .replace(/___/g, '');
+                  
+                  const lines = cleanText.split('\n').filter(line => line.trim());
+                  const sections = [];
+                  let currentSection = null;
+                  let currentQA = null;
+                  
+                  for (const line of lines) {
+                    const trimmed = line.trim();
+                    
+                    if (trimmed.match(/^\d+\.\s+[A-Z\s]+$/) || 
+                        (trimmed === trimmed.toUpperCase() && trimmed.length > 10 && !trimmed.includes('?'))) {
+                      if (currentSection) sections.push(currentSection);
+                      currentSection = {
+                        title: trimmed.replace(/^\d+\.\s*/, ''),
+                        items: []
+                      };
+                      currentQA = null;
+                    }
+                    else if (trimmed.endsWith('?')) {
+                      if (currentQA && currentSection) {
+                        currentSection.items.push(currentQA);
+                      }
+                      currentQA = {
+                        question: trimmed,
+                        answer: []
+                      };
+                    }
+                    else if (currentQA && trimmed) {
+                      const cleanLine = trimmed
+                        .replace(/^[-•*]\s*/, '')
+                        .replace(/^>\s*/, '')
+                        .replace(/^\d+\.\s*/, '');
+                      if (cleanLine) {
+                        currentQA.answer.push(cleanLine);
+                      }
+                    }
+                    else if (!currentQA && currentSection && trimmed) {
+                      const cleanLine = trimmed.replace(/^[-•*]\s*/, '').replace(/^>\s*/, '');
+                      if (cleanLine && !cleanLine.match(/^\d+\.\s*$/)) {
+                        currentSection.items.push({ tip: cleanLine });
+                      }
+                    }
+                  }
+                  
+                  if (currentQA && currentSection) {
+                    currentSection.items.push(currentQA);
+                  }
+                  if (currentSection) sections.push(currentSection);
+                  
+                  if (sections.length === 0) {
                     return (
-                      <h2 key={idx} className="text-xl font-bold text-emerald-400 mt-6 mb-4 border-b border-emerald-500/30 pb-2">
-                        {line}
-                      </h2>
+                      <div className="bg-white rounded-xl p-6 border border-gray-200">
+                        <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
+                          {cleanText}
+                        </p>
+                      </div>
                     );
                   }
-                  // Question headers (####)
-                  if (line.startsWith('####')) {
-                    return (
-                      <h4 key={idx} className="text-lg font-semibold text-foreground mt-4 mb-2">
-                        {line.replace(/^####\s*/, '')}
-                      </h4>
-                    );
-                  }
-                  // Blockquotes (sample answers)
-                  if (line.startsWith('>')) {
-                    return (
-                      <blockquote key={idx} className="border-l-4 border-emerald-500/50 pl-4 py-2 my-2 bg-emerald-500/10 rounded-r text-muted-foreground italic">
-                        {line.replace(/^>\s*/, '')}
-                      </blockquote>
-                    );
-                  }
-                  // Horizontal rules
-                  if (line.trim() === '---') {
-                    return <hr key={idx} className="my-6 border-white/10" />;
-                  }
-                  // Numbered lists
-                  if (/^\d+\.\s/.test(line.trim())) {
-                    return (
-                      <p key={idx} className="text-foreground my-1 ml-4">
-                        {line}
-                      </p>
-                    );
-                  }
-                  // Bullet points
-                  if (line.trim().startsWith('-')) {
-                    return (
-                      <p key={idx} className="text-foreground my-1 ml-4">
-                        • {line.replace(/^-\s*/, '')}
-                      </p>
-                    );
-                  }
-                  // Regular paragraphs
-                  if (line.trim()) {
-                    return (
-                      <p key={idx} className="text-muted-foreground my-2">
-                        {line}
-                      </p>
-                    );
-                  }
-                  return null;
-                })}
+                  
+                  return sections.map((section, sIdx) => (
+                    <div key={sIdx} className="space-y-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">{sIdx + 1}</span>
+                        </div>
+                        <h2 className="text-xl font-bold text-indigo-600 uppercase tracking-wide">
+                          {section.title}
+                        </h2>
+                      </div>
+                      
+                      <div className="space-y-4 ml-2">
+                        {section.items.map((item, qIdx) => (
+                          item.question ? (
+                            <div 
+                              key={qIdx} 
+                              className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
+                            >
+                              <div className="bg-indigo-50 px-5 py-4 border-b border-gray-200">
+                                <div className="flex items-start gap-3">
+                                  <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
+                                    Q
+                                  </span>
+                                  <p className="text-gray-900 font-semibold text-base leading-relaxed">
+                                    {item.question}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="px-5 py-4 bg-white">
+                                <div className="flex items-start gap-3">
+                                  <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
+                                    A
+                                  </span>
+                                  <div className="space-y-2 flex-1">
+                                    {item.answer.map((line, lIdx) => (
+                                      <p key={lIdx} className="text-gray-800 leading-relaxed">
+                                        {line}
+                                      </p>
+                                    ))}
+                                    {item.answer.length === 0 && (
+                                      <p className="text-gray-500 italic">
+                                        Prepare your own answer based on your experience.
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : item.tip ? (
+                            <div 
+                              key={qIdx}
+                              className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200"
+                            >
+                              <div className="flex items-start gap-3">
+                                <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                <p className="text-gray-800 leading-relaxed">{item.tip}</p>
+                              </div>
+                            </div>
+                          ) : null
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </ScrollArea>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-16 text-gray-500 bg-white rounded-b-lg">
               <AlertCircle className="w-8 h-8 mb-4" />
               <p>No prep materials available. Try again.</p>
             </div>
           )}
 
-          <DialogFooter className="mt-4 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-2 p-4 bg-white border-t border-gray-200 rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1377,7 +1453,7 @@ export default function JobSearch({ user }) {
                 }
               }}
               disabled={!interviewPrepMaterials}
-              className="border-white/10"
+              className="border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy All
@@ -1385,7 +1461,7 @@ export default function JobSearch({ user }) {
             <Button
               onClick={() => handleInterviewPrep(interviewPrepJob)}
               disabled={interviewPrepLoading}
-              className="bg-emerald-500 hover:bg-emerald-600"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white"
             >
               {interviewPrepLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1394,7 +1470,7 @@ export default function JobSearch({ user }) {
               )}
               Regenerate
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
