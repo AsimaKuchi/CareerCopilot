@@ -47,6 +47,7 @@ import {
   Target,
   Copy,
   Zap,
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
 
