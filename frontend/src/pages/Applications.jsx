@@ -1030,26 +1030,26 @@ export default function Applications({ user }) {
 
                             {isAutoFillSupported(app.apply_link) && (
                               <Button
-                                data-testid={`auto-fill-btn-${i}`}
+                                data-testid={`auto-fill-submit-btn-${i}`}
                                 size="sm"
                                 onClick={() =>
-                                  handleAutoFill(
-                                    app.application_id,
-                                    app.job_title,
-                                    app.company,
-                                    app.apply_link
-                                  )
+                                  setConfirmSubmit({
+                                    applicationId: app.application_id,
+                                    jobTitle: app.job_title,
+                                    company: app.company,
+                                    applyLink: app.apply_link,
+                                  })
                                 }
                                 disabled={actionLoading === app.application_id}
                                 className="bg-purple-500 hover:bg-purple-600"
-                                title="Auto-fill the application form with your profile data"
+                                title="Auto-fill and submit the application form"
                               >
                                 {actionLoading === app.application_id ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                   <>
                                     <Rocket className="w-4 h-4 mr-1" />
-                                    Auto-Fill
+                                    Auto-Apply
                                   </>
                                 )}
                               </Button>
