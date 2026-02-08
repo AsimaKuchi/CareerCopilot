@@ -3798,22 +3798,75 @@ async def auto_fill_application_data(request: Request, application_id: str):
     # Get autofill data from v2 schema
     autofill = get_autofill_data(profile)
     
-    # Build auto-fill data
+    # Build comprehensive auto-fill data with all available profile fields
     auto_fill_data = {
+        # Basic info
         "first_name": first_name,
         "last_name": last_name,
         "full_name": full_name,
         "email": autofill.get("email") or user_doc.get("email", "") if user_doc else "",
         "phone": autofill.get("phoneFormatted") or autofill.get("phone") or profile.get("phone_number", ""),
+        
+        # Social/professional links
         "linkedin": autofill.get("linkedinUrl") or profile.get("linkedin_url", ""),
         "github": autofill.get("githubUrl") or profile.get("github_url", ""),
         "portfolio": autofill.get("portfolioUrl") or profile.get("portfolio_url", ""),
+        "website": autofill.get("portfolioUrl") or profile.get("portfolio_url", ""),
+        
+        # Location
         "city": autofill.get("city") or profile.get("address_city", ""),
         "state": autofill.get("state") or profile.get("address_state", ""),
+        "province": autofill.get("state") or profile.get("address_state", ""),
         "country": autofill.get("countryFull") or autofill.get("country") or profile.get("address_country", ""),
+        "address": f"{autofill.get('city', '')}, {autofill.get('state', '')}, {autofill.get('country', '')}".strip(", "),
+        "postal_code": profile.get("postal_code", ""),
+        "zip_code": profile.get("postal_code", ""),
+        
+        # Work info
         "current_company": autofill.get("currentCompany") or profile.get("current_company", ""),
+        "current_title": autofill.get("currentTitle") or profile.get("current_title", ""),
+        "years_experience": str(profile.get("experience_years", "")) if profile.get("experience_years") else "",
+        
+        # Education
+        "education": autofill.get("education") or profile.get("highest_education", ""),
+        "degree": autofill.get("education") or profile.get("highest_education", ""),
+        "university": profile.get("university", ""),
+        "school": profile.get("university", ""),
+        
+        # Work authorization
+        "work_authorization": autofill.get("workAuthorizationStatus") or profile.get("work_authorization", ""),
+        "authorized_to_work": "Yes" if profile.get("work_authorization") in ["citizen", "permanent_resident", "work_permit"] else "No",
+        "requires_sponsorship": "No" if profile.get("work_authorization") in ["citizen", "permanent_resident"] else "Yes",
+        "sponsorship": "No" if profile.get("work_authorization") in ["citizen", "permanent_resident"] else "Yes",
+        "visa_status": autofill.get("workAuthorizationStatus") or profile.get("work_authorization", ""),
+        
+        # Availability
+        "willing_to_relocate": "Yes" if profile.get("willing_to_relocate") else "No",
+        "relocate": "Yes" if profile.get("willing_to_relocate") else "No",
+        "notice_period": profile.get("notice_period", "2 weeks"),
+        "start_date": profile.get("available_start_date", "Immediately available"),
+        "availability": profile.get("available_start_date", "Immediately available"),
+        "earliest_start_date": profile.get("available_start_date", "Immediately available"),
+        
+        # Salary
+        "salary_expectation": str(profile.get("expected_salary_min", "")) if profile.get("expected_salary_min") else "",
+        "desired_salary": str(profile.get("expected_salary_min", "")) if profile.get("expected_salary_min") else "",
+        
+        # Referral
+        "referral_source": profile.get("referral_source", "LinkedIn"),
+        "how_did_you_hear": profile.get("referral_source", "LinkedIn"),
+        "source": profile.get("referral_source", "LinkedIn"),
+        
+        # Documents
         "resume_text": app_doc.get("optimized_resume") or profile.get("resume_text", ""),
         "cover_letter": app_doc.get("cover_letter", ""),
+        
+        # Gender/Demographics (optional, often asked)
+        "gender": profile.get("gender", ""),
+        "pronouns": profile.get("pronouns", ""),
+        "veteran_status": profile.get("veteran_status", ""),
+        "disability_status": profile.get("disability_status", ""),
+        "race_ethnicity": profile.get("race_ethnicity", ""),
     }
     
     # Determine ATS type
