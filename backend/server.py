@@ -4675,7 +4675,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                         pass
                 
                 return {
-                    "success": len(fields_filled) > 0 and submit_clicked,
+                    "success": len(fields_filled) > 0,
                     "submitted": submit_clicked,
                     "captcha_detected": False,
                     "fields_filled": fields_filled,
