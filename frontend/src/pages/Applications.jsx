@@ -1235,36 +1235,142 @@ export default function Applications({ user }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Auto-Fill & Submit Confirmation Modal */}
-      <AlertDialog open={!!confirmSubmit} onOpenChange={() => setConfirmSubmit(null)}>
-        <AlertDialogContent className="bg-background border-white/10 max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Rocket className="w-5 h-5 text-purple-400" />
-              Confirm Auto-Submit
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <span className="block">
-                  You're about to auto-fill <strong>AND</strong> submit your application to:
-                </span>
-                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                  <div className="font-semibold text-foreground">{confirmSubmit?.jobTitle}</div>
-                  <div className="text-sm text-muted-foreground">{confirmSubmit?.company}</div>
-                </div>
-                <div className="text-amber-400 text-sm">
-                  ⚠️ This action will submit your application automatically. Make sure your profile is complete and accurate.
-                </div>
+      {/* Auto-Fill & Submit Confirmation Modal with Preview */}
+      <Dialog open={!!confirmSubmit} onOpenChange={() => { setConfirmSubmit(null); setPreviewData(null); }}>
+        <DialogContent className="bg-background border-white/10 max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-purple-400">
+              <Rocket className="w-5 h-5" />
+              Preview & Confirm Auto-Submit
+            </DialogTitle>
+            <DialogDescription>
+              Review the data below before submitting your application
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Job Info */}
+          <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <div className="font-semibold text-foreground">{confirmSubmit?.jobTitle}</div>
+            <div className="text-sm text-muted-foreground">{confirmSubmit?.company}</div>
+          </div>
+          
+          {/* Preview Data Section */}
+          <ScrollArea className="flex-1 max-h-[400px] pr-4">
+            {loadingPreview ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                <span className="ml-2 text-muted-foreground">Loading your profile data...</span>
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="border-white/10">Cancel</AlertDialogCancel>
+            ) : previewData ? (
+              <div className="space-y-3">
+                <div className="text-sm font-semibold text-foreground mb-2">
+                  📋 Data that will be filled:
+                </div>
+                
+                {/* Personal Info */}
+                {(previewData.personal_info?.full_name || previewData.personal_info?.email) && (
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Personal Info</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {previewData.personal_info?.full_name && (
+                        <div><span className="text-muted-foreground">Name:</span> <span className="text-foreground">{previewData.personal_info.full_name}</span></div>
+                      )}
+                      {previewData.personal_info?.email && (
+                        <div><span className="text-muted-foreground">Email:</span> <span className="text-foreground">{previewData.personal_info.email}</span></div>
+                      )}
+                      {previewData.personal_info?.phone && (
+                        <div><span className="text-muted-foreground">Phone:</span> <span className="text-foreground">{previewData.personal_info.phone}</span></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Location */}
+                {previewData.personal_info?.location && (
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Location</div>
+                    <div className="text-sm text-foreground">
+                      {[previewData.personal_info.location.city, previewData.personal_info.location.state, previewData.personal_info.location.country].filter(Boolean).join(', ')}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Links */}
+                {(previewData.personal_info?.linkedin || previewData.personal_info?.github || previewData.personal_info?.portfolio) && (
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Links</div>
+                    <div className="space-y-1 text-sm">
+                      {previewData.personal_info?.linkedin && (
+                        <div><span className="text-muted-foreground">LinkedIn:</span> <span className="text-blue-400 truncate">{previewData.personal_info.linkedin}</span></div>
+                      )}
+                      {previewData.personal_info?.github && (
+                        <div><span className="text-muted-foreground">GitHub:</span> <span className="text-blue-400 truncate">{previewData.personal_info.github}</span></div>
+                      )}
+                      {previewData.personal_info?.portfolio && (
+                        <div><span className="text-muted-foreground">Portfolio:</span> <span className="text-blue-400 truncate">{previewData.personal_info.portfolio}</span></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Work Authorization */}
+                {previewData.questions && previewData.questions.some(q => q.field_type === 'work_authorization') && (
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Work Authorization</div>
+                    {previewData.questions.filter(q => q.field_type === 'work_authorization').map((q, i) => (
+                      <div key={i} className="text-sm text-foreground">{q.current_value || 'Not specified'}</div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Resume */}
+                {previewData.documents?.resume?.text && (
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="text-xs text-emerald-400 uppercase tracking-wide mb-2">Resume</div>
+                    <div className="text-sm text-muted-foreground">
+                      ✅ {previewData.documents.resume.original_filename || 'Resume'} will be uploaded
+                    </div>
+                  </div>
+                )}
+                
+                {/* Cover Letter */}
+                {previewData.documents?.cover_letter?.text && (
+                  <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                    <div className="text-xs text-indigo-400 uppercase tracking-wide mb-2">Cover Letter</div>
+                    <div className="text-sm text-muted-foreground">
+                      ✅ Custom cover letter will be included
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                <p>Could not load preview data. You can still proceed.</p>
+              </div>
+            )}
+          </ScrollArea>
+          
+          {/* Warning */}
+          <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 text-amber-400 text-sm">
+            ⚠️ Clicking "Fill & Submit" will automatically submit your application. Make sure the data above is correct.
+          </div>
+          
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => { setConfirmSubmit(null); setPreviewData(null); }}
+              className="border-white/10"
+            >
+              Cancel
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
                 const { applicationId, jobTitle, company, applyLink } = confirmSubmit;
                 setConfirmSubmit(null);
+                setPreviewData(null);
                 handleAutoFill(applicationId, jobTitle, company, applyLink);
               }}
               className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20"
@@ -1272,19 +1378,20 @@ export default function Applications({ user }) {
               <FileText className="w-4 h-4 mr-2" />
               Fill Only (No Submit)
             </Button>
-            <AlertDialogAction
+            <Button
               onClick={() => {
                 const { applicationId, jobTitle, company, applyLink } = confirmSubmit;
+                setPreviewData(null);
                 handleAutoFillAndSubmit(applicationId, jobTitle, company, applyLink);
               }}
               className="bg-purple-500 hover:bg-purple-600"
             >
               <Rocket className="w-4 h-4 mr-2" />
               Fill & Submit
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!reviewApp} onOpenChange={() => setReviewApp(null)}>
         <DialogContent className="bg-background border-white/10 max-w-4xl max-h-[90vh]">
