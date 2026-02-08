@@ -2240,15 +2240,15 @@ export default function Applications({ user }) {
                   ));
                 })()}
               </div>
-            </ScrollArea>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-500 bg-white rounded-b-lg">
+            <div className="flex flex-col items-center justify-center flex-1 text-gray-500 bg-white">
               <AlertCircle className="w-8 h-8 mb-4" />
               <p>No prep materials available. Try again.</p>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 p-4 bg-white border-t border-gray-200 rounded-b-lg">
+          <div className="flex justify-end gap-2 p-4 bg-white border-t border-gray-200 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
