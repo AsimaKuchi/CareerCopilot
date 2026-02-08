@@ -4603,7 +4603,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                     'form input[type="submit"]',
                 ]
                 
-                    for selector in submit_selectors:
+                for selector in submit_selectors:
                         try:
                             submit_btn = await page.query_selector(selector)
                             if submit_btn:
