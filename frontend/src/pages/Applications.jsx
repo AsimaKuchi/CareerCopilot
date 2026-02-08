@@ -1070,18 +1070,18 @@ export default function Applications({ user }) {
                                 data-testid={`auto-fill-submit-btn-${i}`}
                                 size="sm"
                                 onClick={() =>
-                                  setConfirmSubmit({
-                                    applicationId: app.application_id,
-                                    jobTitle: app.job_title,
-                                    company: app.company,
-                                    applyLink: app.apply_link,
-                                  })
+                                  handleAutoApplyClick(
+                                    app.application_id,
+                                    app.job_title,
+                                    app.company,
+                                    app.apply_link
+                                  )
                                 }
-                                disabled={actionLoading === app.application_id}
+                                disabled={actionLoading === app.application_id || loadingPreview}
                                 className="bg-purple-500 hover:bg-purple-600"
                                 title="Auto-fill and submit the application form"
                               >
-                                {actionLoading === app.application_id ? (
+                                {actionLoading === app.application_id || loadingPreview ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                   <>
