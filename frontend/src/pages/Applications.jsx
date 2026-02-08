@@ -1764,16 +1764,18 @@ export default function Applications({ user }) {
       <Dialog open={!!autoFillData} onOpenChange={() => setAutoFillData(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className={autoFillData?.submitted ? "text-emerald-400" : "text-indigo-400"}>
+            <DialogTitle className={autoFillData?.submitted ? (autoFillData?.submissionConfirmed ? "text-emerald-400" : "text-amber-400") : "text-indigo-400"}>
               {autoFillData?.submitted 
-                ? '🎉 Application Submitted!' 
+                ? (autoFillData?.submissionConfirmed ? '🎉 Submission Likely Successful!' : '⚠️ Submit Clicked - Verify Email')
                 : autoFillData?.playwrightSuccess 
                   ? '✅ Auto-Fill Complete' 
                   : '📋 Application Data'} - {autoFillData?.company}
             </DialogTitle>
             <DialogDescription>
               {autoFillData?.submitted
-                ? `Your application has been submitted. Here's what was filled:`
+                ? (autoFillData?.submissionConfirmed 
+                    ? `Confirmation page detected. Please check your email from ${autoFillData?.company} to confirm.`
+                    : `Submit button clicked but confirmation not detected. Check your email to verify.`)
                 : autoFillData?.playwrightSuccess 
                   ? `${autoFillData?.fieldsFilled?.length || 0} fields were automatically filled. Review and complete any remaining fields.`
                   : 'Copy each field to fill your application manually.'}
@@ -1782,16 +1784,34 @@ export default function Applications({ user }) {
           
           {/* Success/Warning Banner */}
           {autoFillData?.submitted ? (
-            <div className="p-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-lg border border-emerald-500/30 mb-4">
-              <div className="flex items-center gap-2 text-emerald-400">
-                <CheckCircle className="w-6 h-6" />
-                <span className="font-bold text-lg">Application Submitted Successfully!</span>
+            <div className={`p-4 rounded-lg border mb-4 ${
+              autoFillData?.submissionConfirmed 
+                ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-emerald-500/30'
+                : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/30'
+            }`}>
+              <div className={`flex items-center gap-2 ${autoFillData?.submissionConfirmed ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {autoFillData?.submissionConfirmed ? (
+                  <CheckCircle className="w-6 h-6" />
+                ) : (
+                  <AlertCircle className="w-6 h-6" />
+                )}
+                <span className="font-bold text-lg">
+                  {autoFillData?.submissionConfirmed ? 'Submission Likely Successful!' : 'Verify Submission via Email'}
+                </span>
               </div>
-              <div className="text-sm text-emerald-300 mt-2">
-                {autoFillData?.fieldsFilled?.length || 0} fields were filled and the application was submitted to {autoFillData?.company}.
+              <div className={`text-sm mt-2 ${autoFillData?.submissionConfirmed ? 'text-emerald-300' : 'text-amber-300'}`}>
+                {autoFillData?.fieldsFilled?.length || 0} fields were filled and submit was clicked.
               </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                Review the data below to see exactly what was sent.
+              
+              {/* Final URL */}
+              {autoFillData?.finalUrl && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  <span className="font-medium">Final page URL:</span> {autoFillData.finalUrl}
+                </div>
+              )}
+              
+              <div className="text-xs text-foreground mt-3 p-2 bg-black/20 rounded">
+                📧 <strong>Important:</strong> Check your email inbox (and spam folder) for confirmation from {autoFillData?.company}.
               </div>
             </div>
           ) : autoFillData?.playwrightSuccess ? (
@@ -1822,6 +1842,20 @@ export default function Applications({ user }) {
                   {autoFillData.hint}
                 </div>
               )}
+            </div>
+          )}
+          
+          {/* Screenshot Evidence */}
+          {autoFillData?.submitted && autoFillData?.screenshot && (
+            <div className="mb-4">
+              <div className="text-sm font-semibold text-foreground mb-2">📸 Screenshot of Final Page:</div>
+              <div className="rounded-lg border border-white/10 overflow-hidden">
+                <img 
+                  src={`data:image/jpeg;base64,${autoFillData.screenshot}`} 
+                  alt="Submission confirmation page"
+                  className="w-full h-auto"
+                />
+              </div>
             </div>
           )}
           
