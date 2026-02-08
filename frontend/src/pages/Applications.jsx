@@ -48,6 +48,8 @@ import {
   Lightbulb,
   DollarSign,
   Info,
+  GraduationCap,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 
