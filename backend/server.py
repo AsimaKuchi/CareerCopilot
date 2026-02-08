@@ -4001,9 +4001,10 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 
                 try:
                     # Strategy 1: Check for visible CAPTCHA iframes (most reliable)
+                    # These specific iframe URLs only appear when CAPTCHA is actually shown
                     captcha_iframe_selectors = [
-                        'iframe[src*="recaptcha"][src*="/anchor"]',
-                        'iframe[src*="recaptcha"][src*="/bframe"]',
+                        'iframe[src*="recaptcha"][src*="/anchor"]',  # Active reCAPTCHA checkbox
+                        'iframe[src*="recaptcha"][src*="/bframe"]',  # Active reCAPTCHA challenge
                         'iframe[src*="hcaptcha"]',
                         'iframe[src*="turnstile"]',
                     ]
@@ -4014,35 +4015,70 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                             if element:
                                 is_visible = await element.is_visible()
                                 if is_visible:
+                                    # Double-check it's actually rendered and taking space
                                     box = await element.bounding_box()
                                     if box and box['width'] > 0 and box['height'] > 0:
                                         captcha_detected = True
-                                        logger.info(f"CAPTCHA detected: {selector}")
+                                        logger.info(f"✋ ACTIVE CAPTCHA detected: {selector}")
                                         break
                         except:
                             continue
                     
-                    # Strategy 2: Check for visible CAPTCHA container divs
+                    # Strategy 2: Check for visible CAPTCHA container divs (secondary check)
                     if not captcha_detected:
-                        container_selectors = ['.g-recaptcha', '.h-captcha', '.cf-turnstile']
+                        container_selectors = [
+                            '.g-recaptcha',
+                            '.h-captcha',
+                            '.cf-turnstile',
+                        ]
+                        
                         for selector in container_selectors:
                             try:
                                 element = await page.query_selector(selector)
                                 if element:
                                     is_visible = await element.is_visible()
                                     if is_visible:
+                                        # Check if it has actual content (not just hidden script container)
+                                        # Real CAPTCHAs are at least 300x75px
                                         box = await element.bounding_box()
                                         if box and box['width'] > 100 and box['height'] > 50:
                                             captcha_detected = True
-                                            logger.info(f"CAPTCHA container detected: {selector}")
+                                            logger.info(f"✋ ACTIVE CAPTCHA container detected: {selector}")
                                             break
                             except:
                                 continue
+                    
+                    # Strategy 3: Check for explicit blocking challenge text (last resort)
+                    # ONLY ultra-specific phrases that actually block user access
+                    if not captcha_detected:
+                        try:
+                            visible_text = await page.inner_text('body')
+                            visible_text_lower = visible_text.lower()
+                            
+                            # Only these extremely specific blocking phrases
+                            # Generic phrases like "verify you are human" are removed to prevent false positives
+                            blocking_phrases = [
+                                'complete the captcha to continue',
+                                'complete the security check to continue',
+                                'verify you are human to continue',
+                                'solve the captcha to proceed',
+                                'you must complete the captcha',
+                            ]
+                            
+                            for phrase in blocking_phrases:
+                                if phrase in visible_text_lower:
+                                    captcha_detected = True
+                                    logger.info(f"✋ BLOCKING CAPTCHA text detected: {phrase}")
+                                    break
+                        except:
+                            pass
+                    
                 except Exception as e:
                     logger.error(f"CAPTCHA detection error: {e}")
+                    # On error, assume no CAPTCHA rather than blocking the user
                     captcha_detected = False
-
-                logger.info(f"CAPTCHA check: {'CAPTCHA FOUND' if captcha_detected else 'No CAPTCHA - proceeding'}")
+                
+                logger.info(f"🔍 CAPTCHA check: {'CAPTCHA FOUND' if captcha_detected else 'No CAPTCHA - proceeding'}")
                 
                 if captcha_detected:
                     await browser.close()
