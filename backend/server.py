@@ -3909,7 +3909,8 @@ async def auto_fill_application_data(request: Request, application_id: str, body
             ats_type=ats_type,
             auto_fill_data=auto_fill_data,
             resume_file_data=resume_file_data,
-            resume_filename=resume_filename
+            resume_filename=resume_filename,
+            submit_form=submit_form
         )
         
         if result["captcha_detected"]:
@@ -3923,20 +3924,36 @@ async def auto_fill_application_data(request: Request, application_id: str, body
                 "fields_filled": result.get("fields_filled", []),
                 "fields_failed": result.get("fields_failed", []),
                 "manual_mode": True,
+                "submitted": False,
                 "hint": "Click 'Open Application' to continue in your browser with your data ready to paste."
             }
         
+        submitted = result.get("submitted", False)
+        submit_error = result.get("submit_error")
+        
         if result["success"]:
-            # Successfully filled!
+            # Successfully filled (and possibly submitted)
+            if submitted:
+                # Update application status to 'applied'
+                await db.applications.update_one(
+                    {"application_id": application_id},
+                    {"$set": {"status": "applied", "applied_at": datetime.now(timezone.utc), "auto_submitted": True}}
+                )
+                message = f"🎉 Application submitted! {len(result['fields_filled'])} fields filled."
+            else:
+                message = f"✅ Auto-filled {len(result['fields_filled'])} fields!"
+            
             return {
                 "success": True,
-                "message": f"✅ Auto-filled {len(result['fields_filled'])} fields!",
+                "message": message,
                 "apply_link": apply_link,
                 "auto_fill_data": auto_fill_data,
                 "fields_filled": result["fields_filled"],
                 "fields_failed": result["fields_failed"],
                 "manual_mode": False,
                 "ats_type": ats_type,
+                "submitted": submitted,
+                "submit_error": submit_error,
             }
         else:
             # Failed for other reason - fall back to manual
@@ -3948,6 +3965,7 @@ async def auto_fill_application_data(request: Request, application_id: str, body
                 "fields_filled": result.get("fields_filled", []),
                 "fields_failed": result.get("fields_failed", []),
                 "manual_mode": True,
+                "submitted": False,
             }
             
     except Exception as e:
@@ -3961,6 +3979,7 @@ async def auto_fill_application_data(request: Request, application_id: str, body
             "fields_filled": [],
             "fields_failed": [],
             "manual_mode": True,
+            "submitted": False,
         }
 
 
