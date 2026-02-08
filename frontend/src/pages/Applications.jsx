@@ -1206,16 +1206,18 @@ export default function Applications({ user }) {
               <Rocket className="w-5 h-5 text-purple-400" />
               Confirm Auto-Submit
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                You're about to auto-fill <strong>AND</strong> submit your application to:
-              </p>
-              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <div className="font-semibold text-foreground">{confirmSubmit?.jobTitle}</div>
-                <div className="text-sm text-muted-foreground">{confirmSubmit?.company}</div>
-              </div>
-              <div className="text-amber-400 text-sm">
-                ⚠️ This action will submit your application automatically. Make sure your profile is complete and accurate.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <span className="block">
+                  You're about to auto-fill <strong>AND</strong> submit your application to:
+                </span>
+                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <div className="font-semibold text-foreground">{confirmSubmit?.jobTitle}</div>
+                  <div className="text-sm text-muted-foreground">{confirmSubmit?.company}</div>
+                </div>
+                <div className="text-amber-400 text-sm">
+                  ⚠️ This action will submit your application automatically. Make sure your profile is complete and accurate.
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
