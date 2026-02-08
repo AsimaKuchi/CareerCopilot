@@ -78,6 +78,7 @@ export default function Applications({ user }) {
   const [loadingScript, setLoadingScript] = useState(false);
   const [viewDocument, setViewDocument] = useState(null); // {type: 'resume'|'cover', content: string, company: string}
   const [autoFillData, setAutoFillData] = useState(null); // Auto-fill data modal
+  const [confirmSubmit, setConfirmSubmit] = useState(null); // Confirmation modal for auto-submit {applicationId, company, jobTitle, applyLink}
 
   // Copy entire document to clipboard
   const copyDocument = async () => {
