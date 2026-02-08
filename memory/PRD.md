@@ -134,16 +134,17 @@ The job matching evaluates candidates against jobs using:
 - ✅ Industry and seniority matching
 - ✅ Fallback search mechanism for multi-word queries (fixed Jan 25, 2025)
 - ✅ **Profile v2 Schema Migration (Feb 1, 2025)**: Structured schema with normalized enums for work authorization, skills, education, phone (E.164), location. Auto-fill now uses normalized values.
+- ✅ **Auto-Fill & Auto-Submit with User Confirmation (Feb 8, 2025)**: Implemented server-side Playwright automation that fills AND submits application forms. Users see a confirmation modal with 3 options: Cancel, Fill Only (no submit), Fill & Submit. Button renamed from "Auto-Fill" to "Auto-Apply".
 
 ### P1 - High Priority (Next)
-- [ ] Enhance Playwright Auto-Fill with new v2 structured fields
 - [ ] Add Google Jobs as a search source (user approved)
 - [ ] Interview Tips & Prep feature completion
 - [ ] Email notifications for new job matches
+- [ ] Implement remaining ATS scrapers: Teamtailor, Jobvite, BambooHR
 
 ### P2 - Medium Priority
 - [ ] Implement Playwright-based Ashby scraper (currently non-functional)
-- [ ] Expand Auto-Submit to support Lever/Ashby boards
+- [ ] Enhance Playwright reliability for SmartRecruiters and Pinpoint submissions
 - [ ] Fetch full job descriptions for better AI analysis
 - [ ] Saved job searches
 - [ ] Multiple resume versions
@@ -155,8 +156,9 @@ The job matching evaluates candidates against jobs using:
 - [ ] Salary negotiation tips
 - [ ] Video interview practice
 
-## Test Results (Latest: February 6, 2025)
-- **Backend**: 100% success rate (59/59 tests passed - 36 unit + 23 API tests)
+## Test Results (Latest: February 8, 2025)
+- **Backend**: 100% success rate (14/14 auto-fill tests passed)
+- **Frontend**: All UI elements verified (confirmation modal, Auto-Apply button)
 - **Profile v2 Schema**: All migration functions verified
 - **API Endpoints**: GET/PUT /api/profile, GET /api/autofill/data all passing
 - **Playwright Auto-Fill**: 4/4 tests passed (browser launch, navigation, CAPTCHA detection, field selectors)
