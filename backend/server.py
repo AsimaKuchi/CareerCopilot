@@ -4493,6 +4493,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                             if element:
                                 await element.fill(auto_fill_data["cover_letter"])
                                 fields_filled.append("cover_letter")
+                                logger.info("✅ Filled cover letter")
                                 break
                         except:
                             continue
@@ -4516,7 +4517,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                 await element.set_input_files(temp_resume_path)
                                 fields_filled.append("resume")
                                 resume_uploaded = True
-                                logger.info(f"Resume uploaded via selector: {selector}")
+                                logger.info(f"✅ Resume uploaded via selector: {selector}")
                                 break
                         except Exception as e:
                             logger.debug(f"Resume upload failed for {selector}: {e}")
@@ -4524,7 +4525,120 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                     
                     if not resume_uploaded:
                         fields_failed.append("resume")
-                        logger.warning("Could not find resume file input")
+                        logger.warning("⚠️ Could not find resume file input")
+                
+                # ========================================
+                # AUTO-SUBMIT: Find and click submit button
+                # ========================================
+                submit_clicked = False
+                submit_error = None
+                
+                # Wait a moment for form validation
+                await asyncio.sleep(1)
+                
+                # Submit button selectors (common patterns across ATS platforms)
+                submit_selectors = [
+                    # Standard submit buttons
+                    'button[type="submit"]',
+                    'input[type="submit"]',
+                    
+                    # Text-based buttons
+                    'button:has-text("Submit Application")',
+                    'button:has-text("Submit")',
+                    'button:has-text("Apply")',
+                    'button:has-text("Apply Now")',
+                    'button:has-text("Send Application")',
+                    'button:has-text("Complete Application")',
+                    
+                    # ID/class based
+                    'button[id*="submit" i]',
+                    'button[class*="submit" i]',
+                    '#submit-btn',
+                    '#submit_app',
+                    '.submit-button',
+                    '.apply-button',
+                    
+                    # Greenhouse specific
+                    '#submit_app',
+                    'button[data-test="submit-application"]',
+                    
+                    # Lever specific
+                    'button.postings-btn-submit',
+                    'button[data-qa="btn-submit"]',
+                    
+                    # SmartRecruiters specific
+                    'button[data-test="footer-submit"]',
+                    
+                    # Generic fallbacks
+                    'form button[type="submit"]',
+                    'form input[type="submit"]',
+                ]
+                
+                for selector in submit_selectors:
+                    try:
+                        submit_btn = await page.query_selector(selector)
+                        if submit_btn:
+                            is_visible = await submit_btn.is_visible()
+                            is_enabled = await submit_btn.is_enabled()
+                            
+                            if is_visible and is_enabled:
+                                logger.info(f"🔘 Found submit button: {selector}")
+                                
+                                # Scroll to button
+                                await submit_btn.scroll_into_view_if_needed()
+                                await asyncio.sleep(0.5)
+                                
+                                # Click the submit button
+                                await submit_btn.click()
+                                submit_clicked = True
+                                logger.info("🚀 Clicked submit button!")
+                                
+                                # Wait for submission to process
+                                await asyncio.sleep(3)
+                                
+                                # Check for success indicators
+                                page_content = await page.content()
+                                page_content_lower = page_content.lower()
+                                
+                                success_indicators = [
+                                    'thank you',
+                                    'application received',
+                                    'application submitted',
+                                    'successfully submitted',
+                                    'we have received your application',
+                                    'application complete',
+                                    'thanks for applying',
+                                    'thank you for applying',
+                                ]
+                                
+                                submission_confirmed = any(ind in page_content_lower for ind in success_indicators)
+                                
+                                if submission_confirmed:
+                                    logger.info("✅ Application submission confirmed!")
+                                else:
+                                    # Check if we're still on the form (might have validation errors)
+                                    error_indicators = [
+                                        'required field',
+                                        'please fill',
+                                        'this field is required',
+                                        'error',
+                                        'invalid',
+                                    ]
+                                    has_errors = any(err in page_content_lower for err in error_indicators)
+                                    if has_errors:
+                                        logger.warning("⚠️ Form may have validation errors")
+                                        submit_error = "Form validation errors detected"
+                                    else:
+                                        logger.info("📝 Submit clicked, awaiting confirmation...")
+                                
+                                break
+                    except Exception as e:
+                        logger.debug(f"Submit button {selector} not usable: {e}")
+                        continue
+                
+                if not submit_clicked:
+                    logger.warning("⚠️ Could not find or click submit button")
+                    submit_error = "Submit button not found"
                 
                 await browser.close()
                 
@@ -4536,10 +4650,12 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                         pass
                 
                 return {
-                    "success": len(fields_filled) > 0,
+                    "success": len(fields_filled) > 0 and submit_clicked,
+                    "submitted": submit_clicked,
                     "captcha_detected": False,
                     "fields_filled": fields_filled,
                     "fields_failed": fields_failed,
+                    "submit_error": submit_error,
                     "error": None
                 }
                 
