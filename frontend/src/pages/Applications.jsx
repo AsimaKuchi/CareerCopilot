@@ -2080,6 +2080,121 @@ export default function Applications({ user }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Interview Prep Dialog */}
+      <Dialog open={showInterviewPrep} onOpenChange={setShowInterviewPrep}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-400">
+              <GraduationCap className="w-5 h-5" />
+              Interview Preparation
+            </DialogTitle>
+            <DialogDescription>
+              {interviewPrepApp && (
+                <span>
+                  Tailored prep for <strong>{interviewPrepApp.job_title}</strong> at{" "}
+                  <strong>{interviewPrepApp.company}</strong>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {interviewPrepLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-emerald-400 mb-4" />
+              <p className="text-muted-foreground">Generating your personalized interview prep...</p>
+              <p className="text-sm text-muted-foreground mt-2">This may take 15-30 seconds</p>
+            </div>
+          ) : interviewPrepMaterials ? (
+            <ScrollArea className="flex-1 pr-4">
+              <div className="prose prose-invert max-w-none">
+                {interviewPrepMaterials.split('\n').map((line, idx) => {
+                  if (/^\d+\.\s+[A-Z\s]+$/.test(line.trim())) {
+                    return (
+                      <h2 key={idx} className="text-xl font-bold text-emerald-400 mt-6 mb-4 border-b border-emerald-500/30 pb-2">
+                        {line}
+                      </h2>
+                    );
+                  }
+                  if (line.startsWith('####')) {
+                    return (
+                      <h4 key={idx} className="text-lg font-semibold text-foreground mt-4 mb-2">
+                        {line.replace(/^####\s*/, '')}
+                      </h4>
+                    );
+                  }
+                  if (line.startsWith('>')) {
+                    return (
+                      <blockquote key={idx} className="border-l-4 border-emerald-500/50 pl-4 py-2 my-2 bg-emerald-500/10 rounded-r text-muted-foreground italic">
+                        {line.replace(/^>\s*/, '')}
+                      </blockquote>
+                    );
+                  }
+                  if (line.trim() === '---') {
+                    return <hr key={idx} className="my-6 border-white/10" />;
+                  }
+                  if (/^\d+\.\s/.test(line.trim())) {
+                    return (
+                      <p key={idx} className="text-foreground my-1 ml-4">
+                        {line}
+                      </p>
+                    );
+                  }
+                  if (line.trim().startsWith('-')) {
+                    return (
+                      <p key={idx} className="text-foreground my-1 ml-4">
+                        • {line.replace(/^-\s*/, '')}
+                      </p>
+                    );
+                  }
+                  if (line.trim()) {
+                    return (
+                      <p key={idx} className="text-muted-foreground my-2">
+                        {line}
+                      </p>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </ScrollArea>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <AlertCircle className="w-8 h-8 mb-4" />
+              <p>No prep materials available. Try again.</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-white/10">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (interviewPrepMaterials) {
+                  navigator.clipboard.writeText(interviewPrepMaterials);
+                  toast.success("Interview prep copied to clipboard!");
+                }
+              }}
+              disabled={!interviewPrepMaterials}
+              className="border-white/10"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy All
+            </Button>
+            <Button
+              onClick={() => handleInterviewPrep(interviewPrepApp)}
+              disabled={interviewPrepLoading}
+              className="bg-emerald-500 hover:bg-emerald-600"
+            >
+              {interviewPrepLoading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Wand2 className="w-4 h-4 mr-2" />
+              )}
+              Regenerate
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
