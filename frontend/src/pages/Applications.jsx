@@ -79,6 +79,28 @@ export default function Applications({ user }) {
   const [viewDocument, setViewDocument] = useState(null); // {type: 'resume'|'cover', content: string, company: string}
   const [autoFillData, setAutoFillData] = useState(null); // Auto-fill data modal
   const [confirmSubmit, setConfirmSubmit] = useState(null); // Confirmation modal for auto-submit {applicationId, company, jobTitle, applyLink}
+  const [previewData, setPreviewData] = useState(null); // Preview data for confirmation modal
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Fetch preview data when user clicks Auto-Apply
+  const handleAutoApplyClick = async (applicationId, jobTitle, company, applyLink) => {
+    setLoadingPreview(true);
+    setConfirmSubmit({ applicationId, jobTitle, company, applyLink });
+    
+    try {
+      const response = await fetch(`${API}/applications/${applicationId}/autofill-payload`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewData(data);
+      }
+    } catch (err) {
+      console.error("Failed to load preview data:", err);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   // Copy entire document to clipboard
   const copyDocument = async () => {
