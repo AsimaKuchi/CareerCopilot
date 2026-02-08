@@ -466,6 +466,106 @@ export default function Applications({ user }) {
     }
   };
 
+  // Handler for auto-fill AND auto-submit (with confirmation)
+  const handleAutoFillAndSubmit = async (applicationId, jobTitle, company, applyLink) => {
+    setActionLoading(applicationId);
+    setConfirmSubmit(null); // Close the confirmation modal
+    
+    try {
+      toast.info(`🚀 Auto-filling and submitting application to ${company}...`, { duration: 8000 });
+
+      const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ submit_form: true }),
+      });
+
+      const data = await response.json();
+
+      if (data.submitted) {
+        // Successfully submitted!
+        toast.success(
+          <div>
+            <div className="font-semibold">🎉 Application Submitted!</div>
+            <div className="text-sm mt-1">
+              {data.fields_filled?.length || 0} fields filled and submitted to {company}
+            </div>
+          </div>,
+          { duration: 8000 }
+        );
+        
+        // Update the local application state
+        setApplications((apps) =>
+          apps.map((app) =>
+            app.application_id === applicationId
+              ? { ...app, status: "applied", applied_at: new Date().toISOString(), auto_submitted: true }
+              : app
+          )
+        );
+      } else if (data.success) {
+        // Filled but not submitted (maybe submit button not found)
+        toast.warning(
+          <div>
+            <div className="font-semibold">📝 Form Filled - Submit Manually</div>
+            <div className="text-sm mt-1">
+              {data.fields_filled?.length || 0} fields filled. {data.submit_error || "Please click submit manually."}
+            </div>
+          </div>,
+          { duration: 8000 }
+        );
+        
+        // Show the data modal
+        setAutoFillData({
+          company,
+          jobTitle,
+          applyLink: data.apply_link || applyLink,
+          data: data.auto_fill_data,
+          fieldsFilled: data.fields_filled || [],
+          fieldsFailed: data.fields_failed || [],
+          playwrightSuccess: true,
+          manualMode: true,
+          captchaDetected: false,
+          message: data.submit_error || "Form filled - click submit on the application page",
+        });
+      } else {
+        // Failed
+        if (data.captcha_detected) {
+          toast.warning(
+            <div>
+              <div className="font-semibold">🔒 CAPTCHA Detected</div>
+              <div className="text-sm mt-1">Please complete the application manually</div>
+            </div>,
+            { duration: 6000 }
+          );
+        } else {
+          toast.error(data.message || "Auto-submit failed. Please apply manually.");
+        }
+        
+        // Show manual copy modal
+        setAutoFillData({
+          company,
+          jobTitle,
+          applyLink: data.apply_link || applyLink,
+          data: data.auto_fill_data,
+          fieldsFilled: data.fields_filled || [],
+          fieldsFailed: data.fields_failed || [],
+          playwrightSuccess: false,
+          manualMode: true,
+          captchaDetected: data.captcha_detected || false,
+          message: data.message,
+        });
+      }
+    } catch (error) {
+      console.error("Auto-submit error:", error);
+      toast.error("Failed to auto-submit application");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const isAutoFillSupported = (applyLink) => {
     if (!applyLink) return false;
     const link = applyLink.toLowerCase();
