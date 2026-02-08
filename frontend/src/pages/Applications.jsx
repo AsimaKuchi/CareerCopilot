@@ -2192,25 +2192,25 @@ export default function Applications({ user }) {
                               key={qIdx} 
                               className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
                             >
-                              <div className="bg-indigo-50 px-5 py-4 border-b border-gray-200">
+                              <div className="bg-indigo-100 px-5 py-4 border-b border-indigo-200">
                                 <div className="flex items-start gap-3">
-                                  <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
+                                  <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1.5 rounded mt-0.5 uppercase tracking-wide">
                                     Q
                                   </span>
-                                  <p className="text-gray-900 font-semibold text-base leading-relaxed">
+                                  <p className="text-gray-900 font-bold text-base leading-relaxed">
                                     {item.question}
                                   </p>
                                 </div>
                               </div>
                               
-                              <div className="px-5 py-4 bg-white">
+                              <div className="px-5 py-4 bg-emerald-50">
                                 <div className="flex items-start gap-3">
-                                  <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
+                                  <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded mt-0.5 uppercase tracking-wide">
                                     A
                                   </span>
                                   <div className="space-y-2 flex-1">
                                     {item.answer.map((line, lIdx) => (
-                                      <p key={lIdx} className="text-gray-800 leading-relaxed">
+                                      <p key={lIdx} className="text-gray-700 leading-relaxed">
                                         {line}
                                       </p>
                                     ))}
