@@ -505,6 +505,21 @@ export default function Applications({ user }) {
               : app
           )
         );
+        
+        // Show the data modal with submission details
+        setAutoFillData({
+          company,
+          jobTitle,
+          applyLink: data.apply_link || applyLink,
+          data: data.auto_fill_data,
+          fieldsFilled: data.fields_filled || [],
+          fieldsFailed: data.fields_failed || [],
+          playwrightSuccess: true,
+          manualMode: false,
+          captchaDetected: false,
+          message: `✅ Application submitted successfully! ${data.fields_filled?.length || 0} fields were filled.`,
+          submitted: true,
+        });
       } else if (data.success) {
         // Filled but not submitted (maybe submit button not found)
         toast.warning(
