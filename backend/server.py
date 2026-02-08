@@ -4570,7 +4570,6 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                         # Standard submit buttons
                         'button[type="submit"]',
                         'input[type="submit"]',
-                        
                         # Text-based buttons
                         'button:has-text("Submit Application")',
                         'button:has-text("Submit")',
@@ -4578,32 +4577,26 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                         'button:has-text("Apply Now")',
                         'button:has-text("Send Application")',
                         'button:has-text("Complete Application")',
-                        
                         # ID/class based
                         'button[id*="submit" i]',
                         'button[class*="submit" i]',
-                    '#submit-btn',
-                    '#submit_app',
-                    '.submit-button',
-                    '.apply-button',
+                        '#submit-btn',
+                        '#submit_app',
+                        '.submit-button',
+                        '.apply-button',
+                        # Greenhouse specific
+                        'button[data-test="submit-application"]',
+                        # Lever specific
+                        'button.postings-btn-submit',
+                        'button[data-qa="btn-submit"]',
+                        # SmartRecruiters specific
+                        'button[data-test="footer-submit"]',
+                        # Generic fallbacks
+                        'form button[type="submit"]',
+                        'form input[type="submit"]',
+                    ]
                     
-                    # Greenhouse specific
-                    '#submit_app',
-                    'button[data-test="submit-application"]',
-                    
-                    # Lever specific
-                    'button.postings-btn-submit',
-                    'button[data-qa="btn-submit"]',
-                    
-                    # SmartRecruiters specific
-                    'button[data-test="footer-submit"]',
-                    
-                    # Generic fallbacks
-                    'form button[type="submit"]',
-                    'form input[type="submit"]',
-                ]
-                
-                for selector in submit_selectors:
+                    for selector in submit_selectors:
                     try:
                         submit_btn = await page.query_selector(selector)
                         if submit_btn:
