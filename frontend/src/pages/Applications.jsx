@@ -83,6 +83,45 @@ export default function Applications({ user }) {
   const [confirmSubmit, setConfirmSubmit] = useState(null); // Confirmation modal for auto-submit {applicationId, company, jobTitle, applyLink}
   const [previewData, setPreviewData] = useState(null); // Preview data for confirmation modal
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false);
+  const [interviewPrepApp, setInterviewPrepApp] = useState(null);
+  const [interviewPrepLoading, setInterviewPrepLoading] = useState(false);
+  const [interviewPrepMaterials, setInterviewPrepMaterials] = useState("");
+
+  // Interview Prep Handler
+  const handleInterviewPrep = async (app) => {
+    setInterviewPrepApp(app);
+    setInterviewPrepMaterials("");
+    setShowInterviewPrep(true);
+    setInterviewPrepLoading(true);
+
+    try {
+      const response = await fetch(`${API}/ai/interview-prep`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          job_title: app.job_title,
+          company: app.company,
+          job_description: app.job_description || `${app.job_title} position at ${app.company}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to generate prep materials");
+      }
+
+      const data = await response.json();
+      setInterviewPrepMaterials(data.prep_materials);
+      toast.success("Interview prep materials ready!");
+    } catch (error) {
+      toast.error(error.message || "Failed to generate prep materials");
+      setInterviewPrepMaterials("");
+    } finally {
+      setInterviewPrepLoading(false);
+    }
+  };
 
   // Fetch preview data when user clicks Auto-Apply
   const handleAutoApplyClick = async (applicationId, jobTitle, company, applyLink) => {
