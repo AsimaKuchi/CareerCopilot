@@ -1153,6 +1153,17 @@ export default function Applications({ user }) {
                             )}
 
                             <Button
+                              data-testid={`interview-prep-btn-${i}`}
+                              size="sm"
+                              onClick={() => handleInterviewPrep(app)}
+                              className="bg-emerald-500 hover:bg-emerald-600"
+                              title="Get interview preparation materials"
+                            >
+                              <GraduationCap className="w-4 h-4 mr-1" />
+                              Interview Prep
+                            </Button>
+
+                            <Button
                               data-testid={`reject-btn-${i}`}
                               size="sm"
                               variant="outline"
