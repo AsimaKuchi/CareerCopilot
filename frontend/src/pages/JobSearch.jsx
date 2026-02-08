@@ -48,6 +48,7 @@ import {
   Copy,
   Zap,
   GraduationCap,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 
