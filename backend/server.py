@@ -3929,17 +3929,34 @@ async def auto_fill_application_data(request: Request, application_id: str, body
             }
         
         submitted = result.get("submitted", False)
+        submission_confirmed = result.get("submission_confirmed", False)
         submit_error = result.get("submit_error")
+        final_url = result.get("final_url")
+        screenshot = result.get("screenshot")
         
         if result["success"]:
             # Successfully filled (and possibly submitted)
             if submitted:
-                # Update application status to 'applied'
+                # Update application status - but be honest about confirmation
+                status_update = {
+                    "status": "applied", 
+                    "applied_at": datetime.now(timezone.utc), 
+                    "auto_submitted": True,
+                    "submission_confirmed": submission_confirmed,
+                    "final_url": final_url,
+                }
+                if screenshot:
+                    status_update["submission_screenshot"] = screenshot
+                    
                 await db.applications.update_one(
                     {"application_id": application_id},
-                    {"$set": {"status": "applied", "applied_at": datetime.now(timezone.utc), "auto_submitted": True}}
+                    {"$set": status_update}
                 )
-                message = f"🎉 Application submitted! {len(result['fields_filled'])} fields filled."
+                
+                if submission_confirmed:
+                    message = f"🎉 Application likely submitted! {len(result['fields_filled'])} fields filled. Check email for confirmation."
+                else:
+                    message = f"⚠️ Submit clicked but confirmation unclear. {len(result['fields_filled'])} fields filled. Please verify via email."
             else:
                 message = f"✅ Auto-filled {len(result['fields_filled'])} fields!"
             
@@ -3953,6 +3970,9 @@ async def auto_fill_application_data(request: Request, application_id: str, body
                 "manual_mode": False,
                 "ats_type": ats_type,
                 "submitted": submitted,
+                "submission_confirmed": submission_confirmed,
+                "final_url": final_url,
+                "screenshot": screenshot,
                 "submit_error": submit_error,
             }
         else:
