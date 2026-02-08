@@ -1677,24 +1677,33 @@ export default function Applications({ user }) {
             </div>
           )}
           
-          <div className="flex gap-2 mb-4">
-            <Button
-              onClick={() => {
-                if (autoFillData?.applyLink) {
-                  window.open(autoFillData.applyLink, '_blank');
-                }
-              }}
-              className={autoFillData?.captchaDetected ? "bg-amber-500 hover:bg-amber-600" : "bg-indigo-500 hover:bg-indigo-600"}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              {autoFillData?.captchaDetected ? "🔒 Open Application (Solve CAPTCHA)" : "Open Application"}
-            </Button>
-          </div>
+          {!autoFillData?.submitted && (
+            <div className="flex gap-2 mb-4">
+              <Button
+                onClick={() => {
+                  if (autoFillData?.applyLink) {
+                    window.open(autoFillData.applyLink, '_blank');
+                  }
+                }}
+                className={autoFillData?.captchaDetected ? "bg-amber-500 hover:bg-amber-600" : "bg-indigo-500 hover:bg-indigo-600"}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                {autoFillData?.captchaDetected ? "🔒 Open Application (Solve CAPTCHA)" : "Open Application"}
+              </Button>
+            </div>
+          )}
 
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-3">
+              {/* Section header for submitted applications */}
+              {autoFillData?.submitted && (
+                <div className="mb-4 text-sm font-semibold text-foreground">
+                  📋 Data Submitted:
+                </div>
+              )}
+              
               {/* Fields that need manual entry (failed or not filled) */}
-              {autoFillData?.fieldsFailed?.length > 0 && (
+              {autoFillData?.fieldsFailed?.length > 0 && !autoFillData?.submitted && (
                 <div className="mb-4">
                   <div className="text-sm font-semibold text-amber-400 mb-2">⚠️ Fields needing manual entry:</div>
                   <div className="text-xs text-muted-foreground">
