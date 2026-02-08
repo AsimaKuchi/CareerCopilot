@@ -4604,70 +4604,70 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 ]
                 
                 for selector in submit_selectors:
-                        try:
-                            submit_btn = await page.query_selector(selector)
-                            if submit_btn:
-                                is_visible = await submit_btn.is_visible()
-                                is_enabled = await submit_btn.is_enabled()
+                    try:
+                        submit_btn = await page.query_selector(selector)
+                        if submit_btn:
+                            is_visible = await submit_btn.is_visible()
+                            is_enabled = await submit_btn.is_enabled()
+                            
+                            if is_visible and is_enabled:
+                                logger.info(f"🔘 Found submit button: {selector}")
                                 
-                                if is_visible and is_enabled:
-                                    logger.info(f"🔘 Found submit button: {selector}")
-                                    
-                                    # Scroll to button
-                                    await submit_btn.scroll_into_view_if_needed()
-                                    await asyncio.sleep(0.5)
-                                    
-                                    # Click the submit button
-                                    await submit_btn.click()
-                                    submit_clicked = True
-                                    logger.info("🚀 Clicked submit button!")
-                                    
-                                    # Wait for submission to process
-                                    await asyncio.sleep(3)
-                                    
-                                    # Check for success indicators
-                                    page_content = await page.content()
-                                    page_content_lower = page_content.lower()
-                                    
-                                    success_indicators = [
-                                        'thank you',
-                                        'application received',
-                                        'application submitted',
-                                        'successfully submitted',
-                                        'we have received your application',
-                                        'application complete',
-                                        'thanks for applying',
-                                        'thank you for applying',
+                                # Scroll to button
+                                await submit_btn.scroll_into_view_if_needed()
+                                await asyncio.sleep(0.5)
+                                
+                                # Click the submit button
+                                await submit_btn.click()
+                                submit_clicked = True
+                                logger.info("🚀 Clicked submit button!")
+                                
+                                # Wait for submission to process
+                                await asyncio.sleep(3)
+                                
+                                # Check for success indicators
+                                page_content = await page.content()
+                                page_content_lower = page_content.lower()
+                                
+                                success_indicators = [
+                                    'thank you',
+                                    'application received',
+                                    'application submitted',
+                                    'successfully submitted',
+                                    'we have received your application',
+                                    'application complete',
+                                    'thanks for applying',
+                                    'thank you for applying',
+                                ]
+                                
+                                submission_confirmed = any(ind in page_content_lower for ind in success_indicators)
+                                
+                                if submission_confirmed:
+                                    logger.info("✅ Application submission confirmed!")
+                                else:
+                                    # Check if we're still on the form (might have validation errors)
+                                    error_indicators = [
+                                        'required field',
+                                        'please fill',
+                                        'this field is required',
+                                        'error',
+                                        'invalid',
                                     ]
-                                    
-                                    submission_confirmed = any(ind in page_content_lower for ind in success_indicators)
-                                    
-                                    if submission_confirmed:
-                                        logger.info("✅ Application submission confirmed!")
+                                    has_errors = any(err in page_content_lower for err in error_indicators)
+                                    if has_errors:
+                                        logger.warning("⚠️ Form may have validation errors")
+                                        submit_error = "Form validation errors detected"
                                     else:
-                                        # Check if we're still on the form (might have validation errors)
-                                        error_indicators = [
-                                            'required field',
-                                            'please fill',
-                                            'this field is required',
-                                            'error',
-                                            'invalid',
-                                        ]
-                                        has_errors = any(err in page_content_lower for err in error_indicators)
-                                        if has_errors:
-                                            logger.warning("⚠️ Form may have validation errors")
-                                            submit_error = "Form validation errors detected"
-                                        else:
-                                            logger.info("📝 Submit clicked, awaiting confirmation...")
-                                    
-                                    break
-                        except Exception as e:
-                            logger.debug(f"Submit button {selector} not usable: {e}")
-                            continue
-                    
-                    if not submit_clicked:
-                        logger.warning("⚠️ Could not find or click submit button")
-                        submit_error = "Submit button not found"
+                                        logger.info("📝 Submit clicked, awaiting confirmation...")
+                                
+                                break
+                    except Exception as e:
+                        logger.debug(f"Submit button {selector} not usable: {e}")
+                        continue
+                
+                if not submit_clicked:
+                    logger.warning("⚠️ Could not find or click submit button")
+                    submit_error = "Submit button not found"
                 else:
                     # submit_form=False - Just fill, don't submit
                     logger.info("📝 Form filled (submit_form=False - no submission)")
