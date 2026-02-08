@@ -1278,8 +1278,8 @@ export default function JobSearch({ user }) {
 
       {/* Interview Prep Dialog */}
       <Dialog open={showInterviewPrep} onOpenChange={setShowInterviewPrep}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-gray-50">
-          <DialogHeader className="bg-white rounded-t-lg px-6 py-4 border-b">
+        <DialogContent className="max-w-4xl h-[85vh] overflow-hidden flex flex-col bg-gray-50 p-0">
+          <DialogHeader className="bg-white px-6 py-4 border-b flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-indigo-600">
               <GraduationCap className="w-5 h-5" />
               Interview Preparation
@@ -1295,13 +1295,13 @@ export default function JobSearch({ user }) {
           </DialogHeader>
 
           {interviewPrepLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-b-lg">
+            <div className="flex flex-col items-center justify-center flex-1 bg-white">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
               <p className="text-gray-600">Generating your personalized interview prep...</p>
               <p className="text-sm text-gray-400 mt-2">This may take 15-30 seconds</p>
             </div>
           ) : interviewPrepMaterials ? (
-            <ScrollArea className="flex-1 bg-white">
+            <div className="flex-1 overflow-y-auto bg-white">
               <div className="p-6 space-y-6">
                 {(() => {
                   // Parse the prep materials into sections
@@ -1436,15 +1436,15 @@ export default function JobSearch({ user }) {
                   ));
                 })()}
               </div>
-            </ScrollArea>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-500 bg-white rounded-b-lg">
+            <div className="flex flex-col items-center justify-center flex-1 text-gray-500 bg-white">
               <AlertCircle className="w-8 h-8 mb-4" />
               <p>No prep materials available. Try again.</p>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 p-4 bg-white border-t border-gray-200 rounded-b-lg">
+          <div className="flex justify-end gap-2 p-4 bg-white border-t border-gray-200 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
