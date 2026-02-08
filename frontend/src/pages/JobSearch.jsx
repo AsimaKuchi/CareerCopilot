@@ -427,6 +427,41 @@ export default function JobSearch({ user }) {
     setShowApplyDialog(true);
   };
 
+  // Interview Prep Handler
+  const handleInterviewPrep = async (job) => {
+    setInterviewPrepJob(job);
+    setInterviewPrepMaterials("");
+    setShowInterviewPrep(true);
+    setInterviewPrepLoading(true);
+
+    try {
+      const response = await fetch(`${API}/ai/interview-prep`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          job_title: job.job_title || job.title,
+          company: job.employer_name || job.company,
+          job_description: job.full_description || job.description || `${job.job_title} position at ${job.employer_name}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to generate prep materials");
+      }
+
+      const data = await response.json();
+      setInterviewPrepMaterials(data.prep_materials);
+      toast.success("Interview prep materials ready!");
+    } catch (error) {
+      toast.error(error.message || "Failed to generate prep materials");
+      setInterviewPrepMaterials("");
+    } finally {
+      setInterviewPrepLoading(false);
+    }
+  };
+
   const generateOptimizedResume = async () => {
     if (!selectedJob) return;
     setGeneratingResume(true);
