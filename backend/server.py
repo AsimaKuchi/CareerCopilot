@@ -4621,6 +4621,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                     # Check for success indicators
                                     page_content = await page.content()
                                     page_content_lower = page_content.lower()
+                                    final_url = page.url
                                     
                                     success_indicators = [
                                         'thank you',
@@ -4633,10 +4634,26 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                         'thank you for applying',
                                     ]
                                     
-                                    submission_confirmed = any(ind in page_content_lower for ind in success_indicators)
+                                    # Check URL for confirmation patterns
+                                    url_success_patterns = [
+                                        '/thank', '/success', '/confirm', '/complete', 
+                                        '/submitted', '/received', '/done'
+                                    ]
+                                    url_indicates_success = any(pattern in final_url.lower() for pattern in url_success_patterns)
+                                    
+                                    submission_confirmed = any(ind in page_content_lower for ind in success_indicators) or url_indicates_success
+                                    
+                                    # Take a screenshot as evidence
+                                    screenshot_base64 = None
+                                    try:
+                                        screenshot_bytes = await page.screenshot(type='jpeg', quality=50)
+                                        screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
+                                        logger.info("📸 Captured confirmation screenshot")
+                                    except Exception as e:
+                                        logger.warning(f"Could not capture screenshot: {e}")
                                     
                                     if submission_confirmed:
-                                        logger.info("✅ Application submission confirmed!")
+                                        logger.info(f"✅ Application submission likely successful! Final URL: {final_url}")
                                     else:
                                         # Check if we're still on the form (might have validation errors)
                                         error_indicators = [
@@ -4649,9 +4666,10 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                                         has_errors = any(err in page_content_lower for err in error_indicators)
                                         if has_errors:
                                             logger.warning("⚠️ Form may have validation errors")
-                                            submit_error = "Form validation errors detected"
+                                            submit_error = "Form validation errors detected - check screenshot"
                                         else:
-                                            logger.info("📝 Submit clicked, awaiting confirmation...")
+                                            logger.info(f"📝 Submit clicked but no confirmation detected. Final URL: {final_url}")
+                                            submit_error = "Submit clicked but confirmation not detected - verify via email"
                                     
                                     break
                         except Exception as e:
@@ -4661,9 +4679,15 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                     if not submit_clicked:
                         logger.warning("⚠️ Could not find or click submit button")
                         submit_error = "Submit button not found"
+                        final_url = page.url
+                        screenshot_base64 = None
+                        submission_confirmed = False
                 else:
                     # submit_form=False - Just fill, don't submit
                     logger.info("📝 Form filled (submit_form=False - no submission)")
+                    final_url = page.url
+                    screenshot_base64 = None
+                    submission_confirmed = False
                 
                 await browser.close()
                 
