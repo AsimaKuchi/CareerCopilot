@@ -4178,8 +4178,279 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                 # Define field selectors based on ATS type
                 field_selectors = get_field_selectors(ats_type)
                 
-                # Fill each field
+                # ========================================
+                # SMART FIELD DETECTION AND FILLING
+                # ========================================
+                
+                # First, find all required fields on the page
+                required_field_script = """
+                () => {
+                    const requiredFields = [];
+                    
+                    // Find all input, select, and textarea elements
+                    const formElements = document.querySelectorAll('input, select, textarea');
+                    
+                    formElements.forEach(el => {
+                        const isRequired = 
+                            el.hasAttribute('required') ||
+                            el.getAttribute('aria-required') === 'true' ||
+                            el.classList.contains('required') ||
+                            (el.closest('label') && el.closest('label').textContent.includes('*')) ||
+                            (el.closest('.field') && el.closest('.field').querySelector('.required')) ||
+                            (el.previousElementSibling && el.previousElementSibling.textContent.includes('*')) ||
+                            (document.querySelector(`label[for="${el.id}"]`)?.textContent.includes('*'));
+                        
+                        if (isRequired || el.type === 'email' || el.name?.toLowerCase().includes('email')) {
+                            const label = 
+                                document.querySelector(`label[for="${el.id}"]`)?.textContent ||
+                                el.closest('label')?.textContent ||
+                                el.placeholder ||
+                                el.name ||
+                                el.id ||
+                                '';
+                            
+                            requiredFields.push({
+                                type: el.tagName.toLowerCase(),
+                                inputType: el.type || 'text',
+                                name: el.name || '',
+                                id: el.id || '',
+                                placeholder: el.placeholder || '',
+                                label: label.replace('*', '').trim().substring(0, 100),
+                                isVisible: el.offsetParent !== null,
+                                selector: el.id ? `#${el.id}` : (el.name ? `[name="${el.name}"]` : null)
+                            });
+                        }
+                    });
+                    
+                    return requiredFields;
+                }
+                """
+                
+                try:
+                    required_fields = await page.evaluate(required_field_script)
+                    logger.info(f"📋 Found {len(required_fields)} required/important fields")
+                    for rf in required_fields[:10]:  # Log first 10
+                        logger.debug(f"   - {rf.get('label', 'unknown')}: {rf.get('type')}/{rf.get('inputType')} [{rf.get('name') or rf.get('id')}]")
+                except Exception as e:
+                    logger.warning(f"Could not detect required fields: {e}")
+                    required_fields = []
+                
+                # Build smart field mapping (label/name patterns -> auto_fill_data keys)
+                field_mapping = {
+                    # Name fields
+                    r'first.?name|given.?name|fname': 'first_name',
+                    r'last.?name|family.?name|surname|lname': 'last_name',
+                    r'full.?name|name': 'full_name',
+                    
+                    # Contact
+                    r'email|e-mail': 'email',
+                    r'phone|mobile|cell|telephone': 'phone',
+                    
+                    # Location
+                    r'city|town': 'city',
+                    r'state|province|region': 'state',
+                    r'country|nation': 'country',
+                    r'postal|zip|postcode': 'postal_code',
+                    r'address': 'address',
+                    
+                    # Professional links
+                    r'linkedin': 'linkedin',
+                    r'github': 'github',
+                    r'portfolio|website|personal.?site|url': 'portfolio',
+                    
+                    # Work
+                    r'company|employer|organization|current.?company': 'current_company',
+                    r'title|position|role|job.?title|current.?title': 'current_title',
+                    r'experience|years': 'years_experience',
+                    
+                    # Education
+                    r'education|degree|qualification': 'education',
+                    r'university|school|college|institution': 'university',
+                    
+                    # Work authorization
+                    r'authorized|authorization|legal|eligible|right.?to.?work': 'authorized_to_work',
+                    r'sponsor|visa.?sponsor': 'requires_sponsorship',
+                    r'visa|work.?permit|immigration': 'visa_status',
+                    
+                    # Availability
+                    r'relocate|relocation|willing.?to.?move': 'willing_to_relocate',
+                    r'notice|availability|start.?date|available|earliest': 'start_date',
+                    
+                    # Salary
+                    r'salary|compensation|pay|expected': 'salary_expectation',
+                    
+                    # Referral
+                    r'hear|heard|source|referr|how.?did.?you': 'referral_source',
+                }
+                
+                import re
+                
+                # Helper function to fill a field with React-compatible events
+                async def fill_field_react_compatible(element, value, field_name):
+                    """Fill a field using React-compatible event dispatching"""
+                    try:
+                        # Focus the element
+                        await element.focus()
+                        await asyncio.sleep(0.1)
+                        
+                        # Clear existing value
+                        await element.evaluate('el => el.value = ""')
+                        
+                        # Type the value character by character for React compatibility
+                        await element.type(str(value), delay=10)
+                        
+                        # Dispatch events to trigger React state updates
+                        await element.evaluate('''el => {
+                            el.dispatchEvent(new Event("input", { bubbles: true }));
+                            el.dispatchEvent(new Event("change", { bubbles: true }));
+                            el.dispatchEvent(new Event("blur", { bubbles: true }));
+                        }''')
+                        
+                        logger.info(f"✅ Filled {field_name}: {str(value)[:30]}...")
+                        return True
+                    except Exception as e:
+                        logger.error(f"❌ Error filling field {field_name}: {e}")
+                        return False
+                
+                # Helper function to handle dropdown/select fields
+                async def fill_dropdown(element, value, field_name):
+                    """Fill a dropdown/select field by finding matching option"""
+                    try:
+                        # Get all options
+                        options = await element.query_selector_all('option')
+                        
+                        value_lower = str(value).lower()
+                        best_match = None
+                        
+                        for option in options:
+                            option_text = await option.text_content()
+                            option_value = await option.get_attribute('value')
+                            
+                            if option_text and value_lower in option_text.lower():
+                                best_match = option_value or option_text
+                                break
+                            elif option_value and value_lower in option_value.lower():
+                                best_match = option_value
+                                break
+                        
+                        if best_match:
+                            await element.select_option(value=best_match)
+                            await element.evaluate('el => el.dispatchEvent(new Event("change", { bubbles: true }))')
+                            logger.info(f"✅ Selected dropdown {field_name}: {best_match}")
+                            return True
+                        else:
+                            # Try selecting by visible text
+                            await element.select_option(label=str(value))
+                            logger.info(f"✅ Selected dropdown {field_name}: {value}")
+                            return True
+                    except Exception as e:
+                        logger.warning(f"⚠️ Could not select dropdown {field_name}: {e}")
+                        return False
+                
+                # Helper function to handle radio buttons
+                async def fill_radio(page, field_name, value):
+                    """Fill a radio button by finding the matching option"""
+                    try:
+                        value_lower = str(value).lower()
+                        
+                        # Find radio buttons with matching name and value/label
+                        radio_selectors = [
+                            f'input[type="radio"][value*="{value}" i]',
+                            f'input[type="radio"][id*="{value}" i]',
+                        ]
+                        
+                        for selector in radio_selectors:
+                            radio = await page.query_selector(selector)
+                            if radio:
+                                await radio.click()
+                                logger.info(f"✅ Selected radio {field_name}: {value}")
+                                return True
+                        
+                        # Try finding by label text
+                        labels = await page.query_selector_all('label')
+                        for label in labels:
+                            label_text = await label.text_content()
+                            if label_text and value_lower in label_text.lower():
+                                radio_input = await label.query_selector('input[type="radio"]')
+                                if radio_input:
+                                    await radio_input.click()
+                                    logger.info(f"✅ Selected radio {field_name} via label: {value}")
+                                    return True
+                        
+                        return False
+                    except Exception as e:
+                        logger.warning(f"⚠️ Could not select radio {field_name}: {e}")
+                        return False
+                
+                # Now fill fields using both detected required fields AND standard selectors
+                filled_field_names = set()
+                
+                # First, try to fill detected required fields
+                for rf in required_fields:
+                    if not rf.get('isVisible'):
+                        continue
+                    
+                    selector = rf.get('selector')
+                    if not selector:
+                        continue
+                    
+                    field_label = (rf.get('label', '') + ' ' + rf.get('name', '') + ' ' + rf.get('id', '') + ' ' + rf.get('placeholder', '')).lower()
+                    
+                    # Find matching data key
+                    matched_key = None
+                    for pattern, data_key in field_mapping.items():
+                        if re.search(pattern, field_label, re.IGNORECASE):
+                            matched_key = data_key
+                            break
+                    
+                    if not matched_key:
+                        continue
+                    
+                    value = auto_fill_data.get(matched_key)
+                    if not value:
+                        logger.warning(f"⚠️ Required field '{rf.get('label', selector)}' has no matching profile data for '{matched_key}'")
+                        continue
+                    
+                    if matched_key in filled_field_names:
+                        continue
+                    
+                    try:
+                        element = await page.query_selector(selector)
+                        if not element:
+                            continue
+                        
+                        field_type = rf.get('type', 'input')
+                        input_type = rf.get('inputType', 'text')
+                        
+                        if field_type == 'select':
+                            if await fill_dropdown(element, value, matched_key):
+                                fields_filled.append(matched_key)
+                                filled_field_names.add(matched_key)
+                        elif input_type == 'radio':
+                            if await fill_radio(page, matched_key, value):
+                                fields_filled.append(matched_key)
+                                filled_field_names.add(matched_key)
+                        elif input_type == 'checkbox':
+                            # For checkboxes, click if value is truthy
+                            if value and str(value).lower() in ['yes', 'true', '1']:
+                                await element.click()
+                                fields_filled.append(matched_key)
+                                filled_field_names.add(matched_key)
+                                logger.info(f"✅ Checked checkbox {matched_key}")
+                        else:
+                            # Text input or textarea
+                            if await fill_field_react_compatible(element, value, matched_key):
+                                fields_filled.append(matched_key)
+                                filled_field_names.add(matched_key)
+                    except Exception as e:
+                        logger.error(f"❌ Error filling {matched_key}: {e}")
+                        fields_failed.append(matched_key)
+                
+                # Second pass: Use standard selectors for any fields not yet filled
                 for field_name, selectors in field_selectors.items():
+                    if field_name in filled_field_names:
+                        continue
+                    
                     value = auto_fill_data.get(field_name)
                     if not value:
                         continue
@@ -4191,12 +4462,17 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
                             if element:
                                 is_visible = await element.is_visible()
                                 if is_visible:
-                                    await element.click()
-                                    await element.fill("")
-                                    await element.fill(str(value))
-                                    fields_filled.append(field_name)
-                                    filled = True
-                                    break
+                                    tag_name = await element.evaluate('el => el.tagName.toLowerCase()')
+                                    
+                                    if tag_name == 'select':
+                                        filled = await fill_dropdown(element, value, field_name)
+                                    else:
+                                        filled = await fill_field_react_compatible(element, value, field_name)
+                                    
+                                    if filled:
+                                        fields_filled.append(field_name)
+                                        filled_field_names.add(field_name)
+                                        break
                         except Exception as e:
                             continue
                     
