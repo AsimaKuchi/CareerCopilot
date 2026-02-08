@@ -167,6 +167,9 @@ The job matching evaluates candidates against jobs using:
 ## Recent Bug Fixes (February 8, 2025)
 - **✅ Auto-Fill & Auto-Submit Feature Complete**: Implemented user-confirmed auto-submit functionality. Backend accepts `submit_form` parameter (defaults to False). When True, Playwright clicks submit button after filling fields.
 - **✅ HTML Nesting Fix**: Fixed React hydration warning in confirmation modal by using `asChild` prop with div container instead of nested p tags.
+- **✅ Submission Verification**: Added screenshot capture, final URL tracking, and honest messaging about submission confirmation status.
+- **✅ Data Preview Modal**: Users can now preview all their data (personal info, resume, cover letter) before confirming auto-submit.
+- **✅ Interview Prep Feature**: Added "Interview Prep" button to both JobSearch and Applications pages. Generates AI-powered interview materials tailored to each specific job.
 
 ## Recent Bug Fixes (February 6, 2025)
 - **✅ Fixed Playwright Executable Path Error**: The `BrowserType.launch: Executable doesn't exist` error was caused by a version mismatch between the Playwright Python package (v1.57.0, expecting browser build v1200) and the pre-installed browsers (build v1208). Fixed by running `playwright install chromium` to download the correct browser version.
