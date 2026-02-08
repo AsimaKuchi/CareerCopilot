@@ -1616,18 +1616,37 @@ export default function Applications({ user }) {
       <Dialog open={!!autoFillData} onOpenChange={() => setAutoFillData(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-indigo-400">
-              {autoFillData?.playwrightSuccess ? '✅ Auto-Fill Complete' : '📋 Application Data'} - {autoFillData?.company}
+            <DialogTitle className={autoFillData?.submitted ? "text-emerald-400" : "text-indigo-400"}>
+              {autoFillData?.submitted 
+                ? '🎉 Application Submitted!' 
+                : autoFillData?.playwrightSuccess 
+                  ? '✅ Auto-Fill Complete' 
+                  : '📋 Application Data'} - {autoFillData?.company}
             </DialogTitle>
             <DialogDescription>
-              {autoFillData?.playwrightSuccess 
-                ? `${autoFillData?.fieldsFilled?.length || 0} fields were automatically filled. Review and complete any remaining fields.`
-                : 'Copy each field to fill your application manually.'}
+              {autoFillData?.submitted
+                ? `Your application has been submitted. Here's what was filled:`
+                : autoFillData?.playwrightSuccess 
+                  ? `${autoFillData?.fieldsFilled?.length || 0} fields were automatically filled. Review and complete any remaining fields.`
+                  : 'Copy each field to fill your application manually.'}
             </DialogDescription>
           </DialogHeader>
           
           {/* Success/Warning Banner */}
-          {autoFillData?.playwrightSuccess ? (
+          {autoFillData?.submitted ? (
+            <div className="p-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-lg border border-emerald-500/30 mb-4">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <CheckCircle className="w-6 h-6" />
+                <span className="font-bold text-lg">Application Submitted Successfully!</span>
+              </div>
+              <div className="text-sm text-emerald-300 mt-2">
+                {autoFillData?.fieldsFilled?.length || 0} fields were filled and the application was submitted to {autoFillData?.company}.
+              </div>
+              <div className="text-xs text-muted-foreground mt-2">
+                Review the data below to see exactly what was sent.
+              </div>
+            </div>
+          ) : autoFillData?.playwrightSuccess ? (
             <div className="p-3 bg-emerald-500/20 rounded-lg border border-emerald-500/30 mb-4">
               <div className="flex items-center gap-2 text-emerald-400">
                 <CheckCircle className="w-5 h-5" />
