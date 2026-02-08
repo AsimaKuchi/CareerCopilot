@@ -70,6 +70,10 @@ export default function JobSearch({ user }) {
   const [jobSource, setJobSource] = useState("all"); // "all", "quality" (Greenhouse/Lever/Ashby), "aggregator" (LinkedIn/Indeed/etc)
   const [showAnalyzeDialog, setShowAnalyzeDialog] = useState(false);
   const [jobToAnalyze, setJobToAnalyze] = useState(null);
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false);
+  const [interviewPrepJob, setInterviewPrepJob] = useState(null);
+  const [interviewPrepLoading, setInterviewPrepLoading] = useState(false);
+  const [interviewPrepMaterials, setInterviewPrepMaterials] = useState("");
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
