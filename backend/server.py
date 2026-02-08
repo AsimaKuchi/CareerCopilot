@@ -3983,7 +3983,7 @@ async def auto_fill_application_data(request: Request, application_id: str, body
         }
 
 
-async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: dict, resume_file_data: str = None, resume_filename: str = "resume.pdf") -> dict:
+async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: dict, resume_file_data: str = None, resume_filename: str = "resume.pdf", submit_form: bool = False) -> dict:
     """
     Use Playwright to auto-fill a job application form.
     Returns dict with success status, filled fields, and CAPTCHA detection.
@@ -3994,6 +3994,7 @@ async def playwright_auto_fill(apply_link: str, ats_type: str, auto_fill_data: d
         auto_fill_data: Dict of field values to fill
         resume_file_data: Base64 encoded resume file (optional)
         resume_filename: Name of the resume file
+        submit_form: If True, will click the submit button after filling
     """
     fields_filled = []
     fields_failed = []
