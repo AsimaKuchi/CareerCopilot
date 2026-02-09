@@ -113,6 +113,12 @@
       skills: data.profile_context?.skills || [],
       yearsExperience: data.profile_context?.experience_years || '',
       resumeText: (data.profile_context?.resume_text || '').toLowerCase(),
+      willingToRelocate: data.profile_context?.willing_to_relocate,
+      salaryExpectation: data.profile_context?.salary_expectation || '',
+      noticePeriod: data.profile_context?.notice_period || '',
+      startDate: data.profile_context?.start_date || '',
+      highestEducation: data.profile_context?.highest_education || '',
+      remotePreference: data.profile_context?.remote_preference || '',
     };
     
     console.log('[JobMatch AI] Profile context:', {
