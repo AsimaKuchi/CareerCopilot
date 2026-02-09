@@ -5742,7 +5742,275 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     if profile and profile.get("skills"):
         response["skills"] = profile.get("skills")
     
+    # Add stored screening question answers
+    if profile and profile.get("screening_answers"):
+        response["screening_answers"] = profile.get("screening_answers")
+    
     return response
+
+
+# Common screening questions template
+COMMON_SCREENING_QUESTIONS = [
+    {
+        "id": "preferred_name",
+        "question": "What name would you like us to use?",
+        "type": "text",
+        "category": "Personal",
+        "keywords": ["preferred name", "like us to use", "call you"]
+    },
+    {
+        "id": "work_authorization",
+        "question": "Are you legally authorized to work in this country?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Work Authorization",
+        "keywords": ["authorized to work", "legally authorized", "work authorization", "eligible to work"]
+    },
+    {
+        "id": "sponsorship_required",
+        "question": "Will you now or in the future require sponsorship?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Work Authorization",
+        "keywords": ["require sponsorship", "need sponsorship", "visa sponsorship", "immigration sponsorship"]
+    },
+    {
+        "id": "employment_restrictions",
+        "question": "Are you subject to any employment agreements or restrictions?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Legal",
+        "keywords": ["employment agreement", "non-compete", "restrictions", "post-employment"]
+    },
+    {
+        "id": "country_residence",
+        "question": "What is your current country of residence?",
+        "type": "text",
+        "category": "Location",
+        "keywords": ["country of residence", "current country", "reside in", "living in"]
+    },
+    {
+        "id": "us_canada_location",
+        "question": "Are you located in the US or Canada?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Location",
+        "keywords": ["located in us", "located in canada", "us or canada", "united states or canada"]
+    },
+    {
+        "id": "timezone_est",
+        "question": "Are you available to work in EST timezone?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Location",
+        "keywords": ["est timezone", "eastern time", "est hours"]
+    },
+    {
+        "id": "timezone_pst",
+        "question": "Are you available to work in PST timezone?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Location",
+        "keywords": ["pst timezone", "pacific time", "pst hours"]
+    },
+    {
+        "id": "remote_work",
+        "question": "Are you comfortable working remotely?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Work Preferences",
+        "keywords": ["remote work", "work remotely", "work from home", "wfh"]
+    },
+    {
+        "id": "hybrid_work",
+        "question": "Are you open to hybrid work arrangements?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Work Preferences",
+        "keywords": ["hybrid", "in-office", "office days"]
+    },
+    {
+        "id": "relocation",
+        "question": "Are you willing to relocate?",
+        "type": "select",
+        "options": ["Yes", "No", "Maybe"],
+        "category": "Work Preferences",
+        "keywords": ["relocate", "relocation", "move to", "willing to move"]
+    },
+    {
+        "id": "start_date",
+        "question": "When can you start?",
+        "type": "text",
+        "category": "Availability",
+        "keywords": ["start date", "when can you start", "available to start", "earliest start"]
+    },
+    {
+        "id": "notice_period",
+        "question": "What is your notice period?",
+        "type": "text",
+        "category": "Availability",
+        "keywords": ["notice period", "two weeks notice", "current notice"]
+    },
+    {
+        "id": "salary_expectations",
+        "question": "What are your salary expectations?",
+        "type": "text",
+        "category": "Compensation",
+        "keywords": ["salary expectation", "compensation", "desired salary", "salary range"]
+    },
+    {
+        "id": "years_experience_total",
+        "question": "How many years of total work experience do you have?",
+        "type": "text",
+        "category": "Experience",
+        "keywords": ["years of experience", "total experience", "work experience"]
+    },
+    {
+        "id": "highest_education",
+        "question": "What is your highest level of education?",
+        "type": "select",
+        "options": ["High School", "Associate's", "Bachelor's", "Master's", "PhD", "Other"],
+        "category": "Education",
+        "keywords": ["highest education", "degree", "educational background"]
+    },
+    {
+        "id": "criminal_record",
+        "question": "Have you ever been convicted of a crime?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Background",
+        "keywords": ["convicted", "criminal", "felony", "misdemeanor"]
+    },
+    {
+        "id": "referred_by",
+        "question": "How did you hear about this position?",
+        "type": "text",
+        "category": "Source",
+        "keywords": ["hear about", "referred", "found this job", "source"]
+    },
+    {
+        "id": "linkedin_url",
+        "question": "What is your LinkedIn profile URL?",
+        "type": "text",
+        "category": "Links",
+        "keywords": ["linkedin", "linkedin profile", "linkedin url"]
+    },
+    {
+        "id": "github_url",
+        "question": "What is your GitHub profile URL?",
+        "type": "text",
+        "category": "Links",
+        "keywords": ["github", "github profile", "github url"]
+    },
+    {
+        "id": "portfolio_url",
+        "question": "What is your portfolio/website URL?",
+        "type": "text",
+        "category": "Links",
+        "keywords": ["portfolio", "website", "personal site"]
+    },
+    {
+        "id": "age_18_plus",
+        "question": "Are you at least 18 years of age?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Legal",
+        "keywords": ["18 years", "age requirement", "legal age"]
+    },
+    {
+        "id": "background_check",
+        "question": "Are you willing to undergo a background check?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Background",
+        "keywords": ["background check", "background screening"]
+    },
+    {
+        "id": "drug_test",
+        "question": "Are you willing to take a drug test?",
+        "type": "select",
+        "options": ["Yes", "No"],
+        "category": "Background",
+        "keywords": ["drug test", "drug screening"]
+    },
+]
+
+
+@api_router.get("/screening-questions/templates")
+async def get_screening_question_templates(request: Request):
+    """Get the list of common screening questions with templates."""
+    await get_current_user(request)  # Ensure authenticated
+    return {"questions": COMMON_SCREENING_QUESTIONS}
+
+
+@api_router.get("/screening-questions/answers")
+async def get_user_screening_answers(request: Request):
+    """Get user's stored screening question answers."""
+    user = await get_current_user(request)
+    
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0, "screening_answers": 1}
+    )
+    
+    return {
+        "answers": profile.get("screening_answers", {}) if profile else {},
+        "templates": COMMON_SCREENING_QUESTIONS
+    }
+
+
+class ScreeningAnswersUpdate(BaseModel):
+    answers: dict  # {question_id: answer_value}
+
+
+@api_router.put("/screening-questions/answers")
+async def update_screening_answers(request: Request, data: ScreeningAnswersUpdate):
+    """Update user's screening question answers."""
+    user = await get_current_user(request)
+    
+    await db.user_profiles.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"screening_answers": data.answers}},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Screening answers saved"}
+
+
+class CustomQuestionAdd(BaseModel):
+    question: str
+    answer: str
+    keywords: List[str] = []
+
+
+@api_router.post("/screening-questions/custom")
+async def add_custom_screening_question(request: Request, data: CustomQuestionAdd):
+    """Add a custom screening question and answer."""
+    user = await get_current_user(request)
+    
+    # Generate a unique ID for the custom question
+    import hashlib
+    question_id = f"custom_{hashlib.md5(data.question.encode()).hexdigest()[:8]}"
+    
+    custom_question = {
+        "id": question_id,
+        "question": data.question,
+        "answer": data.answer,
+        "keywords": data.keywords or [word.lower() for word in data.question.split() if len(word) > 3],
+        "is_custom": True
+    }
+    
+    # Add to user's custom questions
+    await db.user_profiles.update_one(
+        {"user_id": user.user_id},
+        {
+            "$push": {"custom_screening_questions": custom_question},
+            "$set": {f"screening_answers.{question_id}": data.answer}
+        },
+        upsert=True
+    )
+    
+    return {"success": True, "question_id": question_id}
 
 
 class AnswerQuestionsRequest(BaseModel):
