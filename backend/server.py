@@ -5699,7 +5699,19 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
             }
         ],
         "documents": {},
-        "matched_job": matched_application.get("job_title") if matched_application else None
+        "matched_job": matched_application.get("job_title") if matched_application else None,
+        # Include profile data for AI question answering
+        "profile_context": {
+            "skills": profile.get("skills", []) if profile else [],
+            "experience_years": profile.get("experience_years") if profile else None,
+            "resume_text": profile.get("resume_text", "") if profile else "",
+            "work_authorization": autofill.get("workAuthorizationStatus") or "",
+            "requires_sponsorship": autofill.get("requiresSponsorship"),
+            "preferred_name": first_name,
+            "country": autofill.get("country") or "",
+            "city": autofill.get("city") or "",
+            "state": autofill.get("state") or "",
+        }
     }
     
     # Add resume data - prefer optimized version if available
@@ -5731,6 +5743,102 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
         response["skills"] = profile.get("skills")
     
     return response
+
+
+class AnswerQuestionsRequest(BaseModel):
+    questions: List[dict]  # List of {question: str, options: List[str] (optional)}
+
+@api_router.post("/extension/answer-questions")
+async def answer_screening_questions(request: Request, req: AnswerQuestionsRequest):
+    """
+    Use AI to answer custom screening questions based on user's profile and resume.
+    """
+    user = await get_current_user(request)
+    
+    # Get profile
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if profile:
+        profile = decrypt_sensitive_data(profile)
+    
+    # Get user info
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    autofill = get_autofill_data(profile) if profile else {}
+    full_name = user_doc.get("name", "") if user_doc else ""
+    first_name = full_name.split(" ")[0] if full_name else ""
+    
+    # Build context about the user
+    user_context = f"""
+User Profile:
+- Name: {full_name}
+- Preferred Name: {first_name}
+- Location: {autofill.get('city', '')}, {autofill.get('state', '')}, {autofill.get('country', '')}
+- Work Authorization: {autofill.get('workAuthorizationStatus', 'Not specified')}
+- Requires Sponsorship: {'No' if autofill.get('requiresSponsorship') == False else ('Yes' if autofill.get('requiresSponsorship') else 'Not specified')}
+- Years of Experience: {profile.get('experience_years', 'Not specified') if profile else 'Not specified'}
+- Skills: {', '.join(profile.get('skills', [])) if profile else 'Not specified'}
+
+Resume Summary:
+{profile.get('resume_text', 'No resume available')[:3000] if profile else 'No resume available'}
+"""
+
+    # Format questions for AI
+    questions_text = ""
+    for i, q in enumerate(req.questions):
+        questions_text += f"\n{i+1}. {q.get('question', '')}"
+        if q.get('options'):
+            questions_text += f"\n   Options: {', '.join(q['options'])}"
+    
+    prompt = f"""Based on the user's profile and resume, answer these job application screening questions.
+Be truthful - if you don't have enough information, say "Unable to determine".
+If it's a Yes/No question, answer with just "Yes" or "No".
+If there are dropdown options provided, pick the most appropriate option that matches the user's profile.
+
+{user_context}
+
+Questions to answer:
+{questions_text}
+
+Respond in JSON format:
+{{
+  "answers": [
+    {{"question_index": 0, "answer": "your answer", "confidence": "high/medium/low"}},
+    ...
+  ]
+}}
+"""
+
+    try:
+        from emergentintegrations.llm.chat import chat, Message
+
+        response = await chat(
+            api_key=EMERGENT_API_KEY,
+            model=Model.OPENAI_GPT4O,
+            messages=[Message(role="user", content=prompt)]
+        )
+        
+        # Parse JSON response
+        response_text = response.message
+        
+        # Extract JSON from response
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            result = json.loads(json_match.group())
+            return result
+        else:
+            return {"answers": [], "error": "Could not parse AI response"}
+            
+    except Exception as e:
+        logger.error(f"Error answering questions: {str(e)}")
+        return {"answers": [], "error": str(e)}
 
 # ========================
 # DASHBOARD STATS
