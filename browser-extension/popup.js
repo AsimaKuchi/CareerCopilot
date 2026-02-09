@@ -195,15 +195,43 @@ async function handleAutoFill() {
 
     const autofillData = await response.json();
     
-    // Step 2: Send data to content script
+    // Step 2: Get current tab
     updateProgress(50, 'Filling form fields...');
     
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    const result = await chrome.tabs.sendMessage(tab.id, {
-      action: 'AUTOFILL',
-      data: autofillData
-    });
+    // First, try to inject the content script programmatically
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
+      });
+    } catch (injectError) {
+      console.log('Content script may already be loaded:', injectError);
+    }
+    
+    // Small delay to let script initialize
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Send data to content script
+    let result;
+    try {
+      result = await chrome.tabs.sendMessage(tab.id, {
+        action: 'AUTOFILL',
+        data: autofillData
+      });
+    } catch (msgError) {
+      // If message fails, try executing autofill directly
+      console.log('Message failed, trying direct execution:', msgError);
+      
+      const execResult = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: executeAutoFillDirect,
+        args: [autofillData]
+      });
+      
+      result = execResult[0]?.result || { success: false, filled: [], failed: ['Could not fill form'] };
+    }
 
     updateProgress(100, 'Complete!');
     
