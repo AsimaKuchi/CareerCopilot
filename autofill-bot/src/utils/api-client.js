@@ -8,7 +8,7 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://resume-first-jobs-1.preview.emergentagent.com';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://autofill-browser.preview.emergentagent.com';
 const SESSION_TOKEN = process.env.SESSION_TOKEN;
 
 /**
