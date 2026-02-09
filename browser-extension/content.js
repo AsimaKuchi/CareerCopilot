@@ -393,17 +393,30 @@
     }
     
     if (q.includes('relocate') || q.includes('relocation')) {
-      // Use actual profile setting - values: "yes", "no", "open_to_discussion", "unknown"
+      // Values from profile: "yes", "no", "open_to_discussion"
       const willRelocate = profile.willingToRelocate;
       console.log('[JobMatch AI] Relocation setting:', willRelocate);
+      
       if (willRelocate === 'yes') {
+        // Try to match "Yes" options in dropdowns
+        if (field.options.length > 0) {
+          const match = findBestOption(field.options, ['yes', 'willing to relocate', 'open to relocation']);
+          if (match) return match;
+        }
         return findYesNoOption(field.options, true);
       } else if (willRelocate === 'no') {
+        if (field.options.length > 0) {
+          const match = findBestOption(field.options, ['no', 'not willing', 'not open']);
+          if (match) return match;
+        }
         return findYesNoOption(field.options, false);
       } else if (willRelocate === 'open_to_discussion') {
-        return findBestOption(field.options, ['maybe', 'open', 'depends', 'possibly']) || findYesNoOption(field.options, true);
+        if (field.options.length > 0) {
+          const match = findBestOption(field.options, ['open to discussion', 'maybe', 'depends', 'possibly', 'flexible']);
+          if (match) return match;
+        }
+        return 'Open to discussion';
       }
-      // If unknown or not set, don't answer
       return null;
     }
     
@@ -412,87 +425,137 @@
       // Values: "remote", "hybrid", "onsite"
       const workArrangement = profile.workArrangement;
       console.log('[JobMatch AI] Work arrangement:', workArrangement);
+      
       if (workArrangement === 'remote') {
         return findYesNoOption(field.options, true);
       } else if (workArrangement === 'onsite') {
         return findYesNoOption(field.options, false);
-      } else if (workArrangement === 'hybrid') {
-        return findYesNoOption(field.options, true); // Hybrid usually OK with remote
+      } else if (workArrangement === 'hybrid' || workArrangement === 'flexible') {
+        // Hybrid/Flexible usually means they're OK with remote
+        return findYesNoOption(field.options, true);
+      }
+      return null;
+    }
+    
+    // ===== WORK ARRANGEMENT (when asking preference) =====
+    if (q.includes('work arrangement') || q.includes('work preference') || q.includes('onsite') || (q.includes('hybrid') && !q.includes('remote'))) {
+      const workArrangement = profile.workArrangement;
+      if (workArrangement && field.options.length > 0) {
+        const displayMap = {
+          'remote': ['remote', 'work from home', 'wfh'],
+          'hybrid': ['hybrid', 'flexible', 'mix'],
+          'onsite': ['onsite', 'on-site', 'in-office', 'office'],
+          'flexible': ['flexible', 'no preference', 'any']
+        };
+        const searchTerms = displayMap[workArrangement] || [workArrangement];
+        return findBestOption(field.options, searchTerms);
       }
       return null;
     }
     
     // ===== SALARY EXPECTATION =====
     if (q.includes('salary') && (q.includes('expectation') || q.includes('requirement') || q.includes('desired') || q.includes('range'))) {
-      if (profile.salaryMin && profile.salaryMax) {
-        return `$${profile.salaryMin.toLocaleString()} - $${profile.salaryMax.toLocaleString()}`;
-      } else if (profile.salaryMin) {
-        return `$${profile.salaryMin.toLocaleString()}+`;
-      } else if (profile.salaryMax) {
-        return `Up to $${profile.salaryMax.toLocaleString()}`;
+      const min = profile.salaryMin;
+      const max = profile.salaryMax;
+      
+      if (min && max) {
+        return `$${Number(min).toLocaleString()} - $${Number(max).toLocaleString()}`;
+      } else if (min) {
+        return `$${Number(min).toLocaleString()}+`;
+      } else if (max) {
+        return `Up to $${Number(max).toLocaleString()}`;
       }
       return null;
     }
     
     // ===== NOTICE PERIOD =====
     if (q.includes('notice period') || q.includes('current notice') || q.includes('how soon')) {
-      // Values: "immediate", "2_weeks", "1_month", "2_months", "3_months"
+      // Values: "immediately", "one_week", "two_weeks", "one_month", "two_months", "three_months", etc
       const notice = profile.noticePeriod;
       console.log('[JobMatch AI] Notice period:', notice);
+      
       if (notice && notice !== 'unknown') {
-        const noticeMap = {
-          'immediate': 'Immediately',
-          '2_weeks': '2 weeks',
-          '1_month': '1 month',
-          '2_months': '2 months',
-          '3_months': '3 months',
-          '3_months_plus': '3+ months'
+        // Map to human-readable display values
+        const displayMap = {
+          'immediately': 'Immediately',
+          'one_week': '1 week',
+          'two_weeks': '2 weeks',
+          'three_weeks': '3 weeks',
+          'one_month': '1 month',
+          'six_weeks': '6 weeks',
+          'two_months': '2 months',
+          'three_months': '3 months',
+          'three_months_plus': '3+ months'
         };
-        const displayValue = noticeMap[notice] || notice;
+        const displayValue = displayMap[notice] || notice;
+        
         if (field.options.length > 0) {
-          return findBestOption(field.options, [displayValue, notice]);
+          // Try to find matching option
+          const searchTerms = [displayValue, notice.replace(/_/g, ' ')];
+          return findBestOption(field.options, searchTerms);
         }
         return displayValue;
       }
       return null;
     }
     
-    // ===== START DATE =====
-    if (q.includes('start date') || q.includes('when can you start') || q.includes('available to start')) {
+    // ===== START DATE / AVAILABILITY =====
+    if (q.includes('start date') || q.includes('when can you start') || q.includes('available to start') || q.includes('earliest start')) {
+      // Use availability_date if set
       if (profile.availabilityDate) {
         return profile.availabilityDate;
       }
-      // Use notice period as fallback
-      if (profile.noticePeriod && profile.noticePeriod !== 'unknown') {
-        const noticeMap = {
-          'immediate': 'Immediately',
-          '2_weeks': 'In 2 weeks',
-          '1_month': 'In 1 month',
-          '2_months': 'In 2 months',
-          '3_months': 'In 3 months'
+      // Otherwise derive from notice period
+      const notice = profile.noticePeriod;
+      if (notice && notice !== 'unknown') {
+        const startMap = {
+          'immediately': 'Immediately',
+          'one_week': 'In 1 week',
+          'two_weeks': 'In 2 weeks',
+          'three_weeks': 'In 3 weeks',
+          'one_month': 'In 1 month',
+          'six_weeks': 'In 6 weeks',
+          'two_months': 'In 2 months',
+          'three_months': 'In 3 months'
         };
-        return noticeMap[profile.noticePeriod] || null;
+        return startMap[notice] || null;
       }
       return null;
     }
     
     // ===== EDUCATION =====
     if (q.includes('education') || q.includes('degree') || q.includes('highest level')) {
-      // Values: "high_school", "associates", "bachelors", "masters", "phd", etc
+      // Values: "high_school", "some_college", "associate", "bachelor", "master", "phd", etc
       const edu = profile.education;
       console.log('[JobMatch AI] Education:', edu);
+      
       if (edu && edu !== 'unknown') {
-        const eduMap = {
-          'high_school': "High School",
-          'associates': "Associate's Degree",
-          'bachelors': "Bachelor's Degree",
-          'masters': "Master's Degree",
-          'phd': "PhD",
-          'doctorate': "Doctorate"
+        // Map to human-readable display values
+        const displayMap = {
+          'none': 'No formal education',
+          'high_school': 'High School',
+          'some_college': 'Some College',
+          'associate': "Associate's Degree",
+          'bachelor': "Bachelor's Degree",
+          'master': "Master's Degree",
+          'mba': 'MBA',
+          'phd': 'PhD',
+          'doctorate': 'Doctorate',
+          'bootcamp': 'Coding Bootcamp',
+          'certification': 'Professional Certification'
         };
-        const displayValue = eduMap[edu] || edu;
+        const displayValue = displayMap[edu] || edu;
+        
         if (field.options.length > 0) {
-          return findBestOption(field.options, [displayValue, edu, "Bachelor", "Master", "PhD"]);
+          // Try variations to match dropdown options
+          const searchTerms = [
+            displayValue,
+            edu,
+            edu.replace('_', ' '),
+            displayValue.replace("'s Degree", ""),
+            displayValue.replace(" Degree", "")
+          ];
+          return findBestOption(field.options, searchTerms);
         }
         return displayValue;
       }
@@ -504,11 +567,15 @@
       const source = profile.referralSource;
       if (source) {
         if (field.options.length > 0) {
-          return findBestOption(field.options, [source, source.toLowerCase(), 'linkedin', 'job board', 'online']);
+          return findBestOption(field.options, [source, source.toLowerCase()]);
         }
         return source;
       }
-      return findBestOption(field.options, ['linkedin', 'job board', 'online', 'website']) || 'LinkedIn';
+      // Default to common job board answer
+      if (field.options.length > 0) {
+        return findBestOption(field.options, ['linkedin', 'job board', 'online', 'website', 'company website']);
+      }
+      return 'LinkedIn';
     }
     
     return null;
