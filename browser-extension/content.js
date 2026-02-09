@@ -111,14 +111,17 @@
       workAuth: data.profile_context?.work_authorization || '',
       requiresSponsorship: data.profile_context?.requires_sponsorship,
       skills: data.profile_context?.skills || [],
+      skillsWithYears: data.profile_context?.skills_with_years || [],
       yearsExperience: data.profile_context?.experience_years || '',
       resumeText: (data.profile_context?.resume_text || '').toLowerCase(),
-      willingToRelocate: data.profile_context?.willing_to_relocate,
-      salaryExpectation: data.profile_context?.salary_expectation || '',
-      noticePeriod: data.profile_context?.notice_period || '',
-      startDate: data.profile_context?.start_date || '',
-      highestEducation: data.profile_context?.highest_education || '',
-      remotePreference: data.profile_context?.remote_preference || '',
+      willingToRelocate: data.profile_context?.willing_to_relocate,  // "yes", "no", "open_to_discussion"
+      salaryMin: data.profile_context?.salary_min,
+      salaryMax: data.profile_context?.salary_max,
+      noticePeriod: data.profile_context?.notice_period,  // "immediate", "2_weeks", "1_month", etc
+      availabilityDate: data.profile_context?.availability_date,
+      education: data.profile_context?.education,  // "bachelors", "masters", etc
+      workArrangement: data.profile_context?.work_arrangement,  // "remote", "hybrid", "onsite"
+      referralSource: data.profile_context?.referral_source,
     };
     
     console.log('[JobMatch AI] Profile context:', {
