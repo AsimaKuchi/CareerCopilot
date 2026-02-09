@@ -340,3 +340,96 @@ function showSuccess(element, message) {
 function hideSuccess(element) {
   element.classList.remove('active');
 }
+
+// Direct autofill function that runs in page context
+function executeAutoFillDirect(data) {
+  const results = {
+    success: false,
+    filled: [],
+    failed: [],
+    skipped: [],
+    filledCount: 0
+  };
+
+  function fillField(selectors, value) {
+    if (!value) return false;
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      for (const el of elements) {
+        try {
+          const style = window.getComputedStyle(el);
+          if (style.display === 'none' || style.visibility === 'hidden' || el.disabled) continue;
+          
+          if (el.tagName === 'SELECT') {
+            const options = Array.from(el.options);
+            const match = options.find(opt => 
+              opt.text.toLowerCase().includes(value.toLowerCase()) ||
+              value.toLowerCase().includes(opt.text.toLowerCase())
+            );
+            if (match) {
+              el.value = match.value;
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              return true;
+            }
+          } else {
+            el.focus();
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            el.blur();
+            return true;
+          }
+        } catch (e) { continue; }
+      }
+    }
+    return false;
+  }
+
+  const p = data.personal_info || {};
+  
+  // First Name
+  if (p.first_name && fillField(['input[name*="first" i]', 'input[id*="first" i]', 'input[autocomplete="given-name"]'], p.first_name)) {
+    results.filled.push('First Name');
+  }
+  
+  // Last Name
+  if (p.last_name && fillField(['input[name*="last" i]', 'input[id*="last" i]', 'input[autocomplete="family-name"]'], p.last_name)) {
+    results.filled.push('Last Name');
+  }
+  
+  // Email
+  if (p.email && fillField(['input[type="email"]', 'input[name*="email" i]', 'input[autocomplete="email"]'], p.email)) {
+    results.filled.push('Email');
+  }
+  
+  // Phone
+  if (p.phone && fillField(['input[type="tel"]', 'input[name*="phone" i]', 'input[autocomplete="tel"]'], p.phone)) {
+    results.filled.push('Phone');
+  }
+  
+  // LinkedIn
+  if (p.linkedin && fillField(['input[name*="linkedin" i]', 'input[id*="linkedin" i]'], p.linkedin)) {
+    results.filled.push('LinkedIn');
+  }
+  
+  // GitHub
+  if (p.github && fillField(['input[name*="github" i]', 'input[id*="github" i]'], p.github)) {
+    results.filled.push('GitHub');
+  }
+  
+  // Portfolio
+  if (p.portfolio && fillField(['input[name*="portfolio" i]', 'input[name*="website" i]', 'input[type="url"]'], p.portfolio)) {
+    results.filled.push('Portfolio');
+  }
+  
+  // City
+  if (p.location?.city && fillField(['input[name*="city" i]', 'input[autocomplete="address-level2"]'], p.location.city)) {
+    results.filled.push('City');
+  }
+
+  results.success = results.filled.length > 0;
+  results.filledCount = results.filled.length;
+  
+  return results;
+}
+
