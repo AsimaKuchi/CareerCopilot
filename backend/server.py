@@ -5702,21 +5702,24 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
         "matched_job": matched_application.get("job_title") if matched_application else None,
         # Include profile data for AI question answering
         "profile_context": {
-            "skills": profile.get("skills", []) if profile else [],
-            "experience_years": profile.get("experience_years") if profile else None,
+            "skills": autofill.get("skills", []),
+            "skills_with_years": autofill.get("skillsWithYears", []),
+            "experience_years": autofill.get("experienceYears"),
             "resume_text": profile.get("resume_text", "") if profile else "",
             "work_authorization": autofill.get("workAuthorizationStatus") or "",
             "requires_sponsorship": autofill.get("requiresSponsorship"),
             "preferred_name": first_name,
-            "country": autofill.get("country") or "",
+            "country": autofill.get("countryFull") or autofill.get("country") or "",
             "city": autofill.get("city") or "",
             "state": autofill.get("state") or "",
-            "willing_to_relocate": profile.get("willing_to_relocate") if profile else None,
-            "salary_expectation": profile.get("salary_expectation") if profile else None,
-            "notice_period": autofill.get("noticePeriod") or "",
-            "start_date": autofill.get("startDate") or "",
-            "highest_education": profile.get("highest_education") if profile else None,
-            "remote_preference": profile.get("remote_preference") if profile else None,
+            "willing_to_relocate": autofill.get("willingToRelocate"),
+            "salary_min": autofill.get("salaryMin"),
+            "salary_max": autofill.get("salaryMax"),
+            "notice_period": autofill.get("noticePeriod"),
+            "availability_date": autofill.get("availabilityDate"),
+            "education": autofill.get("education"),
+            "work_arrangement": autofill.get("workArrangement"),
+            "referral_source": autofill.get("referralSource"),
         }
     }
     
