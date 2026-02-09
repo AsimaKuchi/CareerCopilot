@@ -1,19 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "JobMatch AI Auto-Fill",
+  "name": "JobMatch AI - Auto-Fill",
   "version": "1.0.0",
-  "description": "Automatically fill job applications with your tailored resume and cover letter from JobMatch AI",
+  "description": "Auto-fill job applications with your optimized resume and cover letter from JobMatch AI",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://boards.greenhouse.io/*",
-    "https://job-boards.greenhouse.io/*",
-    "https://*.greenhouse.io/*",
-    "https://*.lever.co/*",
-    "https://*.workday.com/*",
-    "https://*.myworkdayjobs.com/*"
+    "https://jobs.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://jobs.ashbyhq.com/*",
+    "https://apply.workable.com/*",
+    "https://careers.smartrecruiters.com/*",
+    "https://*.pinpointhq.com/*",
+    "https://*.bamboohr.com/*",
+    "https://*.teamtailor.com/*",
+    "https://*.jobvite.com/*",
+    "https://*.myworkdayjobs.com/*",
+    "https://*.taleo.net/*",
+    "https://*.icims.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -23,24 +31,34 @@
       "128": "icons/icon128.png"
     }
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://boards.greenhouse.io/*",
-        "https://job-boards.greenhouse.io/*",
-        "https://*.greenhouse.io/*",
-        "https://*.lever.co/*"
-      ],
-      "js": ["content.js"],
-      "css": ["content.css"]
-    }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://jobs.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.ashbyhq.com/*",
+        "https://apply.workable.com/*",
+        "https://careers.smartrecruiters.com/*",
+        "https://*.pinpointhq.com/*",
+        "https://*.bamboohr.com/*",
+        "https://*.teamtailor.com/*",
+        "https://*.jobvite.com/*",
+        "https://*.myworkdayjobs.com/*",
+        "https://*.taleo.net/*",
+        "https://*.icims.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
   }
 }
