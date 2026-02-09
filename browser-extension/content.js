@@ -89,234 +89,389 @@
   }
 
   // ==========================================
-  // CUSTOM SCREENING QUESTIONS (AI-POWERED)
+  // CUSTOM SCREENING QUESTIONS (PROFILE-BASED)
   // ==========================================
   
   async function fillCustomScreeningQuestions(data, results) {
     console.log('[JobMatch AI] Looking for custom screening questions...');
     
-    // Find all question containers with required asterisks
-    const questions = [];
+    // Build a comprehensive profile context from existing data
+    const profile = {
+      firstName: data.personal_info?.first_name || '',
+      lastName: data.personal_info?.last_name || '',
+      fullName: data.personal_info?.full_name || '',
+      email: data.personal_info?.email || '',
+      phone: data.personal_info?.phone || '',
+      linkedin: data.personal_info?.linkedin || '',
+      github: data.personal_info?.github || '',
+      portfolio: data.personal_info?.portfolio || '',
+      city: data.personal_info?.location?.city || '',
+      state: data.personal_info?.location?.state || '',
+      country: data.personal_info?.location?.country || '',
+      workAuth: data.profile_context?.work_authorization || '',
+      requiresSponsorship: data.profile_context?.requires_sponsorship,
+      skills: data.profile_context?.skills || [],
+      yearsExperience: data.profile_context?.experience_years || '',
+      resumeText: (data.profile_context?.resume_text || '').toLowerCase(),
+    };
     
-    // Look for question labels/text
-    const allLabels = document.querySelectorAll('label, .field-label, [class*="label"], [class*="question"]');
-    const allSelects = document.querySelectorAll('select');
-    const allInputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+    console.log('[JobMatch AI] Profile context:', {
+      name: profile.fullName,
+      location: `${profile.city}, ${profile.state}, ${profile.country}`,
+      skills: profile.skills.length,
+      hasResume: profile.resumeText.length > 0
+    });
     
-    // Also look for fieldsets and divs that contain questions
-    const questionContainers = document.querySelectorAll('[class*="field"], [class*="question"], fieldset, .application-question');
+    // Find all form fields that might be screening questions
+    const allFields = findAllFormFields();
+    console.log(`[JobMatch AI] Found ${allFields.length} potential fields to fill`);
     
-    questionContainers.forEach((container, index) => {
-      // Find the question text
-      const labelEl = container.querySelector('label, [class*="label"], [class*="question-text"]');
-      const questionText = labelEl?.textContent?.trim() || container.querySelector('span, p, div')?.textContent?.trim();
+    for (const field of allFields) {
+      const answer = getAnswerFromProfile(field, profile);
+      if (answer) {
+        const filled = await setFieldAnswer(field, answer);
+        if (filled) {
+          results.filled.push(field.label.substring(0, 40) + (field.label.length > 40 ? '...' : ''));
+        }
+      }
+    }
+  }
+  
+  function findAllFormFields() {
+    const fields = [];
+    
+    // Find all labeled inputs, selects, and textareas
+    document.querySelectorAll('label').forEach(label => {
+      const labelText = label.textContent?.trim() || '';
+      if (labelText.length < 5) return;
       
-      if (!questionText || questionText.length < 10) return;
+      // Find associated input
+      const forId = label.getAttribute('for');
+      let input = forId ? document.getElementById(forId) : null;
       
-      // Check if it has a required asterisk
-      const isRequired = container.innerHTML.includes('*') || 
-                         container.querySelector('[class*="required"]') ||
-                         container.querySelector('abbr[title="required"]');
+      // If no for attribute, look for input inside label
+      if (!input) {
+        input = label.querySelector('input, select, textarea');
+      }
       
-      // Find the input element
-      const selectEl = container.querySelector('select');
-      const inputEl = container.querySelector('input[type="text"], input[type="number"], textarea');
-      const radioEls = container.querySelectorAll('input[type="radio"]');
+      // If still no input, look for adjacent sibling
+      if (!input) {
+        const parent = label.parentElement;
+        input = parent?.querySelector('input, select, textarea');
+      }
       
-      if (selectEl || inputEl || radioEls.length > 0) {
+      if (input && !input.value) {
         const options = [];
-        
-        if (selectEl) {
-          Array.from(selectEl.options).forEach(opt => {
-            if (opt.value && opt.text && !opt.text.toLowerCase().includes('select')) {
-              options.push(opt.text.trim());
+        if (input.tagName === 'SELECT') {
+          Array.from(input.options).forEach(opt => {
+            if (opt.value && !opt.text.toLowerCase().includes('select')) {
+              options.push({ value: opt.value, text: opt.text.trim() });
             }
           });
         }
         
-        if (radioEls.length > 0) {
-          radioEls.forEach(radio => {
-            const label = radio.closest('label')?.textContent?.trim() || radio.value;
-            if (label) options.push(label);
-          });
-        }
+        // Check for radio buttons
+        const radios = label.closest('fieldset, div, form')?.querySelectorAll(`input[type="radio"][name="${input.name || ''}"]`);
         
-        questions.push({
-          question: questionText,
+        fields.push({
+          label: labelText,
+          labelLower: labelText.toLowerCase(),
+          element: input,
+          type: input.tagName.toLowerCase(),
+          inputType: input.type || 'text',
           options: options,
-          element: selectEl || inputEl || radioEls[0],
-          type: selectEl ? 'select' : (radioEls.length > 0 ? 'radio' : 'text'),
-          radioEls: radioEls,
-          isRequired: isRequired
+          radios: radios?.length > 1 ? Array.from(radios) : null
         });
       }
     });
     
-    console.log(`[JobMatch AI] Found ${questions.length} custom questions`);
-    
-    if (questions.length === 0) return;
-    
-    // Try to answer questions using profile context
-    const profileContext = data.profile_context || {};
-    
-    for (const q of questions) {
-      const answered = await answerQuestionLocally(q, profileContext, data);
-      if (answered) {
-        results.filled.push(q.question.substring(0, 40) + '...');
-      } else {
-        results.skipped.push(q.question.substring(0, 40) + '...');
+    // Also look for aria-label fields
+    document.querySelectorAll('input[aria-label], select[aria-label], textarea[aria-label]').forEach(input => {
+      const labelText = input.getAttribute('aria-label') || '';
+      if (labelText.length < 5 || input.value) return;
+      
+      const options = [];
+      if (input.tagName === 'SELECT') {
+        Array.from(input.options).forEach(opt => {
+          if (opt.value && !opt.text.toLowerCase().includes('select')) {
+            options.push({ value: opt.value, text: opt.text.trim() });
+          }
+        });
       }
-    }
+      
+      fields.push({
+        label: labelText,
+        labelLower: labelText.toLowerCase(),
+        element: input,
+        type: input.tagName.toLowerCase(),
+        inputType: input.type || 'text',
+        options: options,
+        radios: null
+      });
+    });
+    
+    return fields;
   }
   
-  async function answerQuestionLocally(q, profileContext, data) {
-    const questionLower = q.question.toLowerCase();
-    const options = q.options || [];
-    const optionsLower = options.map(o => o.toLowerCase());
+  function getAnswerFromProfile(field, profile) {
+    const q = field.labelLower;
+    const opts = field.options.map(o => o.text.toLowerCase());
     
-    let answer = null;
-    
-    // Pattern matching for common questions
-    
-    // Preferred name
-    if (questionLower.includes('prefer') && questionLower.includes('name')) {
-      answer = profileContext.preferred_name || data.personal_info?.first_name;
+    // ===== NAME QUESTIONS =====
+    if (q.includes('preferred name') || q.includes('name you') || q.includes('call you')) {
+      return profile.firstName;
+    }
+    if (q.includes('full name') && !q.includes('company')) {
+      return profile.fullName;
     }
     
-    // Sponsorship
-    else if (questionLower.includes('sponsorship') || questionLower.includes('visa')) {
-      const needsSponsorship = profileContext.requires_sponsorship;
-      if (needsSponsorship === false) {
-        answer = findMatchingOption(options, ['no', 'not require', "don't require", 'will not']);
-      } else if (needsSponsorship === true) {
-        answer = findMatchingOption(options, ['yes', 'require', 'will need']);
+    // ===== CONTACT QUESTIONS =====
+    if (q.includes('linkedin')) {
+      return profile.linkedin;
+    }
+    if (q.includes('github')) {
+      return profile.github;
+    }
+    if (q.includes('portfolio') || q.includes('website') || q.includes('personal url')) {
+      return profile.portfolio;
+    }
+    
+    // ===== LOCATION QUESTIONS =====
+    if (q.includes('country of residence') || q.includes('current country') || q.includes('what country')) {
+      if (field.options.length > 0) {
+        return findBestOption(field.options, [profile.country]);
       }
+      return profile.country;
     }
-    
-    // Employment restrictions/agreements
-    else if (questionLower.includes('employment agreement') || questionLower.includes('non-compete') || questionLower.includes('restriction')) {
-      answer = findMatchingOption(options, ['no', 'not subject']);
+    if (q.includes('city')) {
+      return profile.city;
     }
-    
-    // Previously worked at company
-    else if (questionLower.includes('previously worked') || questionLower.includes('consulted for')) {
-      // Check resume for company name
-      const companyMatch = questionLower.match(/worked.*?(?:at|for)\s+(\w+)/i);
-      const companyName = companyMatch ? companyMatch[1] : '';
-      const resumeText = (profileContext.resume_text || '').toLowerCase();
-      
-      if (companyName && resumeText.includes(companyName.toLowerCase())) {
-        answer = findMatchingOption(options, ['yes']);
-      } else {
-        answer = findMatchingOption(options, ['no']);
+    if (q.includes('state') || q.includes('province')) {
+      if (field.options.length > 0) {
+        return findBestOption(field.options, [profile.state]);
       }
+      return profile.state;
     }
     
-    // Years of experience with specific skill
-    else if (questionLower.includes('years') && questionLower.includes('experience')) {
-      const skillMatch = questionLower.match(/experience\s+(?:with|in|using|building)?\s*([a-zA-Z\s]+)\??/i);
-      const skill = skillMatch ? skillMatch[1].trim() : '';
-      const skills = profileContext.skills || [];
-      const resumeText = (profileContext.resume_text || '').toLowerCase();
+    // Location check questions (Yes/No)
+    if (q.includes('located in') || q.includes('based in') || q.includes('reside in')) {
+      const locationLower = `${profile.city} ${profile.state} ${profile.country}`.toLowerCase();
       
-      // Check if user has the skill
-      const hasSkill = skills.some(s => s.toLowerCase().includes(skill.toLowerCase())) ||
-                       resumeText.includes(skill.toLowerCase());
-      
-      if (hasSkill) {
-        answer = findMatchingOption(options, ['yes', '3+', '2+', '1+']);
-      } else {
-        answer = findMatchingOption(options, ['no', '0', 'less than']);
+      if (q.includes('us or canada') || q.includes('united states or canada') || q.includes('north america')) {
+        const isUSCanada = locationLower.includes('canada') || locationLower.includes('united states') || 
+                          locationLower.includes('usa') || profile.country.toLowerCase() === 'us';
+        return findYesNoOption(field.options, isUSCanada);
       }
-    }
-    
-    // Location questions
-    else if (questionLower.includes('located in') || questionLower.includes('country of residence')) {
-      const country = profileContext.country || '';
-      const city = profileContext.city || '';
-      const state = profileContext.state || '';
-      
-      // Check for specific location mentions
-      if (questionLower.includes('us or canada') || questionLower.includes('united states or canada')) {
-        if (country.toLowerCase().includes('canada') || country.toLowerCase().includes('us') || 
-            country.toLowerCase().includes('united states')) {
-          answer = findMatchingOption(options, ['yes', country]);
-        } else {
-          answer = findMatchingOption(options, ['no']);
-        }
-      } else if (questionLower.includes('country of residence')) {
-        answer = findMatchingOption(options, [country, country.toLowerCase()]);
+      if (q.includes('canada')) {
+        return findYesNoOption(field.options, locationLower.includes('canada'));
+      }
+      if (q.includes('united states') || q.includes('us ')) {
+        const isUS = locationLower.includes('united states') || locationLower.includes('usa') || profile.country.toLowerCase() === 'us';
+        return findYesNoOption(field.options, isUS);
       }
     }
     
     // Timezone questions
-    else if (questionLower.includes('timezone') || questionLower.includes('est') || questionLower.includes('pst')) {
-      const city = (profileContext.city || '').toLowerCase();
-      const state = (profileContext.state || '').toLowerCase();
+    if (q.includes('timezone') || q.includes('time zone')) {
+      const cityLower = profile.city.toLowerCase();
+      const stateLower = profile.state.toLowerCase();
       
-      // Common EST cities/states
-      const estLocations = ['toronto', 'new york', 'boston', 'miami', 'ontario', 'quebec', 'florida', 'georgia'];
-      const isEST = estLocations.some(loc => city.includes(loc) || state.includes(loc));
+      // EST timezone cities/states
+      const estLocations = ['toronto', 'montreal', 'ottawa', 'new york', 'boston', 'miami', 'atlanta', 'ontario', 'quebec', 'florida', 'georgia', 'new jersey', 'pennsylvania', 'virginia', 'north carolina'];
+      // PST timezone
+      const pstLocations = ['vancouver', 'seattle', 'los angeles', 'san francisco', 'portland', 'british columbia', 'california', 'washington', 'oregon'];
+      // CST timezone
+      const cstLocations = ['chicago', 'houston', 'dallas', 'austin', 'winnipeg', 'manitoba', 'texas', 'illinois'];
       
-      if (isEST) {
-        answer = findMatchingOption(options, ['yes', 'est', 'eastern']);
+      const isEST = estLocations.some(loc => cityLower.includes(loc) || stateLower.includes(loc));
+      const isPST = pstLocations.some(loc => cityLower.includes(loc) || stateLower.includes(loc));
+      const isCST = cstLocations.some(loc => cityLower.includes(loc) || stateLower.includes(loc));
+      
+      if (q.includes('est') || q.includes('eastern')) {
+        return findYesNoOption(field.options, isEST);
+      }
+      if (q.includes('pst') || q.includes('pacific')) {
+        return findYesNoOption(field.options, isPST);
+      }
+      if (q.includes('cst') || q.includes('central')) {
+        return findYesNoOption(field.options, isCST);
       }
     }
     
-    // Try to fill the answer
-    if (answer) {
-      return await setQuestionAnswer(q, answer);
+    // ===== WORK AUTHORIZATION =====
+    if (q.includes('authorized to work') || q.includes('legally authorized') || q.includes('eligible to work') || q.includes('work authorization')) {
+      const isAuthorized = profile.workAuth && 
+        (profile.workAuth.toLowerCase().includes('citizen') || 
+         profile.workAuth.toLowerCase().includes('permanent') ||
+         profile.workAuth.toLowerCase().includes('authorized') ||
+         profile.workAuth.toLowerCase().includes('green card'));
+      return findYesNoOption(field.options, isAuthorized !== false);
     }
     
-    return false;
-  }
-  
-  function findMatchingOption(options, keywords) {
-    for (const keyword of keywords) {
-      for (const option of options) {
-        if (option.toLowerCase().includes(keyword.toLowerCase())) {
-          return option;
+    if (q.includes('sponsorship') || q.includes('visa support') || q.includes('require visa')) {
+      const needsSponsorship = profile.requiresSponsorship === true;
+      // Note: question usually asks "will you REQUIRE sponsorship" so Yes = needs, No = doesn't need
+      return findYesNoOption(field.options, needsSponsorship);
+    }
+    
+    // ===== EXPERIENCE QUESTIONS =====
+    if (q.includes('years of experience') || q.includes('years experience')) {
+      if (q.includes('total') || (!q.includes('with') && !q.includes('in '))) {
+        // Total years of experience
+        if (profile.yearsExperience) {
+          if (field.options.length > 0) {
+            return findBestOption(field.options, [profile.yearsExperience.toString(), `${profile.yearsExperience}+`, `${profile.yearsExperience} years`]);
+          }
+          return profile.yearsExperience.toString();
+        }
+      } else {
+        // Years with specific skill - check resume and skills
+        const skillMatch = q.match(/(?:with|in|using)\s+([a-zA-Z0-9\s\+\#\.]+?)(?:\?|$|\s+years|\s+experience)/i);
+        if (skillMatch) {
+          const skill = skillMatch[1].trim().toLowerCase();
+          const hasSkill = profile.skills.some(s => s.toLowerCase().includes(skill)) || 
+                          profile.resumeText.includes(skill);
+          if (hasSkill) {
+            return findYesNoOption(field.options, true) || findBestOption(field.options, ['yes', '2+', '3+', '1+', '2-3', '3-5']);
+          } else {
+            return findYesNoOption(field.options, false) || findBestOption(field.options, ['no', '0', 'none', 'less than']);
+          }
         }
       }
     }
-    // Return first keyword as fallback for text inputs
-    return keywords[0];
+    
+    // Do you have experience with X?
+    if (q.includes('do you have') && (q.includes('experience') || q.includes('knowledge') || q.includes('proficiency'))) {
+      const skillMatch = q.match(/(?:experience|knowledge|proficiency)\s+(?:with|in|of|using)\s+([a-zA-Z0-9\s\+\#\.]+?)(?:\?|$)/i);
+      if (skillMatch) {
+        const skill = skillMatch[1].trim().toLowerCase();
+        const hasSkill = profile.skills.some(s => s.toLowerCase().includes(skill)) || 
+                        profile.resumeText.includes(skill);
+        return findYesNoOption(field.options, hasSkill);
+      }
+    }
+    
+    // ===== COMMON YES/NO QUESTIONS =====
+    if (q.includes('employment agreement') || q.includes('non-compete') || q.includes('employment restriction')) {
+      return findYesNoOption(field.options, false); // Default: No restrictions
+    }
+    
+    if (q.includes('previously worked') || q.includes('worked at') || q.includes('employed by') || q.includes('consulted for')) {
+      // Check if company name is in resume
+      const companyMatch = q.match(/(?:worked|employed|consulted)\s+(?:at|by|for)\s+([a-zA-Z0-9\s]+?)(?:\?|$|before)/i);
+      if (companyMatch) {
+        const company = companyMatch[1].trim().toLowerCase();
+        const workedThere = profile.resumeText.includes(company);
+        return findYesNoOption(field.options, workedThere);
+      }
+      return findYesNoOption(field.options, false); // Default: No
+    }
+    
+    if (q.includes('18 years') || q.includes('legal age') || q.includes('at least 18')) {
+      return findYesNoOption(field.options, true);
+    }
+    
+    if (q.includes('background check')) {
+      return findYesNoOption(field.options, true);
+    }
+    
+    if (q.includes('drug test') || q.includes('drug screen')) {
+      return findYesNoOption(field.options, true);
+    }
+    
+    if (q.includes('remote') && (q.includes('comfortable') || q.includes('willing') || q.includes('open to'))) {
+      return findYesNoOption(field.options, true);
+    }
+    
+    if (q.includes('relocate') || q.includes('relocation')) {
+      // Default to "open to it" but not definite
+      if (field.options.length > 0) {
+        return findBestOption(field.options, ['yes', 'open', 'willing', 'maybe']);
+      }
+    }
+    
+    // ===== HOW DID YOU HEAR =====
+    if (q.includes('how did you hear') || q.includes('how did you find') || q.includes('referred by')) {
+      if (field.options.length > 0) {
+        return findBestOption(field.options, ['job board', 'linkedin', 'online', 'website', 'search']);
+      }
+      return 'Job Board / Online Search';
+    }
+    
+    return null;
   }
   
-  async function setQuestionAnswer(q, answer) {
+  function findYesNoOption(options, isYes) {
+    if (options.length === 0) return isYes ? 'Yes' : 'No';
+    
+    const yesWords = ['yes', 'true', 'i am', 'i do', 'i have', 'i will'];
+    const noWords = ['no', 'false', 'i am not', "i don't", 'i have not', 'i will not'];
+    
+    const searchWords = isYes ? yesWords : noWords;
+    
+    for (const opt of options) {
+      const optLower = opt.text.toLowerCase();
+      if (searchWords.some(w => optLower.includes(w) || optLower === w)) {
+        return opt.text;
+      }
+    }
+    
+    // Fallback
+    return isYes ? 'Yes' : 'No';
+  }
+  
+  function findBestOption(options, searchTerms) {
+    for (const term of searchTerms) {
+      for (const opt of options) {
+        if (opt.text.toLowerCase().includes(term.toLowerCase())) {
+          return opt.text;
+        }
+      }
+    }
+    return null;
+  }
+  
+  async function setFieldAnswer(field, answer) {
     try {
-      if (q.type === 'select' && q.element) {
-        const options = Array.from(q.element.options);
+      if (field.type === 'select' && field.element) {
+        const options = Array.from(field.element.options);
         const matchingOption = options.find(opt => 
+          opt.text.toLowerCase() === answer.toLowerCase() ||
           opt.text.toLowerCase().includes(answer.toLowerCase()) ||
           answer.toLowerCase().includes(opt.text.toLowerCase())
         );
         
         if (matchingOption) {
-          q.element.value = matchingOption.value;
-          q.element.dispatchEvent(new Event('change', { bubbles: true }));
-          console.log(`[JobMatch AI] Filled select: ${q.question.substring(0, 30)}... = ${matchingOption.text}`);
+          field.element.value = matchingOption.value;
+          field.element.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log(`[JobMatch AI] ✓ ${field.label.substring(0, 30)}... = ${matchingOption.text}`);
           return true;
         }
       }
       
-      if (q.type === 'radio' && q.radioEls) {
-        for (const radio of q.radioEls) {
-          const label = radio.closest('label')?.textContent?.trim() || radio.value;
-          if (label.toLowerCase().includes(answer.toLowerCase()) ||
-              answer.toLowerCase().includes(label.toLowerCase())) {
+      if (field.radios) {
+        for (const radio of field.radios) {
+          const radioLabel = radio.closest('label')?.textContent?.trim() || radio.value;
+          if (radioLabel.toLowerCase().includes(answer.toLowerCase()) ||
+              answer.toLowerCase().includes(radioLabel.toLowerCase())) {
             radio.click();
-            console.log(`[JobMatch AI] Filled radio: ${q.question.substring(0, 30)}... = ${label}`);
+            console.log(`[JobMatch AI] ✓ ${field.label.substring(0, 30)}... = ${radioLabel}`);
             return true;
           }
         }
       }
       
-      if (q.type === 'text' && q.element) {
-        q.element.value = answer;
-        q.element.dispatchEvent(new Event('input', { bubbles: true }));
-        q.element.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log(`[JobMatch AI] Filled text: ${q.question.substring(0, 30)}... = ${answer}`);
+      if ((field.type === 'input' || field.type === 'textarea') && field.element) {
+        if (field.inputType === 'radio' || field.inputType === 'checkbox') {
+          return false;
+        }
+        
+        field.element.focus();
+        field.element.value = answer;
+        field.element.dispatchEvent(new Event('input', { bubbles: true }));
+        field.element.dispatchEvent(new Event('change', { bubbles: true }));
+        field.element.blur();
+        console.log(`[JobMatch AI] ✓ ${field.label.substring(0, 30)}... = ${answer}`);
         return true;
       }
     } catch (error) {
