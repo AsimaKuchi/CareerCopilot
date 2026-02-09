@@ -2,168 +2,425 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobMatch AI</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+    
     body {
-      width: 320px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      width: 360px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
       color: #fff;
-      padding: 16px;
     }
+    
+    .container {
+      padding: 20px;
+    }
+    
     .header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
+    
     .logo {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
       background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 14px;
+      font-size: 20px;
     }
-    .title {
-      font-size: 16px;
+    
+    .header h1 {
+      font-size: 18px;
       font-weight: 600;
     }
-    .subtitle {
-      font-size: 11px;
+    
+    .header p {
+      font-size: 12px;
       color: rgba(255,255,255,0.6);
     }
-    .status {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      font-size: 13px;
+    
+    /* Login Section */
+    .login-section {
+      display: none;
     }
-    .status.connected {
-      background: rgba(34, 197, 94, 0.2);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #4ade80;
+    
+    .login-section.active {
+      display: block;
     }
-    .status.disconnected {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
+    
+    .form-group {
+      margin-bottom: 16px;
     }
-    .status.loading {
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #a5b4fc;
+    
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 6px;
     }
-    .btn {
+    
+    .form-group input {
       width: 100%;
       padding: 12px;
-      border: none;
+      border: 1px solid rgba(255,255,255,0.2);
       border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus {
+      border-color: #6366f1;
+    }
+    
+    .form-group input::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+    
+    /* Main Section */
+    .main-section {
+      display: none;
+    }
+    
+    .main-section.active {
+      display: block;
+    }
+    
+    .user-info {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .user-info .name {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    
+    .user-info .email {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+    }
+    
+    .status-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .status-card.supported {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.1);
+    }
+    
+    .status-card.unsupported {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+    }
+    
+    .status-card h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-card p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.5;
+    }
+    
+    .status-icon {
+      font-size: 16px;
+    }
+    
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
+    
     .btn-primary {
       background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
+      color: #fff;
     }
+    
     .btn-primary:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
     }
+    
     .btn-primary:disabled {
-      opacity: 0.5;
+      opacity: 0.6;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
-    .btn-secondary {
-      background: rgba(255,255,255,0.1);
-      color: white;
+    
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+    }
+    
+    .btn-success:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-outline {
+      background: transparent;
       border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
     }
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.15);
+    
+    .btn-outline:hover {
+      background: rgba(255,255,255,0.1);
     }
-    .info {
-      font-size: 12px;
-      color: rgba(255,255,255,0.6);
-      text-align: center;
-      margin-top: 12px;
-    }
-    .app-info {
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-    .app-info h4 {
+    
+    .btn-sm {
+      padding: 10px 16px;
       font-size: 13px;
-      margin-bottom: 4px;
-      color: #a5b4fc;
     }
-    .app-info p {
+    
+    /* Progress */
+    .progress-container {
+      display: none;
+      margin-top: 16px;
+    }
+    
+    .progress-container.active {
+      display: block;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      border-radius: 2px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+    
+    .progress-text {
       font-size: 12px;
       color: rgba(255,255,255,0.7);
+      text-align: center;
     }
-    .hidden {
+    
+    /* Results */
+    .results {
       display: none;
+      margin-top: 16px;
     }
+    
+    .results.active {
+      display: block;
+    }
+    
+    .result-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 13px;
+    }
+    
+    .result-item:last-child {
+      border-bottom: none;
+    }
+    
+    .result-icon {
+      font-size: 14px;
+    }
+    
+    .result-icon.success {
+      color: #10b981;
+    }
+    
+    .result-icon.error {
+      color: #ef4444;
+    }
+    
+    /* Footer */
+    .footer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .footer a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 12px;
+      transition: color 0.2s;
+    }
+    
+    .footer a:hover {
+      color: #fff;
+    }
+    
+    /* Loading spinner */
     .spinner {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
       border-top-color: #fff;
+      border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin-right: 8px;
     }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+    
+    /* Error message */
+    .error-msg {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      color: #fca5a5;
+      margin-bottom: 16px;
+      display: none;
+    }
+    
+    .error-msg.active {
+      display: block;
+    }
+    
+    /* Success message */
+    .success-msg {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      color: #6ee7b7;
+      margin-bottom: 16px;
+      display: none;
+    }
+    
+    .success-msg.active {
+      display: block;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">JM</div>
-    <div>
-      <div class="title">JobMatch AI</div>
-      <div class="subtitle">Auto-Fill Assistant</div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">JM</div>
+      <div>
+        <h1>JobMatch AI</h1>
+        <p>Auto-Fill Applications</p>
+      </div>
+    </div>
+    
+    <!-- Login Section -->
+    <div id="loginSection" class="login-section active">
+      <div id="loginError" class="error-msg"></div>
+      
+      <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 16px;">
+        Connect to your JobMatch AI account to auto-fill applications with your profile data.
+      </p>
+      
+      <div class="form-group">
+        <label>API URL</label>
+        <input type="text" id="apiUrl" placeholder="https://your-app.emergentagent.com" />
+      </div>
+      
+      <button id="connectBtn" class="btn btn-primary">
+        <span>Connect Account</span>
+      </button>
+      
+      <p style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 12px; text-align: center;">
+        Enter your JobMatch AI URL and make sure you're logged in on the website.
+      </p>
+    </div>
+    
+    <!-- Main Section -->
+    <div id="mainSection" class="main-section">
+      <div id="userInfo" class="user-info">
+        <div class="name" id="userName">Loading...</div>
+        <div class="email" id="userEmail">...</div>
+      </div>
+      
+      <div id="statusCard" class="status-card">
+        <h3>
+          <span class="status-icon" id="statusIcon">🔍</span>
+          <span id="statusTitle">Checking page...</span>
+        </h3>
+        <p id="statusText">Detecting if this is a supported job application page.</p>
+      </div>
+      
+      <div id="successMsg" class="success-msg"></div>
+      <div id="errorMsg" class="error-msg"></div>
+      
+      <button id="autoFillBtn" class="btn btn-success" style="display: none;">
+        <span>Auto-Fill Application</span>
+      </button>
+      
+      <div id="progressContainer" class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Fetching your profile...</div>
+      </div>
+      
+      <div id="results" class="results">
+        <h4 style="font-size: 13px; margin-bottom: 12px; color: rgba(255,255,255,0.8);">Fill Results:</h4>
+        <div id="resultsList"></div>
+      </div>
+      
+      <div class="footer">
+        <a href="#" id="openDashboard">Open Dashboard</a>
+        <a href="#" id="disconnectBtn">Disconnect</a>
+      </div>
     </div>
   </div>
-
-  <div id="status" class="status loading">
-    <span class="spinner"></span> Checking connection...
-  </div>
-
-  <div id="app-info" class="app-info hidden">
-    <h4 id="job-title">Loading...</h4>
-    <p id="company-name"></p>
-  </div>
-
-  <button id="autofill-btn" class="btn btn-primary" disabled>
-    Auto-Fill Application
-  </button>
-
-  <button id="settings-btn" class="btn btn-secondary">
-    Settings
-  </button>
-
-  <p class="info">
-    Make sure you're on a job application page
-  </p>
-
+  
   <script src="popup.js"></script>
 </body>
 </html>
