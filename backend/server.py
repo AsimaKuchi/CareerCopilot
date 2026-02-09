@@ -5603,6 +5603,107 @@ async def get_autofill_data_endpoint(request: Request, url: str = None):
     }
 
 # ========================
+# BROWSER EXTENSION API
+# ========================
+
+@api_router.get("/extension/autofill-data")
+async def get_extension_autofill_data(request: Request):
+    """
+    Get structured autofill data for the browser extension.
+    Returns all user profile data including resume and cover letter.
+    """
+    user = await get_current_user(request)
+    
+    # Get user info
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Get profile
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    # Decrypt sensitive data if encrypted
+    if profile:
+        profile = decrypt_sensitive_data(profile)
+    
+    # Get structured autofill data from v2 schema
+    autofill = get_autofill_data(profile) if profile else {}
+    
+    # Parse name
+    full_name = user_doc.get("name", "") if user_doc else ""
+    name_parts = full_name.split(" ", 1)
+    first_name = autofill.get("firstName") or (name_parts[0] if name_parts else "")
+    last_name = autofill.get("lastName") or (name_parts[1] if len(name_parts) > 1 else "")
+    email = autofill.get("email") or (user_doc.get("email", "") if user_doc else "")
+    
+    # Build structured response for extension
+    response = {
+        "personal_info": {
+            "full_name": full_name,
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "phone": autofill.get("phone") or "",
+            "linkedin": autofill.get("linkedinUrl") or "",
+            "github": autofill.get("githubUrl") or "",
+            "portfolio": autofill.get("portfolioUrl") or "",
+            "location": {
+                "city": autofill.get("city") or "",
+                "state": autofill.get("state") or "",
+                "country": autofill.get("country") or ""
+            }
+        },
+        "questions": [
+            {
+                "field_type": "work_authorization",
+                "question": "Are you authorized to work in this country?",
+                "current_value": autofill.get("workAuthorizationStatus") or ""
+            },
+            {
+                "field_type": "sponsorship",
+                "question": "Do you require sponsorship?",
+                "current_value": "No" if autofill.get("requiresSponsorship") == False else ("Yes" if autofill.get("requiresSponsorship") else "")
+            },
+            {
+                "field_type": "years_experience",
+                "question": "Years of experience",
+                "current_value": str(profile.get("experience_years") or "") if profile else ""
+            }
+        ],
+        "documents": {}
+    }
+    
+    # Add resume data if available
+    if profile and profile.get("resume_text"):
+        resume_data = {
+            "text": profile.get("resume_text"),
+            "filename": profile.get("resume_filename") or "resume.pdf"
+        }
+        
+        # Include file data if available
+        if profile.get("resume_file_data"):
+            resume_data["file_data"] = profile.get("resume_file_data")
+            resume_data["mime_type"] = profile.get("resume_mime_type") or "application/pdf"
+        
+        response["documents"]["resume"] = resume_data
+    
+    # Add cover letter template if available
+    if profile and profile.get("default_cover_letter"):
+        response["documents"]["cover_letter"] = {
+            "text": profile.get("default_cover_letter")
+        }
+    
+    # Add skills for custom question matching
+    if profile and profile.get("skills"):
+        response["skills"] = profile.get("skills")
+    
+    return response
+
+# ========================
 # DASHBOARD STATS
 # ========================
 
