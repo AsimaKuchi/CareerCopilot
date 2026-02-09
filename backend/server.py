@@ -5711,6 +5711,12 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
             "country": autofill.get("country") or "",
             "city": autofill.get("city") or "",
             "state": autofill.get("state") or "",
+            "willing_to_relocate": profile.get("willing_to_relocate") if profile else None,
+            "salary_expectation": profile.get("salary_expectation") if profile else None,
+            "notice_period": autofill.get("noticePeriod") or "",
+            "start_date": autofill.get("startDate") or "",
+            "highest_education": profile.get("highest_education") if profile else None,
+            "remote_preference": profile.get("remote_preference") if profile else None,
         }
     }
     
