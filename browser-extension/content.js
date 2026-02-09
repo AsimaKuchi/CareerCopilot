@@ -390,13 +390,65 @@
     }
     
     if (q.includes('relocate') || q.includes('relocation')) {
-      // Default to "open to it" but not definite
-      if (field.options.length > 0) {
-        return findBestOption(field.options, ['yes', 'open', 'willing', 'maybe']);
+      // Use actual profile setting
+      const willRelocate = profile.willingToRelocate;
+      if (willRelocate === 'yes' || willRelocate === true) {
+        return findYesNoOption(field.options, true);
+      } else if (willRelocate === 'no' || willRelocate === false) {
+        return findYesNoOption(field.options, false);
+      } else if (willRelocate === 'open_to_discussion' || willRelocate === 'maybe') {
+        return findBestOption(field.options, ['maybe', 'open', 'depends', 'possibly']) || findYesNoOption(field.options, true);
       }
+      // If not set, don't answer
+      return null;
     }
     
-    // ===== HOW DID YOU HEAR =====
+    // ===== REMOTE WORK =====
+    if (q.includes('remote') && (q.includes('comfortable') || q.includes('willing') || q.includes('open to') || q.includes('work remotely'))) {
+      const remotePref = profile.remotePreference?.toLowerCase();
+      if (remotePref === 'remote' || remotePref === 'remote_only' || remotePref === 'remote only') {
+        return findYesNoOption(field.options, true);
+      } else if (remotePref === 'onsite' || remotePref === 'on-site' || remotePref === 'office') {
+        return findYesNoOption(field.options, false);
+      }
+      // Hybrid or not set - default to yes for remote
+      return findYesNoOption(field.options, true);
+    }
+    
+    // ===== SALARY EXPECTATION =====
+    if (q.includes('salary') && (q.includes('expectation') || q.includes('requirement') || q.includes('desired'))) {
+      if (profile.salaryExpectation) {
+        return profile.salaryExpectation;
+      }
+      return null;
+    }
+    
+    // ===== NOTICE PERIOD =====
+    if (q.includes('notice period') || q.includes('current notice')) {
+      if (profile.noticePeriod) {
+        return profile.noticePeriod;
+      }
+      return null;
+    }
+    
+    // ===== START DATE =====
+    if (q.includes('start date') || q.includes('when can you start') || q.includes('available to start')) {
+      if (profile.startDate) {
+        return profile.startDate;
+      }
+      return null;
+    }
+    
+    // ===== EDUCATION =====
+    if (q.includes('education') || q.includes('degree') || q.includes('highest level')) {
+      if (profile.highestEducation) {
+        if (field.options.length > 0) {
+          return findBestOption(field.options, [profile.highestEducation, profile.highestEducation.toLowerCase()]);
+        }
+        return profile.highestEducation;
+      }
+      return null;
+    }
     if (q.includes('how did you hear') || q.includes('how did you find') || q.includes('referred by')) {
       if (field.options.length > 0) {
         return findBestOption(field.options, ['job board', 'linkedin', 'online', 'website', 'search']);
