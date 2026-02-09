@@ -175,13 +175,17 @@ async function handleAutoFill() {
   hideSuccess(elements.successMsg);
   
   try {
-    // Step 1: Fetch autofill data
+    // Get current tab URL for job matching
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tab?.url || '';
+    
+    // Step 1: Fetch autofill data (pass job URL for optimized content matching)
     updateProgress(20, 'Fetching your profile data...');
     
     const stored = await chrome.storage.local.get([STORAGE_KEYS.API_URL]);
     const apiUrl = stored[STORAGE_KEYS.API_URL];
     
-    const response = await fetch(`${apiUrl}/api/extension/autofill-data`, {
+    const response = await fetch(`${apiUrl}/api/extension/autofill-data?job_url=${encodeURIComponent(currentUrl)}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -195,10 +199,14 @@ async function handleAutoFill() {
 
     const autofillData = await response.json();
     
-    // Step 2: Get current tab
-    updateProgress(50, 'Filling form fields...');
+    // Show if we matched a saved application
+    if (autofillData.matched_job) {
+      updateProgress(40, `Found saved application: ${autofillData.matched_job}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // Step 2: Fill form fields
+    updateProgress(50, 'Filling form fields...');
     
     // First, try to inject the content script programmatically
     try {
@@ -231,6 +239,16 @@ async function handleAutoFill() {
       });
       
       result = execResult[0]?.result || { success: false, filled: [], failed: ['Could not fill form'] };
+    }
+    
+    // Add info about optimized content
+    if (autofillData.documents?.resume?.is_optimized) {
+      result.filled = result.filled || [];
+      result.filled.push('Resume (Optimized for this job)');
+    }
+    if (autofillData.documents?.cover_letter?.is_optimized) {
+      result.filled = result.filled || [];
+      result.filled.push('Cover Letter (Optimized for this job)');
     }
 
     updateProgress(100, 'Complete!');
