@@ -5607,10 +5607,11 @@ async def get_autofill_data_endpoint(request: Request, url: str = None):
 # ========================
 
 @api_router.get("/extension/autofill-data")
-async def get_extension_autofill_data(request: Request):
+async def get_extension_autofill_data(request: Request, job_url: str = None):
     """
     Get structured autofill data for the browser extension.
     Returns all user profile data including resume and cover letter.
+    If job_url is provided, tries to match to a saved application for optimized content.
     """
     user = await get_current_user(request)
     
@@ -5629,6 +5630,29 @@ async def get_extension_autofill_data(request: Request):
     # Decrypt sensitive data if encrypted
     if profile:
         profile = decrypt_sensitive_data(profile)
+    
+    # Check if we have a matching saved application with optimized content
+    optimized_resume = None
+    optimized_cover_letter = None
+    matched_application = None
+    
+    if job_url:
+        # Try to find a matching application
+        matched_application = await db.applications.find_one(
+            {
+                "user_id": user.user_id,
+                "$or": [
+                    {"apply_link": {"$regex": job_url.split("?")[0], "$options": "i"}},
+                    {"job_url": {"$regex": job_url.split("?")[0], "$options": "i"}}
+                ]
+            },
+            {"_id": 0}
+        )
+        
+        if matched_application:
+            optimized_resume = matched_application.get("optimized_resume")
+            optimized_cover_letter = matched_application.get("cover_letter")
+            logger.info(f"Found matching application for URL: {job_url}")
     
     # Get structured autofill data from v2 schema
     autofill = get_autofill_data(profile) if profile else {}
@@ -5674,27 +5698,32 @@ async def get_extension_autofill_data(request: Request):
                 "current_value": str(profile.get("experience_years") or "") if profile else ""
             }
         ],
-        "documents": {}
+        "documents": {},
+        "matched_job": matched_application.get("job_title") if matched_application else None
     }
     
-    # Add resume data if available
-    if profile and profile.get("resume_text"):
+    # Add resume data - prefer optimized version if available
+    resume_text = optimized_resume or (profile.get("resume_text") if profile else None)
+    if resume_text or (profile and profile.get("resume_file_data")):
         resume_data = {
-            "text": profile.get("resume_text"),
-            "filename": profile.get("resume_filename") or "resume.pdf"
+            "text": resume_text or profile.get("resume_text"),
+            "filename": profile.get("resume_filename") or "resume.pdf",
+            "is_optimized": bool(optimized_resume)
         }
         
         # Include file data if available
-        if profile.get("resume_file_data"):
+        if profile and profile.get("resume_file_data"):
             resume_data["file_data"] = profile.get("resume_file_data")
             resume_data["mime_type"] = profile.get("resume_mime_type") or "application/pdf"
         
         response["documents"]["resume"] = resume_data
     
-    # Add cover letter template if available
-    if profile and profile.get("default_cover_letter"):
+    # Add cover letter - prefer optimized version if available
+    cover_letter_text = optimized_cover_letter or (profile.get("default_cover_letter") if profile else None)
+    if cover_letter_text:
         response["documents"]["cover_letter"] = {
-            "text": profile.get("default_cover_letter")
+            "text": cover_letter_text,
+            "is_optimized": bool(optimized_cover_letter)
         }
     
     # Add skills for custom question matching
