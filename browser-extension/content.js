@@ -4,11 +4,18 @@
 (function() {
   'use strict';
 
+  let apiUrl = null;
+
   // Listen for messages from popup
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'AUTOFILL') {
       handleAutoFill(message.data).then(sendResponse);
       return true; // Keep channel open for async response
+    }
+    if (message.action === 'SET_API_URL') {
+      apiUrl = message.url;
+      sendResponse({ success: true });
+      return true;
     }
   });
 
@@ -49,8 +56,8 @@
       // Handle cover letter
       await fillCoverLetter(data, results);
       
-      // Fill custom questions
-      await fillCustomQuestions(data, results);
+      // Fill custom screening questions using AI
+      await fillCustomScreeningQuestions(data, results);
 
       results.success = results.filled.length > 0;
       results.filledCount = results.filled.length;
@@ -79,6 +86,244 @@
     if (/taleo/i.test(url)) return 'taleo';
     if (/icims/i.test(url)) return 'icims';
     return 'unknown';
+  }
+
+  // ==========================================
+  // CUSTOM SCREENING QUESTIONS (AI-POWERED)
+  // ==========================================
+  
+  async function fillCustomScreeningQuestions(data, results) {
+    console.log('[JobMatch AI] Looking for custom screening questions...');
+    
+    // Find all question containers with required asterisks
+    const questions = [];
+    
+    // Look for question labels/text
+    const allLabels = document.querySelectorAll('label, .field-label, [class*="label"], [class*="question"]');
+    const allSelects = document.querySelectorAll('select');
+    const allInputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+    
+    // Also look for fieldsets and divs that contain questions
+    const questionContainers = document.querySelectorAll('[class*="field"], [class*="question"], fieldset, .application-question');
+    
+    questionContainers.forEach((container, index) => {
+      // Find the question text
+      const labelEl = container.querySelector('label, [class*="label"], [class*="question-text"]');
+      const questionText = labelEl?.textContent?.trim() || container.querySelector('span, p, div')?.textContent?.trim();
+      
+      if (!questionText || questionText.length < 10) return;
+      
+      // Check if it has a required asterisk
+      const isRequired = container.innerHTML.includes('*') || 
+                         container.querySelector('[class*="required"]') ||
+                         container.querySelector('abbr[title="required"]');
+      
+      // Find the input element
+      const selectEl = container.querySelector('select');
+      const inputEl = container.querySelector('input[type="text"], input[type="number"], textarea');
+      const radioEls = container.querySelectorAll('input[type="radio"]');
+      
+      if (selectEl || inputEl || radioEls.length > 0) {
+        const options = [];
+        
+        if (selectEl) {
+          Array.from(selectEl.options).forEach(opt => {
+            if (opt.value && opt.text && !opt.text.toLowerCase().includes('select')) {
+              options.push(opt.text.trim());
+            }
+          });
+        }
+        
+        if (radioEls.length > 0) {
+          radioEls.forEach(radio => {
+            const label = radio.closest('label')?.textContent?.trim() || radio.value;
+            if (label) options.push(label);
+          });
+        }
+        
+        questions.push({
+          question: questionText,
+          options: options,
+          element: selectEl || inputEl || radioEls[0],
+          type: selectEl ? 'select' : (radioEls.length > 0 ? 'radio' : 'text'),
+          radioEls: radioEls,
+          isRequired: isRequired
+        });
+      }
+    });
+    
+    console.log(`[JobMatch AI] Found ${questions.length} custom questions`);
+    
+    if (questions.length === 0) return;
+    
+    // Try to answer questions using profile context
+    const profileContext = data.profile_context || {};
+    
+    for (const q of questions) {
+      const answered = await answerQuestionLocally(q, profileContext, data);
+      if (answered) {
+        results.filled.push(q.question.substring(0, 40) + '...');
+      } else {
+        results.skipped.push(q.question.substring(0, 40) + '...');
+      }
+    }
+  }
+  
+  async function answerQuestionLocally(q, profileContext, data) {
+    const questionLower = q.question.toLowerCase();
+    const options = q.options || [];
+    const optionsLower = options.map(o => o.toLowerCase());
+    
+    let answer = null;
+    
+    // Pattern matching for common questions
+    
+    // Preferred name
+    if (questionLower.includes('prefer') && questionLower.includes('name')) {
+      answer = profileContext.preferred_name || data.personal_info?.first_name;
+    }
+    
+    // Sponsorship
+    else if (questionLower.includes('sponsorship') || questionLower.includes('visa')) {
+      const needsSponsorship = profileContext.requires_sponsorship;
+      if (needsSponsorship === false) {
+        answer = findMatchingOption(options, ['no', 'not require', "don't require", 'will not']);
+      } else if (needsSponsorship === true) {
+        answer = findMatchingOption(options, ['yes', 'require', 'will need']);
+      }
+    }
+    
+    // Employment restrictions/agreements
+    else if (questionLower.includes('employment agreement') || questionLower.includes('non-compete') || questionLower.includes('restriction')) {
+      answer = findMatchingOption(options, ['no', 'not subject']);
+    }
+    
+    // Previously worked at company
+    else if (questionLower.includes('previously worked') || questionLower.includes('consulted for')) {
+      // Check resume for company name
+      const companyMatch = questionLower.match(/worked.*?(?:at|for)\s+(\w+)/i);
+      const companyName = companyMatch ? companyMatch[1] : '';
+      const resumeText = (profileContext.resume_text || '').toLowerCase();
+      
+      if (companyName && resumeText.includes(companyName.toLowerCase())) {
+        answer = findMatchingOption(options, ['yes']);
+      } else {
+        answer = findMatchingOption(options, ['no']);
+      }
+    }
+    
+    // Years of experience with specific skill
+    else if (questionLower.includes('years') && questionLower.includes('experience')) {
+      const skillMatch = questionLower.match(/experience\s+(?:with|in|using|building)?\s*([a-zA-Z\s]+)\??/i);
+      const skill = skillMatch ? skillMatch[1].trim() : '';
+      const skills = profileContext.skills || [];
+      const resumeText = (profileContext.resume_text || '').toLowerCase();
+      
+      // Check if user has the skill
+      const hasSkill = skills.some(s => s.toLowerCase().includes(skill.toLowerCase())) ||
+                       resumeText.includes(skill.toLowerCase());
+      
+      if (hasSkill) {
+        answer = findMatchingOption(options, ['yes', '3+', '2+', '1+']);
+      } else {
+        answer = findMatchingOption(options, ['no', '0', 'less than']);
+      }
+    }
+    
+    // Location questions
+    else if (questionLower.includes('located in') || questionLower.includes('country of residence')) {
+      const country = profileContext.country || '';
+      const city = profileContext.city || '';
+      const state = profileContext.state || '';
+      
+      // Check for specific location mentions
+      if (questionLower.includes('us or canada') || questionLower.includes('united states or canada')) {
+        if (country.toLowerCase().includes('canada') || country.toLowerCase().includes('us') || 
+            country.toLowerCase().includes('united states')) {
+          answer = findMatchingOption(options, ['yes', country]);
+        } else {
+          answer = findMatchingOption(options, ['no']);
+        }
+      } else if (questionLower.includes('country of residence')) {
+        answer = findMatchingOption(options, [country, country.toLowerCase()]);
+      }
+    }
+    
+    // Timezone questions
+    else if (questionLower.includes('timezone') || questionLower.includes('est') || questionLower.includes('pst')) {
+      const city = (profileContext.city || '').toLowerCase();
+      const state = (profileContext.state || '').toLowerCase();
+      
+      // Common EST cities/states
+      const estLocations = ['toronto', 'new york', 'boston', 'miami', 'ontario', 'quebec', 'florida', 'georgia'];
+      const isEST = estLocations.some(loc => city.includes(loc) || state.includes(loc));
+      
+      if (isEST) {
+        answer = findMatchingOption(options, ['yes', 'est', 'eastern']);
+      }
+    }
+    
+    // Try to fill the answer
+    if (answer) {
+      return await setQuestionAnswer(q, answer);
+    }
+    
+    return false;
+  }
+  
+  function findMatchingOption(options, keywords) {
+    for (const keyword of keywords) {
+      for (const option of options) {
+        if (option.toLowerCase().includes(keyword.toLowerCase())) {
+          return option;
+        }
+      }
+    }
+    // Return first keyword as fallback for text inputs
+    return keywords[0];
+  }
+  
+  async function setQuestionAnswer(q, answer) {
+    try {
+      if (q.type === 'select' && q.element) {
+        const options = Array.from(q.element.options);
+        const matchingOption = options.find(opt => 
+          opt.text.toLowerCase().includes(answer.toLowerCase()) ||
+          answer.toLowerCase().includes(opt.text.toLowerCase())
+        );
+        
+        if (matchingOption) {
+          q.element.value = matchingOption.value;
+          q.element.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log(`[JobMatch AI] Filled select: ${q.question.substring(0, 30)}... = ${matchingOption.text}`);
+          return true;
+        }
+      }
+      
+      if (q.type === 'radio' && q.radioEls) {
+        for (const radio of q.radioEls) {
+          const label = radio.closest('label')?.textContent?.trim() || radio.value;
+          if (label.toLowerCase().includes(answer.toLowerCase()) ||
+              answer.toLowerCase().includes(label.toLowerCase())) {
+            radio.click();
+            console.log(`[JobMatch AI] Filled radio: ${q.question.substring(0, 30)}... = ${label}`);
+            return true;
+          }
+        }
+      }
+      
+      if (q.type === 'text' && q.element) {
+        q.element.value = answer;
+        q.element.dispatchEvent(new Event('input', { bubbles: true }));
+        q.element.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log(`[JobMatch AI] Filled text: ${q.question.substring(0, 30)}... = ${answer}`);
+        return true;
+      }
+    } catch (error) {
+      console.error('[JobMatch AI] Error setting answer:', error);
+    }
+    
+    return false;
   }
 
   // ==========================================
