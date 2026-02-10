@@ -899,17 +899,25 @@
       const edu = profile.education;
       log('Education question, profile value:', edu);
       
+      // Backend now sends human-readable labels directly
+      // But also handle legacy normalized values for backwards compatibility
       const eduMap = {
-        'high_school': 'High School',
-        'some_college': 'Some College',
-        'associate': "Associate's Degree",
+        'high_school': 'High School Diploma / GED',
+        'some_college': 'Some College (No Degree)',
+        'associate': "Associate Degree",
         'bachelor': "Bachelor's Degree",
         'master': "Master's Degree",
-        'doctorate': 'Doctorate',
-        'professional': 'Professional Degree',
+        'doctorate': 'Doctorate (PhD, MD, JD, etc.)',
+        'professional': 'Professional Certification',
         'bootcamp': 'Bootcamp',
-        'certification': 'Certification'
+        'certification': 'Certification',
+        'other': 'Other'
       };
+      
+      // If already human-readable (from updated backend), use directly
+      if (edu && (edu.includes('Degree') || edu.includes('Diploma') || edu.includes('College') || edu.includes('Doctorate') || edu.includes('Certification'))) {
+        return edu;
+      }
       
       return eduMap[edu] || edu || null;
     }
