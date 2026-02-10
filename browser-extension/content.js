@@ -1,16 +1,13 @@
-// JobMatch AI - Content Script v3
-// Debug version for Greenhouse react-select dropdowns
+// JobMatch AI - Content Script v4
+// Fixed for Greenhouse react-select - using keyboard navigation
 
 (function() {
   'use strict';
-
-  const DEBUG = true;
 
   function log(...args) {
     console.log('[JobMatch AI]', ...args);
   }
 
-  // Listen for messages from popup
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'AUTOFILL') {
       handleAutoFill(message.data).then(sendResponse);
@@ -22,10 +19,6 @@
     }
   });
 
-  // ============================
-  // MAIN AUTO-FILL HANDLER
-  // ============================
-
   async function handleAutoFill(data) {
     const results = {
       success: false,
@@ -36,331 +29,293 @@
     };
 
     try {
-      log('=== AUTO-FILL STARTED (v3) ===');
-      log('URL:', window.location.href);
+      log('=== AUTO-FILL STARTED (v4) ===');
 
-      // Build profile from data
       const profile = buildProfile(data);
       log('Profile:', profile);
 
-      // 1. Fill text fields first
+      // Fill text fields
       await fillTextFields(data, profile, results);
-
-      // 2. Handle file uploads
       await handleFileUploads(data, results);
 
-      // 3. Fill dropdowns - DIRECT APPROACH
-      log('\n=== PROCESSING DROPDOWNS (Direct Approach) ===');
+      // Fill dropdowns using INPUT-BASED approach
+      log('\n=== PROCESSING DROPDOWNS ===');
       
-      // Find ALL elements with select__control class (the clickable part of react-select)
-      const selectControls = document.querySelectorAll('.select__control');
-      log(`Found ${selectControls.length} select controls on page`);
+      // Find all combobox inputs (the actual interactive element in react-select)
+      const comboboxInputs = document.querySelectorAll('input[role="combobox"]');
+      log(`Found ${comboboxInputs.length} combobox inputs`);
 
-      for (let i = 0; i < selectControls.length; i++) {
-        const control = selectControls[i];
-        await processDropdownDirect(control, i, profile, results);
-        await sleep(200);
+      for (const input of comboboxInputs) {
+        await processCombobox(input, profile, results);
+        await sleep(300);
       }
 
       results.success = results.filled.length > 0;
       results.filledCount = results.filled.length;
 
-      log('\n=== AUTO-FILL COMPLETE ===');
+      log('\n=== COMPLETE ===');
       log('Filled:', results.filled);
       log('Failed:', results.failed);
-      log('Skipped:', results.skipped);
 
     } catch (error) {
-      log('Auto-fill error:', error);
-      results.failed.push(`Error: ${error.message}`);
+      log('Error:', error);
     }
 
     return results;
   }
 
-  // ============================
-  // DIRECT DROPDOWN PROCESSING
-  // ============================
-
-  async function processDropdownDirect(control, index, profile, results) {
-    // Find the label for this dropdown
-    const container = control.closest('.select__container') || control.closest('.select');
-    const label = findLabelText(container, control);
+  async function processCombobox(input, profile, results) {
+    // Get the label for this combobox
+    const labelId = input.getAttribute('aria-labelledby');
+    const label = labelId ? document.getElementById(labelId)?.textContent?.replace(/\*/g, '').trim() : null;
     
-    log(`\n--- Dropdown #${index}: "${label || 'Unknown'}" ---`);
-
     if (!label) {
-      log('Skipping - no label found');
+      log('Skipping input without label');
       return;
     }
 
+    log(`\n--- Processing: "${label}" ---`);
+
     // Skip EEO questions
-    if (shouldSkipQuestion(label)) {
-      log('Skipping - EEO/demographic question');
+    if (/gender|race|ethnicity|veteran|disability|hispanic|latino/i.test(label)) {
+      log('Skipping EEO question');
       results.skipped.push(`${label.substring(0, 30)} (EEO)`);
       return;
     }
 
-    // Check if already has a value
-    const singleValue = control.querySelector('.select__single-value');
-    if (singleValue && singleValue.textContent && !singleValue.textContent.includes('Select')) {
+    // Check if already has value (look for single-value element)
+    const control = input.closest('.select__control') || input.closest('[class*="control"]');
+    const container = control?.parentElement;
+    const singleValue = container?.querySelector('.select__single-value, [class*="singleValue"]');
+    if (singleValue?.textContent && !singleValue.textContent.includes('Select')) {
       log('Already filled:', singleValue.textContent);
       return;
     }
 
-    // Get the answer for this question
+    // Get answer
     const answer = getAnswerForQuestion(label.toLowerCase(), profile);
     if (!answer) {
-      log('No answer found for this question');
+      log('No answer for this question');
       results.skipped.push(`${label.substring(0, 30)} (no match)`);
       return;
     }
 
-    log('Answer to fill:', answer);
+    log('Answer:', answer);
 
-    // STEP 1: Click the control to open dropdown
-    log('Step 1: Clicking control to open dropdown...');
-    control.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    await sleep(50);
-    control.click();
-    await sleep(400);
-
-    // STEP 2: Look for the menu that appeared
-    log('Step 2: Looking for menu...');
+    // OPEN THE DROPDOWN using keyboard
+    log('Opening dropdown...');
     
-    // Debug: Log all elements that might be menus
-    const allMenus = document.querySelectorAll('[class*="menu"]');
-    log(`Found ${allMenus.length} elements with "menu" in class`);
+    // Focus the input
+    input.focus();
+    await sleep(100);
+
+    // Check current state
+    log('aria-expanded before:', input.getAttribute('aria-expanded'));
+
+    // Method 1: Click the parent control area
+    if (control) {
+      control.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+      await sleep(50);
+      control.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+      await sleep(50);
+      control.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    }
+    await sleep(200);
+
+    // Method 2: Press Space key on input
+    input.dispatchEvent(new KeyboardEvent('keydown', { 
+      key: ' ', 
+      code: 'Space', 
+      keyCode: 32, 
+      which: 32,
+      bubbles: true,
+      cancelable: true
+    }));
+    await sleep(200);
+
+    // Method 3: Press ArrowDown
+    input.dispatchEvent(new KeyboardEvent('keydown', { 
+      key: 'ArrowDown', 
+      code: 'ArrowDown', 
+      keyCode: 40, 
+      which: 40,
+      bubbles: true,
+      cancelable: true
+    }));
+    await sleep(300);
+
+    log('aria-expanded after:', input.getAttribute('aria-expanded'));
+
+    // Find options - look EVERYWHERE on the page
+    let options = findAllVisibleOptions();
+    log(`Found ${options.length} options`);
     
-    // Try multiple selectors to find options
-    let options = [];
-    
-    // Method 1: Standard react-select menu
-    let menu = document.querySelector('.select__menu');
-    if (menu) {
-      log('Found .select__menu');
-      const opts = menu.querySelectorAll('.select__option');
-      log(`Found ${opts.length} .select__option elements`);
-      opts.forEach(o => {
-        if (isVisible(o)) {
-          options.push({ el: o, text: o.textContent.trim() });
-        }
-      });
-    }
-
-    // Method 2: Any visible menu with options
-    if (options.length === 0) {
-      document.querySelectorAll('[class*="menu"]').forEach(m => {
-        if (isVisible(m)) {
-          m.querySelectorAll('[class*="option"]').forEach(o => {
-            if (isVisible(o) && o.textContent.trim()) {
-              options.push({ el: o, text: o.textContent.trim() });
-            }
-          });
-        }
-      });
-    }
-
-    // Method 3: Look in portal mount point
-    if (options.length === 0) {
-      const portal = document.getElementById('react-portal-mount-point');
-      if (portal) {
-        log('Checking portal mount point...');
-        portal.querySelectorAll('[class*="option"]').forEach(o => {
-          if (isVisible(o) && o.textContent.trim()) {
-            options.push({ el: o, text: o.textContent.trim() });
-          }
-        });
-      }
-    }
-
-    // Method 4: Any element with role="option"
-    if (options.length === 0) {
-      document.querySelectorAll('[role="option"]').forEach(o => {
-        if (isVisible(o) && o.textContent.trim()) {
-          options.push({ el: o, text: o.textContent.trim() });
-        }
-      });
-    }
-
-    // Method 5: Check if combobox input needs interaction
-    if (options.length === 0) {
-      log('No options found, trying to trigger via input...');
-      const input = control.querySelector('input[role="combobox"]') || 
-                    container?.querySelector('input[role="combobox"]');
-      if (input) {
-        log('Found combobox input, focusing and pressing arrow down...');
-        input.focus();
-        await sleep(100);
-        
-        // Try arrow down to open
-        input.dispatchEvent(new KeyboardEvent('keydown', { 
-          key: 'ArrowDown', 
-          code: 'ArrowDown',
-          keyCode: 40,
-          bubbles: true 
-        }));
-        await sleep(400);
-        
-        // Look for options again
-        document.querySelectorAll('[class*="option"], [role="option"]').forEach(o => {
-          if (isVisible(o) && o.textContent.trim()) {
-            options.push({ el: o, text: o.textContent.trim() });
-          }
-        });
-      }
-    }
-
-    log(`Total options found: ${options.length}`);
     if (options.length > 0) {
-      log('Options:', options.map(o => o.text));
+      log('Options:', options.slice(0, 5).map(o => o.text));
+    }
+
+    if (options.length === 0) {
+      // Try typing to trigger autocomplete
+      log('Trying to type answer...');
+      await typeIntoInput(input, answer.substring(0, 3));
+      await sleep(400);
+      options = findAllVisibleOptions();
+      log(`After typing, found ${options.length} options`);
     }
 
     if (options.length === 0) {
       log('FAILED: No options found');
-      closeDropdown();
+      closeDropdown(input);
       results.failed.push(`${label.substring(0, 30)} (no options)`);
       return;
     }
 
-    // STEP 3: Find and click the matching option
-    log('Step 3: Finding matching option...');
-    const bestOption = findBestOption(options, answer);
-    
-    if (!bestOption) {
-      log('No matching option found');
-      closeDropdown();
-      results.failed.push(`${label.substring(0, 30)} (no match in options)`);
+    // Find matching option
+    const match = findBestMatch(options, answer);
+    if (!match) {
+      log('No matching option');
+      closeDropdown(input);
+      results.failed.push(`${label.substring(0, 30)} (no match)`);
       return;
     }
 
-    log('Clicking option:', bestOption.text);
-    bestOption.el.click();
+    log('Selecting:', match.text);
+    
+    // Click the option
+    match.el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await sleep(50);
+    match.el.click();
     await sleep(100);
 
-    results.filled.push(`${label.substring(0, 30)} → ${bestOption.text}`);
-    log('SUCCESS!');
+    results.filled.push(`${label.substring(0, 30)} → ${match.text}`);
+    log('SUCCESS');
   }
 
-  function findLabelText(container, control) {
-    // Try multiple ways to find the label
+  function findAllVisibleOptions() {
+    const options = [];
+    const seen = new Set();
+
+    // All possible option selectors
+    const selectors = [
+      '.select__option',
+      '[class*="option"]',
+      '[role="option"]',
+      '[id*="option"]',
+      '.select__menu-list > div',
+      '[class*="menu"] > div',
+      '[class*="Menu"] > div'
+    ];
+
+    for (const selector of selectors) {
+      document.querySelectorAll(selector).forEach(el => {
+        const text = el.textContent?.trim();
+        if (text && !seen.has(text) && isVisible(el) && text.length < 200) {
+          // Skip placeholder texts
+          if (!/^select|^choose|^--/i.test(text) && text !== 'No options') {
+            seen.add(text);
+            options.push({ el, text });
+          }
+        }
+      });
+    }
+
+    return options;
+  }
+
+  async function typeIntoInput(input, text) {
+    input.focus();
     
-    // 1. Look for label in container
-    if (container) {
-      const label = container.querySelector('label, .label, .select__label');
-      if (label) return label.textContent.replace(/\*/g, '').trim();
+    // Clear any existing value
+    const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (nativeSetter) {
+      nativeSetter.call(input, '');
     }
-
-    // 2. Check aria-labelledby on the input
-    const input = control.querySelector('input');
-    if (input) {
-      const labelledBy = input.getAttribute('aria-labelledby');
-      if (labelledBy) {
-        const labelEl = document.getElementById(labelledBy);
-        if (labelEl) return labelEl.textContent.replace(/\*/g, '').trim();
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    
+    // Type each character
+    for (const char of text) {
+      if (nativeSetter) {
+        nativeSetter.call(input, input.value + char);
+      } else {
+        input.value += char;
       }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
+      await sleep(50);
     }
+  }
 
-    // 3. Look at parent elements
-    let parent = control.parentElement;
-    for (let i = 0; i < 5 && parent; i++) {
-      const label = parent.querySelector('label');
-      if (label) return label.textContent.replace(/\*/g, '').trim();
-      parent = parent.parentElement;
+  function closeDropdown(input) {
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.body.click();
+  }
+
+  function findBestMatch(options, answer) {
+    const answerLower = answer.toLowerCase().trim();
+    
+    // Exact
+    for (const o of options) {
+      if (o.text.toLowerCase().trim() === answerLower) return o;
+    }
+    
+    // Starts with
+    for (const o of options) {
+      if (o.text.toLowerCase().startsWith(answerLower)) return o;
+    }
+    
+    // Contains
+    for (const o of options) {
+      if (o.text.toLowerCase().includes(answerLower)) return o;
+    }
+    
+    // Answer contains option
+    for (const o of options) {
+      if (answerLower.includes(o.text.toLowerCase())) return o;
     }
 
     return null;
   }
 
-  function shouldSkipQuestion(label) {
-    const lower = label.toLowerCase();
-    return /gender|race|ethnicity|veteran|disability|hispanic|latino|eeo|demographic/i.test(lower);
-  }
-
   function getAnswerForQuestion(q, profile) {
-    // Employment agreements
     if (q.includes('employment agreement') || q.includes('post-employment') || q.includes('restriction')) {
       return 'No';
     }
-
-    // Sponsorship
     if (q.includes('sponsorship') || (q.includes('visa') && q.includes('require'))) {
       return profile.requiresSponsorship ? 'Yes' : 'No';
     }
-
-    // Previously worked
     if (q.includes('previously worked') || q.includes('consulted for')) {
       return 'No';
     }
-
-    // Location US/Canada
     if (q.includes('located') && (q.includes('us') || q.includes('canada'))) {
       const loc = `${profile.city} ${profile.state} ${profile.country}`.toLowerCase();
       return (loc.includes('canada') || loc.includes('us') || profile.country === 'CA') ? 'Yes' : 'No';
     }
-
-    // Country of residence
     if (q.includes('country') && q.includes('residence')) {
       return profile.countryFull || 'Canada';
     }
-
-    // Years of experience
-    if (q.includes('years') && q.includes('experience')) {
-      return 'Yes'; // Assume yes if they're applying
+    if (q.includes('experience') && (q.includes('supporting') || q.includes('managing') || q.includes('working'))) {
+      return 'Yes';
     }
-
+    if (q.includes('google suite') || q.includes('calendar') || q.includes('timezone')) {
+      return 'Yes';
+    }
     return null;
-  }
-
-  function findBestOption(options, answer) {
-    const answerLower = answer.toLowerCase().trim();
-    
-    // Exact match
-    for (const opt of options) {
-      if (opt.text.toLowerCase().trim() === answerLower) {
-        return opt;
-      }
-    }
-
-    // Starts with
-    for (const opt of options) {
-      if (opt.text.toLowerCase().startsWith(answerLower)) {
-        return opt;
-      }
-    }
-
-    // Contains
-    for (const opt of options) {
-      if (opt.text.toLowerCase().includes(answerLower) || 
-          answerLower.includes(opt.text.toLowerCase())) {
-        return opt;
-      }
-    }
-
-    return null;
-  }
-
-  function closeDropdown() {
-    document.body.click();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   }
 
   function isVisible(el) {
     if (!el) return false;
     const rect = el.getBoundingClientRect();
     const style = window.getComputedStyle(el);
-    return rect.width > 0 && rect.height > 0 &&
+    return rect.width > 0 && rect.height > 0 && 
            style.display !== 'none' && 
-           style.visibility !== 'hidden';
+           style.visibility !== 'hidden' &&
+           parseFloat(style.opacity) > 0;
   }
 
   function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(r => setTimeout(r, ms));
   }
-
-  // ============================
-  // PROFILE BUILDER
-  // ============================
 
   function buildProfile(data) {
     return {
@@ -376,102 +331,75 @@
       countryFull: data.profile_context?.country || '',
       requiresSponsorship: data.profile_context?.requires_sponsorship,
       willingToRelocate: data.profile_context?.willing_to_relocate || '',
-      noticePeriod: data.profile_context?.notice_period || '',
-      workArrangement: data.profile_context?.work_arrangement || '',
       resumeText: data.profile_context?.resume_text || '',
     };
   }
 
-  // ============================
-  // TEXT FIELDS
-  // ============================
-
   async function fillTextFields(data, profile, results) {
     const pi = data.personal_info || {};
-
-    if (pi.first_name && await fillInput('#first_name', pi.first_name)) {
-      results.filled.push('First Name');
-    }
-    if (pi.last_name && await fillInput('#last_name', pi.last_name)) {
-      results.filled.push('Last Name');
-    }
-    if (pi.email && await fillInput('#email', pi.email)) {
-      results.filled.push('Email');
-    }
-    if (pi.phone && await fillInput('#phone', pi.phone)) {
-      results.filled.push('Phone');
-    }
-    if (pi.linkedin) {
-      const linkedinInput = document.querySelector('input[id*="linkedin" i], input[name*="linkedin" i]');
-      if (linkedinInput && await fillInput(linkedinInput, pi.linkedin)) {
-        results.filled.push('LinkedIn Profile');
-      }
-    }
-
-    // Preferred name question
-    const labels = document.querySelectorAll('label');
-    for (const label of labels) {
-      if (label.textContent.toLowerCase().includes('prefer') && 
-          label.textContent.toLowerCase().includes('name')) {
+    if (pi.first_name) await fillInput('#first_name', pi.first_name) && results.filled.push('First Name');
+    if (pi.last_name) await fillInput('#last_name', pi.last_name) && results.filled.push('Last Name');
+    if (pi.email) await fillInput('#email', pi.email) && results.filled.push('Email');
+    if (pi.phone) await fillInput('#phone', pi.phone) && results.filled.push('Phone');
+    
+    // LinkedIn
+    const li = document.querySelector('input[id*="linkedin" i]');
+    if (li && pi.linkedin) await fillInput(li, pi.linkedin) && results.filled.push('LinkedIn');
+    
+    // Preferred name
+    for (const label of document.querySelectorAll('label')) {
+      if (/prefer.*name/i.test(label.textContent)) {
         const forId = label.getAttribute('for');
         if (forId) {
-          const input = document.getElementById(forId);
-          if (input && input.tagName === 'INPUT' && !input.value) {
-            await fillInput(input, profile.firstName);
-            results.filled.push("Preferred Name");
+          const inp = document.getElementById(forId);
+          if (inp?.tagName === 'INPUT' && !inp.value) {
+            await fillInput(inp, profile.firstName);
+            results.filled.push('Preferred Name');
           }
         }
       }
     }
   }
 
-  async function fillInput(selectorOrEl, value) {
-    const el = typeof selectorOrEl === 'string' ? 
-               document.querySelector(selectorOrEl) : selectorOrEl;
+  async function fillInput(sel, val) {
+    const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
     if (!el || el.value) return false;
-
     el.focus();
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    if (setter) setter.call(el, value);
-    else el.value = value;
-    
+    if (setter) setter.call(el, val);
+    else el.value = val;
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
 
-  // ============================
-  // FILE UPLOADS
-  // ============================
-
   async function handleFileUploads(data, results) {
     const resume = data.documents?.resume;
     if (resume?.file_data) {
-      const input = document.querySelector('#resume');
-      if (input) {
+      const inp = document.querySelector('#resume');
+      if (inp) {
         try {
-          const file = b64ToFile(resume.file_data, resume.filename, resume.mime_type);
+          const f = b64ToFile(resume.file_data, resume.filename, resume.mime_type);
           const dt = new DataTransfer();
-          dt.items.add(file);
-          input.files = dt.files;
-          input.dispatchEvent(new Event('change', { bubbles: true }));
+          dt.items.add(f);
+          inp.files = dt.files;
+          inp.dispatchEvent(new Event('change', { bubbles: true }));
           results.filled.push('Resume');
-        } catch (e) { log('Resume error:', e); }
+        } catch(e) {}
       }
     }
-
     const cover = data.documents?.cover_letter;
     if (cover?.file_data) {
-      const input = document.querySelector('#cover_letter');
-      if (input) {
+      const inp = document.querySelector('#cover_letter');
+      if (inp) {
         try {
-          const file = b64ToFile(cover.file_data, cover.filename, cover.mime_type);
+          const f = b64ToFile(cover.file_data, cover.filename, cover.mime_type);
           const dt = new DataTransfer();
-          dt.items.add(file);
-          input.files = dt.files;
-          input.dispatchEvent(new Event('change', { bubbles: true }));
+          dt.items.add(f);
+          inp.files = dt.files;
+          inp.dispatchEvent(new Event('change', { bubbles: true }));
           results.filled.push('Cover Letter');
-        } catch (e) { log('Cover letter error:', e); }
+        } catch(e) {}
       }
     }
   }
@@ -483,5 +411,5 @@
     return new File([arr], name || 'file.pdf', { type: type || 'application/pdf' });
   }
 
-  log('Content script v3 loaded - Ready!');
+  log('Content script v4 loaded!');
 })();
