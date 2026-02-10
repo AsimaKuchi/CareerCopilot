@@ -5701,6 +5701,7 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
         "documents": {},
         "matched_job": matched_application.get("job_title") if matched_application else None,
         # Include profile data for AI question answering
+        # Map normalized DB values to human-readable UI labels that match Profile.jsx exactly
         "profile_context": {
             "skills": autofill.get("skills", []),
             "skills_with_years": autofill.get("skillsWithYears", []),
@@ -5712,13 +5713,17 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
             "country": autofill.get("countryFull") or autofill.get("country") or "",
             "city": autofill.get("city") or "",
             "state": autofill.get("state") or "",
-            "willing_to_relocate": autofill.get("willingToRelocate"),
+            # Map willing_to_relocate to exact UI labels from Profile.jsx
+            "willing_to_relocate": _map_willing_to_relocate(autofill.get("willingToRelocate")),
             "salary_min": autofill.get("salaryMin"),
             "salary_max": autofill.get("salaryMax"),
-            "notice_period": autofill.get("noticePeriod"),
+            # Map notice_period to exact UI labels from Profile.jsx
+            "notice_period": _map_notice_period(autofill.get("noticePeriod")),
             "availability_date": autofill.get("availabilityDate"),
-            "education": autofill.get("education"),
-            "work_arrangement": autofill.get("workArrangement"),
+            # Map education to exact UI labels from Profile.jsx
+            "education": _map_education(autofill.get("education")),
+            # Map work_arrangement to exact UI labels from Profile.jsx
+            "work_arrangement": _map_work_arrangement(autofill.get("workArrangement")),
             "referral_source": autofill.get("referralSource"),
         }
     }
