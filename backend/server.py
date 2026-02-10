@@ -5606,6 +5606,51 @@ async def get_autofill_data_endpoint(request: Request, url: str = None):
 # BROWSER EXTENSION API
 # ========================
 
+# Helper functions to map normalized DB values to exact UI labels from Profile.jsx
+def _map_willing_to_relocate(value: str) -> str:
+    """Map willing_to_relocate DB value to exact UI label from Profile.jsx SelectItem."""
+    mapping = {
+        "yes": "Yes - willing to relocate",
+        "no": "No - not willing to relocate",
+        "open_to_discussion": "Open to discussion",
+    }
+    return mapping.get(value, value) if value else ""
+
+def _map_notice_period(value: str) -> str:
+    """Map notice_period DB value to exact UI label from Profile.jsx SelectItem."""
+    mapping = {
+        "immediately": "Immediately available",
+        "two_weeks": "2 weeks notice",
+        "one_month": "1 month notice",
+        "two_months": "2 months notice",
+        "three_months_plus": "3+ months notice",
+    }
+    return mapping.get(value, value) if value else ""
+
+def _map_education(value: str) -> str:
+    """Map education DB value to exact UI label from Profile.jsx SelectItem."""
+    mapping = {
+        "high_school": "High School Diploma / GED",
+        "some_college": "Some College (No Degree)",
+        "associate": "Associate Degree",
+        "bachelor": "Bachelor's Degree",
+        "master": "Master's Degree",
+        "doctorate": "Doctorate (PhD, MD, JD, etc.)",
+        "professional": "Professional Certification",
+        "other": "Other",
+    }
+    return mapping.get(value, value) if value else ""
+
+def _map_work_arrangement(value: str) -> str:
+    """Map work_arrangement DB value to exact UI label from Profile.jsx SelectItem."""
+    mapping = {
+        "remote": "Remote",
+        "hybrid": "Hybrid",
+        "onsite": "On-site",
+        "flexible": "Flexible",
+    }
+    return mapping.get(value, value) if value else ""
+
 @api_router.get("/extension/autofill-data")
 async def get_extension_autofill_data(request: Request, job_url: str = None):
     """
