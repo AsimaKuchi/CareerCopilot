@@ -5775,27 +5775,70 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     
     # Add resume data - prefer optimized version if available
     resume_text = optimized_resume or (profile.get("resume_text") if profile else None)
-    if resume_text or (profile and profile.get("resume_file_data")):
-        resume_data = {
-            "text": resume_text or profile.get("resume_text"),
+    if resume_text:
+        # Generate DOCX file from optimized resume text
+        try:
+            company_name = matched_application.get("company", "Company") if matched_application else "Company"
+            job_title = matched_application.get("job_title", "Position") if matched_application else "Position"
+            
+            # Create DOCX from optimized text
+            docx_bytes = create_docx_from_text(resume_text)
+            file_data_b64 = base64.b64encode(docx_bytes).decode('utf-8')
+            
+            resume_data = {
+                "text": resume_text,
+                "filename": f"Resume_{company_name}_{job_title}.docx".replace(" ", "_"),
+                "file_data": file_data_b64,
+                "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "is_optimized": bool(optimized_resume)
+            }
+            response["documents"]["resume"] = resume_data
+            logger.info(f"Generated optimized resume DOCX for extension (is_optimized: {bool(optimized_resume)})")
+        except Exception as e:
+            logger.error(f"Failed to generate resume DOCX for extension: {e}")
+            # Fallback to text only
+            response["documents"]["resume"] = {
+                "text": resume_text,
+                "filename": "resume.txt",
+                "is_optimized": bool(optimized_resume)
+            }
+    elif profile and profile.get("resume_file_data"):
+        # Use original uploaded file if no optimized version
+        response["documents"]["resume"] = {
+            "text": profile.get("resume_text"),
             "filename": profile.get("resume_filename") or "resume.pdf",
-            "is_optimized": bool(optimized_resume)
+            "file_data": profile.get("resume_file_data"),
+            "mime_type": profile.get("resume_mime_type") or "application/pdf",
+            "is_optimized": False
         }
-        
-        # Include file data if available
-        if profile and profile.get("resume_file_data"):
-            resume_data["file_data"] = profile.get("resume_file_data")
-            resume_data["mime_type"] = profile.get("resume_mime_type") or "application/pdf"
-        
-        response["documents"]["resume"] = resume_data
     
     # Add cover letter - prefer optimized version if available
     cover_letter_text = optimized_cover_letter or (profile.get("default_cover_letter") if profile else None)
     if cover_letter_text:
-        response["documents"]["cover_letter"] = {
-            "text": cover_letter_text,
-            "is_optimized": bool(optimized_cover_letter)
-        }
+        # Generate DOCX file from cover letter text
+        try:
+            company_name = matched_application.get("company", "Company") if matched_application else "Company"
+            job_title = matched_application.get("job_title", "Position") if matched_application else "Position"
+            
+            # Create DOCX from cover letter text
+            docx_bytes = create_docx_from_text(cover_letter_text)
+            file_data_b64 = base64.b64encode(docx_bytes).decode('utf-8')
+            
+            response["documents"]["cover_letter"] = {
+                "text": cover_letter_text,
+                "filename": f"CoverLetter_{company_name}_{job_title}.docx".replace(" ", "_"),
+                "file_data": file_data_b64,
+                "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "is_optimized": bool(optimized_cover_letter)
+            }
+            logger.info(f"Generated cover letter DOCX for extension (is_optimized: {bool(optimized_cover_letter)})")
+        except Exception as e:
+            logger.error(f"Failed to generate cover letter DOCX for extension: {e}")
+            # Fallback to text only
+            response["documents"]["cover_letter"] = {
+                "text": cover_letter_text,
+                "is_optimized": bool(optimized_cover_letter)
+            }
     
     # Add skills for custom question matching
     if profile and profile.get("skills"):
