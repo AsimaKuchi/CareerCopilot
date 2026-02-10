@@ -376,6 +376,13 @@
   async function handleFileUploads(data, results) {
     const resume = data.documents?.resume;
     if (resume?.file_data) {
+      log('Resume data found:', {
+        filename: resume.filename,
+        isOptimized: resume.is_optimized,
+        hasFileData: !!resume.file_data,
+        mimeType: resume.mime_type
+      });
+      
       const inp = document.querySelector('#resume');
       if (inp) {
         try {
@@ -384,12 +391,32 @@
           dt.items.add(f);
           inp.files = dt.files;
           inp.dispatchEvent(new Event('change', { bubbles: true }));
-          results.filled.push('Resume');
-        } catch(e) {}
+          
+          const label = resume.is_optimized ? 'Resume (Optimized for this job)' : 'Resume';
+          results.filled.push(label);
+          log(`Uploaded: ${label}`);
+        } catch(e) {
+          log('Resume upload error:', e);
+          results.failed.push('Resume upload failed');
+        }
+      } else {
+        log('Resume file input not found');
+        results.skipped.push('Resume (no file input)');
       }
+    } else {
+      log('No resume file data available');
+      results.skipped.push('Resume (no file data)');
     }
+    
     const cover = data.documents?.cover_letter;
     if (cover?.file_data) {
+      log('Cover letter data found:', {
+        filename: cover.filename,
+        isOptimized: cover.is_optimized,
+        hasFileData: !!cover.file_data,
+        mimeType: cover.mime_type
+      });
+      
       const inp = document.querySelector('#cover_letter');
       if (inp) {
         try {
@@ -398,8 +425,28 @@
           dt.items.add(f);
           inp.files = dt.files;
           inp.dispatchEvent(new Event('change', { bubbles: true }));
-          results.filled.push('Cover Letter');
-        } catch(e) {}
+          
+          const label = cover.is_optimized ? 'Cover Letter (Optimized for this job)' : 'Cover Letter';
+          results.filled.push(label);
+          log(`Uploaded: ${label}`);
+        } catch(e) {
+          log('Cover letter upload error:', e);
+          results.failed.push('Cover letter upload failed');
+        }
+      } else {
+        log('Cover letter file input not found');
+        results.skipped.push('Cover Letter (no file input)');
+      }
+    } else if (cover?.text) {
+      // Try filling cover letter as text in a textarea
+      log('Cover letter text found (no file data)');
+      const textarea = document.querySelector('textarea[id*="cover" i], textarea[name*="cover" i]');
+      if (textarea) {
+        textarea.value = cover.text;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        const label = cover.is_optimized ? 'Cover Letter Text (Optimized)' : 'Cover Letter Text';
+        results.filled.push(label);
       }
     }
   }
