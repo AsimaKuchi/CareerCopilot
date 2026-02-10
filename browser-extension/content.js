@@ -848,13 +848,21 @@
         'flexible': 'Flexible'
       };
       
+      // If already human-readable (from updated backend), use directly
+      if (arrangement && ['Remote', 'Hybrid', 'On-site', 'Flexible'].includes(arrangement)) {
+        return arrangement;
+      }
+      
       return arrangementMap[arrangement] || arrangement || null;
     }
     
     // "comfortable working remotely" / "open to remote work" (Yes/No)
     if (q.includes('remote') && (q.includes('comfortable') || q.includes('willing') || q.includes('open to'))) {
       const arrangement = profile.workArrangement;
-      return arrangement === 'remote' || arrangement === 'hybrid' || arrangement === 'flexible' ? 'Yes' : 'No';
+      // Handle both normalized and human-readable values
+      const isRemoteCompatible = arrangement === 'remote' || arrangement === 'hybrid' || arrangement === 'flexible' ||
+                                 arrangement === 'Remote' || arrangement === 'Hybrid' || arrangement === 'Flexible';
+      return isRemoteCompatible ? 'Yes' : 'No';
     }
     
     // ===== YEARS OF EXPERIENCE =====
