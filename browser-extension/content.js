@@ -793,12 +793,18 @@
       const willing = profile.willingToRelocate;
       log('Relocation question, profile value:', willing);
       
-      // Map normalized values to user-friendly dropdown options
+      // Backend now sends human-readable labels directly
+      // But also handle legacy normalized values for backwards compatibility
       const relocateMap = {
         'yes': 'Yes - willing to relocate',
         'no': 'No - not willing to relocate',
         'open_to_discussion': 'Open to discussion'
       };
+      
+      // If already human-readable (from updated backend), use directly
+      if (willing && (willing.includes('willing') || willing.includes('discussion'))) {
+        return willing;
+      }
       
       return relocateMap[willing] || willing || null;
     }
