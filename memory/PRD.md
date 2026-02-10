@@ -24,22 +24,40 @@ Build a website that helps users find jobs best suited for them based on what in
 - **AI**: OpenAI GPT-5.2 via emergentintegrations
 - **Job API**: JSearch (RapidAPI) + Greenhouse/Lever/SmartRecruiters/Pinpoint APIs
 - **Auth**: Emergent Google OAuth
+- **Automation**: Chrome Browser Extension (replaces server-side Playwright)
 
 ### Key Files
 ```
 /app/backend/server.py          # Main API endpoints
 /app/backend/profile_schema.py  # Profile v2 schema + migration logic
 /app/backend/encryption.py      # AES encryption for sensitive data
-/app/backend/ats_scrapers.py    # SmartRecruiters & Pinpoint scrapers (NEW)
+/app/backend/ats_scrapers.py    # SmartRecruiters & Pinpoint scrapers
+/app/browser-extension/         # Chrome extension for auto-filling (NEW)
 /app/frontend/src/App.js        # Main React app with routing
 /app/frontend/src/pages/        # All page components
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (February 7, 2025)
+## What's Been Implemented (February 10, 2025)
 
 ### Latest Updates ✅
-- **Resume-Grounded Match Analysis** (NEW):
+- **Browser Extension Dropdown Auto-Fill (NEW - Feb 10, 2025)**:
+  - Rebuilt content.js with robust dropdown detection and filling logic
+  - Supports native `<select>`, `role="combobox"`, `aria-haspopup`, Radix UI, react-select
+  - Opens dropdowns and waits for portal-rendered options (up to 2500ms)
+  - Global option search: listbox options, ul/li, Radix popper, react-select menus
+  - Answer matching: exact → contains → word-overlap → numeric bucket matching
+  - Synonyms mapping for Yes/No, countries, work arrangements, relocation, notice periods
+  - Filters placeholder options ("Select...", "Loading...", "No options")
+  - Verification: checks aria-selected, hidden input values, dropdown text change
+  - Retry mechanism for failed selections
+  - Skips EEO/demographic/legal questions
+  - DEBUG_DROPDOWNS flag for verbose logging
+  - Backend mapping functions added to convert DB values to exact UI labels:
+    - `_map_willing_to_relocate()`: "yes" → "Yes - willing to relocate"
+    - `_map_notice_period()`: "two_weeks" → "2 weeks notice"
+    - `_map_education()`: "bachelor" → "Bachelor's Degree"
+    - `_map_work_arrangement()`: "remote" → "Remote"
   - Redesigned match analysis to be grounded in actual resume content
   - Each strength now includes: Job requirement → Resume evidence → Match reason
   - No more generic phrases like "Strong role alignment" or "Experience aligns well"
