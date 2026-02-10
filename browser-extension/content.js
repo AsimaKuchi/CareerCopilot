@@ -814,18 +814,24 @@
       const notice = profile.noticePeriod;
       log('Notice period question, profile value:', notice);
       
-      // Map normalized values to user-friendly dropdown options
+      // Backend now sends human-readable labels directly
+      // But also handle legacy normalized values for backwards compatibility
       const noticeMap = {
         'immediately': 'Immediately available',
         'one_week': '1 week',
-        'two_weeks': '2 weeks',
+        'two_weeks': '2 weeks notice',
         'three_weeks': '3 weeks', 
-        'one_month': '1 month',
+        'one_month': '1 month notice',
         'six_weeks': '6 weeks',
-        'two_months': '2 months',
+        'two_months': '2 months notice',
         'three_months': '3 months',
-        'three_months_plus': '3+ months'
+        'three_months_plus': '3+ months notice'
       };
+      
+      // If already human-readable (from updated backend), use directly
+      if (notice && (notice.includes('available') || notice.includes('notice') || notice.includes('week') || notice.includes('month'))) {
+        return notice;
+      }
       
       return noticeMap[notice] || notice || null;
     }
