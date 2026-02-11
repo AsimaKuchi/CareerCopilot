@@ -5857,6 +5857,71 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     return response
 
 
+@api_router.post("/extension/track-submission")
+async def track_extension_submission(request: Request):
+    """
+    Track when a user submits a job application via the browser extension.
+    Updates the existing application status to 'applied'.
+    """
+    user = await get_current_user(request)
+    
+    body = await request.json()
+    job_url = body.get("job_url")
+    job_title = body.get("job_title")
+    company = body.get("company")
+    
+    if not job_url:
+        raise HTTPException(status_code=400, detail="job_url is required")
+    
+    # Try to find the matching application by URL
+    # Strip query params for matching
+    base_url = job_url.split("?")[0]
+    
+    matched_application = await db.applications.find_one(
+        {
+            "user_id": user.user_id,
+            "$or": [
+                {"apply_link": {"$regex": base_url, "$options": "i"}},
+                {"job_url": {"$regex": base_url, "$options": "i"}}
+            ]
+        }
+    )
+    
+    if matched_application:
+        # Update the existing application to "applied" status
+        await db.applications.update_one(
+            {"_id": matched_application["_id"]},
+            {
+                "$set": {
+                    "status": "applied",
+                    "applied_at": datetime.now(timezone.utc).isoformat(),
+                    "submission_method": "browser_extension",
+                    "submission_url": job_url
+                }
+            }
+        )
+        
+        logger.info(f"Application {matched_application.get('application_id')} marked as applied via extension")
+        
+        return {
+            "success": True,
+            "message": "Application status updated to 'applied'",
+            "application_id": matched_application.get("application_id"),
+            "job_title": matched_application.get("job_title"),
+            "company": matched_application.get("company")
+        }
+    else:
+        # No matching application found - this shouldn't happen in normal flow
+        # but we can still log it
+        logger.warning(f"No matching application found for URL: {job_url}")
+        
+        return {
+            "success": False,
+            "message": "No matching application found. Please ensure you opened this job from the dashboard.",
+            "job_url": job_url
+        }
+
+
 # Common screening questions template
 COMMON_SCREENING_QUESTIONS = [
     {
