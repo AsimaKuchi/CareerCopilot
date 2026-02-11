@@ -458,5 +458,255 @@
     return new File([arr], name || 'file.pdf', { type: type || 'application/pdf' });
   }
 
+  // ========================================
+  // SUBMISSION TRACKING
+  // ========================================
+  
+  let submissionTracked = false; // Prevent duplicate tracking
+  
+  function extractJobInfo() {
+    // Try to extract job title and company from the page
+    let jobTitle = '';
+    let company = '';
+    
+    // Common patterns for job title
+    const titleSelectors = [
+      'h1', // Most common
+      '[data-testid="job-title"]',
+      '.job-title',
+      '.posting-headline h2',
+      '[class*="JobTitle"]',
+      '[class*="job-title"]'
+    ];
+    
+    for (const selector of titleSelectors) {
+      const el = document.querySelector(selector);
+      if (el?.textContent?.trim()) {
+        jobTitle = el.textContent.trim();
+        break;
+      }
+    }
+    
+    // Common patterns for company name
+    const companySelectors = [
+      '[data-testid="company-name"]',
+      '.company-name',
+      '[class*="CompanyName"]',
+      '[class*="company-name"]',
+      '.posting-headline h1', // Greenhouse
+      'meta[property="og:site_name"]'
+    ];
+    
+    for (const selector of companySelectors) {
+      const el = document.querySelector(selector);
+      if (el) {
+        company = el.getAttribute('content') || el.textContent?.trim() || '';
+        if (company) break;
+      }
+    }
+    
+    // Fallback: try to get from page title
+    if (!company && document.title) {
+      const parts = document.title.split(/[|\-–]/);
+      if (parts.length > 1) {
+        company = parts[parts.length - 1].trim();
+      }
+    }
+    
+    return { jobTitle, company };
+  }
+  
+  async function trackSubmission() {
+    if (submissionTracked) {
+      log('Submission already tracked, skipping');
+      return;
+    }
+    
+    submissionTracked = true;
+    log('=== TRACKING SUBMISSION ===');
+    
+    const jobUrl = window.location.href;
+    const { jobTitle, company } = extractJobInfo();
+    
+    log('Job URL:', jobUrl);
+    log('Job Title:', jobTitle);
+    log('Company:', company);
+    
+    // Get API URL from storage
+    chrome.storage.local.get(['apiUrl', 'sessionToken'], async (result) => {
+      const apiUrl = result.apiUrl;
+      const sessionToken = result.sessionToken;
+      
+      if (!apiUrl || !sessionToken) {
+        log('Missing API URL or session token, cannot track submission');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${apiUrl}/api/extension/track-submission`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({
+            job_url: jobUrl,
+            job_title: jobTitle,
+            company: company
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          log('✅ Submission tracked successfully!');
+          log('Application updated:', data.job_title, 'at', data.company);
+          
+          // Show visual confirmation to user
+          showSubmissionConfirmation(data);
+        } else {
+          log('⚠️ Could not track submission:', data.message);
+        }
+      } catch (error) {
+        log('Error tracking submission:', error);
+      }
+    });
+  }
+  
+  function showSubmissionConfirmation(data) {
+    // Create a toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      z-index: 999999;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      max-width: 350px;
+      animation: slideIn 0.3s ease-out;
+    `;
+    
+    toast.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 24px;">✓</div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">Application Submitted!</div>
+          <div style="opacity: 0.9; font-size: 13px;">
+            ${data.job_title ? `${data.job_title} at ` : ''}${data.company || 'Company'} - Tracked in JobMatch AI
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(toast);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      toast.style.animation = 'slideIn 0.3s ease-out reverse';
+      setTimeout(() => toast.remove(), 300);
+    }, 5000);
+  }
+  
+  function setupSubmissionTracking() {
+    log('Setting up submission tracking...');
+    
+    // Common submit button selectors for job applications
+    const submitSelectors = [
+      'button[type="submit"]',
+      'input[type="submit"]',
+      'button[data-testid*="submit"]',
+      'button[class*="submit"]',
+      'button[class*="Submit"]',
+      '#submit_app', // Greenhouse
+      'button:contains("Submit")',
+      'button:contains("Apply")',
+      '[data-testid="submit-application"]',
+      '.application-submit',
+      // Greenhouse specific
+      '#application_submit_button',
+      'button[value="Submit Application"]',
+      // Lever specific
+      'button.postings-btn',
+      // General patterns
+      'button[type="submit"][class*="btn"]',
+      'form button:last-of-type'
+    ];
+    
+    // Find and attach listeners to submit buttons
+    function attachSubmitListeners() {
+      submitSelectors.forEach(selector => {
+        try {
+          const buttons = document.querySelectorAll(selector);
+          buttons.forEach(button => {
+            if (button.dataset.jobmatchTracked) return; // Already tracked
+            
+            const buttonText = (button.textContent || button.value || '').toLowerCase();
+            // Only track buttons that look like submit buttons
+            if (buttonText.includes('submit') || buttonText.includes('apply') || buttonText.includes('send')) {
+              button.dataset.jobmatchTracked = 'true';
+              
+              button.addEventListener('click', (e) => {
+                log('Submit button clicked:', buttonText);
+                // Track after a short delay to allow form submission to complete
+                setTimeout(() => trackSubmission(), 1500);
+              });
+              
+              log('Attached listener to submit button:', buttonText);
+            }
+          });
+        } catch (e) {
+          // Selector might not be valid, ignore
+        }
+      });
+    }
+    
+    // Also listen for form submissions
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (form.tagName === 'FORM') {
+        log('Form submitted');
+        setTimeout(() => trackSubmission(), 1500);
+      }
+    }, true);
+    
+    // Run initially
+    attachSubmitListeners();
+    
+    // Re-run when DOM changes (for SPAs)
+    const observer = new MutationObserver(() => {
+      attachSubmitListeners();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    log('Submission tracking setup complete');
+  }
+  
+  // Initialize submission tracking when page loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupSubmissionTracking);
+  } else {
+    setupSubmissionTracking();
+  }
+
   log('Content script v4 loaded!');
 })();
