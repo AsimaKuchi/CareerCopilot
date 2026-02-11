@@ -113,6 +113,12 @@ function showMainSection(userData, apiUrl) {
   elements.userEmail.textContent = email;
   elements.openDashboard.href = apiUrl;
   
+  // Store API URL in a format content script can access
+  chrome.storage.local.set({
+    apiUrl: apiUrl,
+    sessionToken: '' // Will be set from cookies
+  });
+  
   // Check current page
   checkCurrentPage();
 }
