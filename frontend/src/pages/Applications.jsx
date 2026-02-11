@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navbar from "@/components/Navbar";
+import NextStepsCard from "@/components/NextStepsCard";
 import {
   Briefcase,
   CheckCircle,
