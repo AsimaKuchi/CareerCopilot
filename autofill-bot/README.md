@@ -36,7 +36,7 @@ Edit `.env`:
 
 ```env
 # API Configuration
-API_BASE_URL=https://autofill-browser.preview.emergentagent.com
+API_BASE_URL=https://job-autofill-pro.preview.emergentagent.com
 
 # Session token from browser (required!)
 # Get this from your browser cookies after logging in
