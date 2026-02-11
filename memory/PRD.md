@@ -38,10 +38,16 @@ Build a website that helps users find jobs best suited for them based on what in
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (February 10, 2025)
+## What's Been Implemented (February 11, 2025)
 
 ### Latest Updates ✅
-- **Browser Extension Dropdown Auto-Fill (NEW - Feb 10, 2025)**:
+- **File Naming Convention for Browser Extension Uploads (NEW - Feb 11, 2025)**:
+  - Resume uploads now named: `FirstnameLastnameCV.docx` (e.g., `JohnSmithCV.docx`)
+  - Cover letter uploads now named: `FirstnameLastnameCL.docx` (e.g., `JohnSmithCL.docx`)
+  - Special characters and spaces are stripped from names for clean filenames
+  - Backend endpoint `/api/extension/autofill-data` updated with new naming logic
+
+- **Browser Extension Dropdown Auto-Fill (Feb 10, 2025)**:
   - Rebuilt content.js with robust dropdown detection and filling logic
   - Supports native `<select>`, `role="combobox"`, `aria-haspopup`, Radix UI, react-select
   - Opens dropdowns and waits for portal-rendered options (up to 2500ms)
