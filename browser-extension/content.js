@@ -532,43 +532,27 @@
     log('Job Title:', jobTitle);
     log('Company:', company);
     
-    // Get API URL from storage
-    chrome.storage.local.get(['apiUrl', 'sessionToken'], async (result) => {
-      const apiUrl = result.apiUrl;
-      const sessionToken = result.sessionToken;
-      
-      if (!apiUrl || !sessionToken) {
-        log('Missing API URL or session token, cannot track submission');
+    // Send message to background script to make the API call
+    // Background script has access to cookies for authentication
+    chrome.runtime.sendMessage({
+      action: 'TRACK_SUBMISSION',
+      data: {
+        job_url: jobUrl,
+        job_title: jobTitle,
+        company: company
+      }
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        log('Error sending to background:', chrome.runtime.lastError);
         return;
       }
       
-      try {
-        const response = await fetch(`${apiUrl}/api/extension/track-submission`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionToken}`
-          },
-          body: JSON.stringify({
-            job_url: jobUrl,
-            job_title: jobTitle,
-            company: company
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          log('✅ Submission tracked successfully!');
-          log('Application updated:', data.job_title, 'at', data.company);
-          
-          // Show visual confirmation to user
-          showSubmissionConfirmation(data);
-        } else {
-          log('⚠️ Could not track submission:', data.message);
-        }
-      } catch (error) {
-        log('Error tracking submission:', error);
+      if (response?.success) {
+        log('✅ Submission tracked successfully!');
+        log('Application updated:', response.job_title, 'at', response.company);
+        showSubmissionConfirmation(response);
+      } else {
+        log('⚠️ Could not track submission:', response?.message || 'Unknown error');
       }
     });
   }
