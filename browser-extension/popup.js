@@ -205,6 +205,13 @@ async function handleAutoFill() {
 
     const autofillData = await response.json();
     
+    // Store API URL and current job URL for submission tracking
+    // The content script will use these to track submissions
+    await chrome.storage.local.set({
+      apiUrl: apiUrl,
+      currentJobUrl: currentUrl
+    });
+    
     // Show if we matched a saved application
     if (autofillData.matched_job) {
       updateProgress(40, `Found saved application: ${autofillData.matched_job}`);
