@@ -4934,6 +4934,343 @@ async def delete_application(request: Request, application_id: str):
     
     return {"message": "Application deleted"}
 
+# ========================
+# NEXT STEPS ("What to Do Next") ENDPOINTS
+# ========================
+
+def get_default_next_steps():
+    """Return the default next steps structure for a new application."""
+    return {
+        "follow_company": {
+            "completed": False,
+            "title": "Follow the Company",
+            "description": "Follow the company on LinkedIn to stay updated"
+        },
+        "find_recruiter": {
+            "completed": False,
+            "title": "Find Recruiter/Hiring Manager",
+            "description": "Search for the recruiter or hiring manager on LinkedIn"
+        },
+        "send_message": {
+            "completed": False,
+            "title": "Send a Message",
+            "description": "Reach out to the recruiter or hiring manager",
+            "generated_content": None
+        },
+        "prep_interview": {
+            "completed": False,
+            "title": "Prep Interview Questions",
+            "description": "Prepare answers for common interview questions",
+            "generated_questions": None
+        },
+        "track_outcome": {
+            "completed": False,
+            "title": "Track Outcome",
+            "description": "Update the status of your application",
+            "outcome": "pending"  # pending, interview_scheduled, rejected, offer
+        },
+        "follow_up": {
+            "completed": False,
+            "title": "Follow Up in 7 Days",
+            "description": "Set a reminder to follow up if you haven't heard back",
+            "reminder_date": None
+        }
+    }
+
+@api_router.get("/applications/{application_id}/next-steps")
+async def get_next_steps(request: Request, application_id: str):
+    """Get the next steps progress for an application."""
+    user = await get_current_user(request)
+    
+    app = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Return existing progress or default
+    next_steps = app.get("next_steps_progress") or get_default_next_steps()
+    
+    # Calculate progress
+    completed_count = sum(1 for step in next_steps.values() if step.get("completed"))
+    total_count = len(next_steps)
+    
+    return {
+        "application_id": application_id,
+        "job_title": app.get("job_title"),
+        "company": app.get("company"),
+        "status": app.get("status"),
+        "next_steps": next_steps,
+        "progress": {
+            "completed": completed_count,
+            "total": total_count,
+            "percentage": round((completed_count / total_count) * 100) if total_count > 0 else 0
+        }
+    }
+
+@api_router.put("/applications/{application_id}/next-steps")
+async def update_next_step(request: Request, application_id: str, update: NextStepUpdate):
+    """Update a single next step's completion status or data."""
+    user = await get_current_user(request)
+    
+    app = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Get existing or default next steps
+    next_steps = app.get("next_steps_progress") or get_default_next_steps()
+    
+    # Validate step_id
+    if update.step_id not in next_steps:
+        raise HTTPException(status_code=400, detail=f"Invalid step_id: {update.step_id}")
+    
+    # Update the specific step
+    if update.completed is not None:
+        next_steps[update.step_id]["completed"] = update.completed
+    
+    if update.outcome is not None and update.step_id == "track_outcome":
+        next_steps[update.step_id]["outcome"] = update.outcome
+    
+    if update.reminder_date is not None and update.step_id == "follow_up":
+        next_steps[update.step_id]["reminder_date"] = update.reminder_date
+    
+    # Save to database
+    await db.applications.update_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"$set": {"next_steps_progress": next_steps}}
+    )
+    
+    # Calculate progress
+    completed_count = sum(1 for step in next_steps.values() if step.get("completed"))
+    total_count = len(next_steps)
+    
+    return {
+        "success": True,
+        "step_id": update.step_id,
+        "next_steps": next_steps,
+        "progress": {
+            "completed": completed_count,
+            "total": total_count,
+            "percentage": round((completed_count / total_count) * 100) if total_count > 0 else 0
+        }
+    }
+
+@api_router.post("/applications/{application_id}/next-steps/generate")
+async def generate_next_step_content(request: Request, application_id: str, req: NextStepContentRequest):
+    """Generate AI content for send_message or prep_interview steps."""
+    user = await get_current_user(request)
+    
+    app = await db.applications.find_one(
+        {"application_id": application_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Get user profile for personalization
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if profile:
+        profile = decrypt_sensitive_data(profile)
+    
+    # Get user info
+    user_doc = await db.users.find_one({"user_id": user.user_id}, {"_id": 0})
+    user_name = user_doc.get("name", "Applicant") if user_doc else "Applicant"
+    
+    job_title = app.get("job_title", "the position")
+    company = app.get("company", "the company")
+    job_description = app.get("job_description", "")
+    optimized_resume = app.get("optimized_resume", "")
+    
+    # Extract skills from profile
+    skills = []
+    if profile and profile.get("skills"):
+        for skill in profile.get("skills", []):
+            if isinstance(skill, dict):
+                skills.append(skill.get("name", ""))
+            else:
+                skills.append(str(skill))
+    skills_text = ", ".join(skills[:10]) if skills else "various relevant skills"
+    
+    # Generate content based on step_id
+    if req.step_id == "send_message":
+        content_type = req.content_type or "linkedin_message"
+        generated_content = await generate_outreach_message(
+            user_name, job_title, company, job_description, skills_text, optimized_resume, content_type
+        )
+        
+        # Save to next_steps_progress
+        next_steps = app.get("next_steps_progress") or get_default_next_steps()
+        next_steps["send_message"]["generated_content"] = generated_content
+        
+        await db.applications.update_one(
+            {"application_id": application_id},
+            {"$set": {"next_steps_progress": next_steps}}
+        )
+        
+        return {
+            "success": True,
+            "step_id": "send_message",
+            "content_type": content_type,
+            "generated_content": generated_content
+        }
+    
+    elif req.step_id == "prep_interview":
+        generated_questions = await generate_interview_questions(
+            user_name, job_title, company, job_description, skills_text, optimized_resume
+        )
+        
+        # Save to next_steps_progress
+        next_steps = app.get("next_steps_progress") or get_default_next_steps()
+        next_steps["prep_interview"]["generated_questions"] = generated_questions
+        
+        await db.applications.update_one(
+            {"application_id": application_id},
+            {"$set": {"next_steps_progress": next_steps}}
+        )
+        
+        return {
+            "success": True,
+            "step_id": "prep_interview",
+            "generated_questions": generated_questions
+        }
+    
+    else:
+        raise HTTPException(status_code=400, detail="Content generation only available for send_message and prep_interview steps")
+
+async def generate_outreach_message(user_name: str, job_title: str, company: str, 
+                                     job_description: str, skills: str, resume: str, 
+                                     content_type: str) -> str:
+    """Generate a personalized outreach message using AI."""
+    from emergentintegrations.llm.chat import chat, UserMessage
+    
+    if content_type == "connection_request":
+        prompt = f"""Write a brief LinkedIn connection request (under 300 characters) for someone who just applied to a {job_title} position at {company}.
+
+Applicant name: {user_name}
+Key skills: {skills}
+
+Requirements:
+- Be professional but friendly
+- Mention the specific role applied for
+- Keep it concise (LinkedIn has a 300 character limit for connection requests)
+- Don't be overly formal or salesy
+- Express genuine interest in connecting
+
+Write ONLY the message text, no quotes or explanations."""
+    
+    elif content_type == "email":
+        prompt = f"""Write a professional follow-up email for someone who applied to a {job_title} position at {company}.
+
+Applicant name: {user_name}
+Key skills: {skills}
+Job description summary: {job_description[:500] if job_description else 'Not available'}
+Resume highlights: {resume[:500] if resume else 'Not available'}
+
+Requirements:
+- Professional but personable tone
+- Subject line included
+- Reference specific skills/experience relevant to the role
+- Express enthusiasm without being pushy
+- Include a clear call-to-action
+- Keep under 200 words
+
+Format:
+Subject: [subject line]
+
+[email body]"""
+    
+    else:  # linkedin_message
+        prompt = f"""Write a LinkedIn message to a recruiter/hiring manager after applying for a {job_title} position at {company}.
+
+Applicant name: {user_name}
+Key skills: {skills}
+Job description summary: {job_description[:500] if job_description else 'Not available'}
+Resume highlights: {resume[:500] if resume else 'Not available'}
+
+Requirements:
+- Professional but conversational tone
+- Reference the specific position applied for
+- Briefly highlight 1-2 relevant qualifications
+- Express genuine interest in the company/role
+- Include a soft call-to-action
+- Keep under 150 words
+
+Write ONLY the message text, no quotes or explanations."""
+
+    try:
+        response = await chat(
+            api_key=EMERGENT_LLM_KEY,
+            model="gpt-5.2",
+            messages=[UserMessage(content=prompt)]
+        )
+        return response.strip()
+    except Exception as e:
+        logger.error(f"Error generating outreach message: {e}")
+        return f"Hi, I recently applied for the {job_title} position at {company} and wanted to connect. I believe my background in {skills} would be a great fit for this role. I'd love to learn more about the opportunity. Thank you!"
+
+async def generate_interview_questions(user_name: str, job_title: str, company: str,
+                                        job_description: str, skills: str, resume: str) -> str:
+    """Generate personalized interview prep questions and answers using AI."""
+    from emergentintegrations.llm.chat import chat, UserMessage
+    
+    prompt = f"""Generate 5 likely interview questions for a {job_title} position at {company}, along with personalized answer suggestions.
+
+Candidate name: {user_name}
+Key skills: {skills}
+Job description: {job_description[:800] if job_description else 'Not available'}
+Resume/background: {resume[:800] if resume else 'Not available'}
+
+Requirements:
+- Include a mix of behavioral and technical questions
+- Tailor questions to the specific role and company
+- Provide concise but strong answer suggestions
+- Use STAR method hints for behavioral questions
+- Keep answers professional and achievement-focused
+
+Format each Q&A as:
+**Q1: [Question]**
+💡 Suggested Answer: [Answer suggestion in 2-3 sentences]
+
+**Q2: [Question]**
+💡 Suggested Answer: [Answer]
+
+...and so on for all 5 questions."""
+
+    try:
+        response = await chat(
+            api_key=EMERGENT_LLM_KEY,
+            model="gpt-5.2",
+            messages=[UserMessage(content=prompt)]
+        )
+        return response.strip()
+    except Exception as e:
+        logger.error(f"Error generating interview questions: {e}")
+        return f"""**Q1: Tell me about yourself and why you're interested in this {job_title} role.**
+💡 Suggested Answer: Focus on your relevant experience with {skills} and express genuine interest in {company}'s mission.
+
+**Q2: What's your greatest strength relevant to this position?**
+💡 Suggested Answer: Highlight a key skill from your background that directly applies to the role.
+
+**Q3: Describe a challenging project you've worked on.**
+💡 Suggested Answer: Use the STAR method - Situation, Task, Action, Result.
+
+**Q4: Why do you want to work at {company}?**
+💡 Suggested Answer: Research the company and mention specific things that attract you.
+
+**Q5: Where do you see yourself in 5 years?**
+💡 Suggested Answer: Show ambition while aligning with the company's growth trajectory."""
+
 def create_docx_from_text(text: str, title: str = None) -> bytes:
     """Create a DOCX file from text content and return bytes."""
     doc = Document()
