@@ -330,6 +330,19 @@ class JobApplication(BaseModel):
     match_score: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     applied_at: Optional[datetime] = None
+    next_steps_progress: Optional[Dict[str, Any]] = None  # Track "What to do next" progress
+
+class NextStepUpdate(BaseModel):
+    """Update a single next step's completion status or data."""
+    step_id: str  # follow_company, find_recruiter, send_message, prep_interview, track_outcome, follow_up
+    completed: Optional[bool] = None
+    outcome: Optional[str] = None  # For track_outcome step
+    reminder_date: Optional[str] = None  # For follow_up step (ISO date string)
+
+class NextStepContentRequest(BaseModel):
+    """Request to generate AI content for a next step."""
+    step_id: str  # send_message or prep_interview
+    content_type: Optional[str] = None  # For send_message: "linkedin_message", "email", "connection_request"
 
 class ApplyRequest(BaseModel):
     job_id: str
