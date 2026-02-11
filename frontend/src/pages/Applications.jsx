@@ -1273,6 +1273,14 @@ export default function Applications({ user }) {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* What to Do Next - Only show for applied applications */}
+                  {app.status === "applied" && (
+                    <NextStepsCard 
+                      application={app} 
+                      onUpdate={fetchApplications}
+                    />
+                  )}
                 </CardContent>
               </Card>
             ))}
