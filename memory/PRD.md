@@ -47,6 +47,14 @@ Build a website that helps users find jobs best suited for them based on what in
   - Special characters and spaces are stripped from names for clean filenames
   - Backend endpoint `/api/extension/autofill-data` updated with new naming logic
 
+- **Auto-Track Submissions (NEW - Feb 11, 2025)**:
+  - When user clicks "Submit" on external job application pages, the extension auto-tracks it
+  - New backend endpoint `POST /api/extension/track-submission` updates application status to "applied"
+  - Matches submission to existing application by job URL
+  - Visual toast notification confirms the submission was tracked
+  - Application status immediately reflects on the dashboard
+  - Background script handles authenticated API calls
+
 - **Browser Extension Dropdown Auto-Fill (Feb 10, 2025)**:
   - Rebuilt content.js with robust dropdown detection and filling logic
   - Supports native `<select>`, `role="combobox"`, `aria-haspopup`, Radix UI, react-select
