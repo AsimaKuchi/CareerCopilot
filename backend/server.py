@@ -5820,8 +5820,11 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     if cover_letter_text:
         # Generate DOCX file from cover letter text
         try:
-            company_name = matched_application.get("company", "Company") if matched_application else "Company"
-            job_title = matched_application.get("job_title", "Position") if matched_application else "Position"
+            # Create filename using FirstnameLastnameCL.docx format
+            # Remove spaces and special characters from names
+            clean_first = "".join(c for c in first_name if c.isalnum())
+            clean_last = "".join(c for c in last_name if c.isalnum())
+            cover_letter_filename = f"{clean_first}{clean_last}CL.docx"
             
             # Create DOCX from cover letter text
             docx_bytes = create_docx_from_text(cover_letter_text)
@@ -5829,12 +5832,12 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
             
             response["documents"]["cover_letter"] = {
                 "text": cover_letter_text,
-                "filename": f"CoverLetter_{company_name}_{job_title}.docx".replace(" ", "_"),
+                "filename": cover_letter_filename,
                 "file_data": file_data_b64,
                 "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "is_optimized": bool(optimized_cover_letter)
             }
-            logger.info(f"Generated cover letter DOCX for extension (is_optimized: {bool(optimized_cover_letter)})")
+            logger.info(f"Generated cover letter DOCX for extension: {cover_letter_filename} (is_optimized: {bool(optimized_cover_letter)})")
         except Exception as e:
             logger.error(f"Failed to generate cover letter DOCX for extension: {e}")
             # Fallback to text only
