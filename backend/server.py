@@ -5778,8 +5778,11 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     if resume_text:
         # Generate DOCX file from optimized resume text
         try:
-            company_name = matched_application.get("company", "Company") if matched_application else "Company"
-            job_title = matched_application.get("job_title", "Position") if matched_application else "Position"
+            # Create filename using FirstnameLastnameCV.docx format
+            # Remove spaces and special characters from names
+            clean_first = "".join(c for c in first_name if c.isalnum())
+            clean_last = "".join(c for c in last_name if c.isalnum())
+            resume_filename = f"{clean_first}{clean_last}CV.docx"
             
             # Create DOCX from optimized text
             docx_bytes = create_docx_from_text(resume_text)
@@ -5787,13 +5790,13 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
             
             resume_data = {
                 "text": resume_text,
-                "filename": f"Resume_{company_name}_{job_title}.docx".replace(" ", "_"),
+                "filename": resume_filename,
                 "file_data": file_data_b64,
                 "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "is_optimized": bool(optimized_resume)
             }
             response["documents"]["resume"] = resume_data
-            logger.info(f"Generated optimized resume DOCX for extension (is_optimized: {bool(optimized_resume)})")
+            logger.info(f"Generated optimized resume DOCX for extension: {resume_filename} (is_optimized: {bool(optimized_resume)})")
         except Exception as e:
             logger.error(f"Failed to generate resume DOCX for extension: {e}")
             # Fallback to text only
