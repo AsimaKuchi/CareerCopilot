@@ -5152,7 +5152,7 @@ async def generate_outreach_message(user_name: str, job_title: str, company: str
                                      job_description: str, skills: str, resume: str, 
                                      content_type: str) -> str:
     """Generate a personalized outreach message using AI."""
-    from emergentintegrations.llm.chat import chat, UserMessage
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
     
     if content_type == "connection_request":
         prompt = f"""Write a brief LinkedIn connection request (under 300 characters) for someone who just applied to a {job_title} position at {company}.
@@ -5222,7 +5222,7 @@ Write ONLY the message text, no quotes or explanations."""
 async def generate_interview_questions(user_name: str, job_title: str, company: str,
                                         job_description: str, skills: str, resume: str) -> str:
     """Generate personalized interview prep questions and answers using AI."""
-    from emergentintegrations.llm.chat import chat, UserMessage
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
     
     prompt = f"""Generate 5 likely interview questions for a {job_title} position at {company}, along with personalized answer suggestions.
 
