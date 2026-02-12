@@ -5249,11 +5249,12 @@ Format each Q&A as:
 ...and so on for all 5 questions."""
 
     try:
-        response = await chat(
+        chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            model="gpt-5.2",
-            messages=[UserMessage(content=prompt)]
+            session_id=f"interview_{uuid.uuid4().hex[:8]}",
+            system_message="You are an expert career coach helping candidates prepare for job interviews."
         )
+        response = await chat.send_message(UserMessage(text=prompt))
         return response.strip()
     except Exception as e:
         logger.error(f"Error generating interview questions: {e}")
