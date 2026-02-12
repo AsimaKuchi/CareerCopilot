@@ -4944,35 +4944,41 @@ def get_default_next_steps():
         "follow_company": {
             "completed": False,
             "title": "Follow the Company",
-            "description": "Follow the company on LinkedIn to stay updated"
+            "description": "Stay visible in their network. Recruiters often check who's engaging with their content — this puts your name on their radar before they even review applications.",
+            "why_important": "85% of jobs are filled through networking. Following shows genuine interest."
         },
         "find_recruiter": {
             "completed": False,
             "title": "Find Recruiter/Hiring Manager",
-            "description": "Search for the recruiter or hiring manager on LinkedIn"
+            "description": "Most applicants never reach the decision-maker directly. Finding the right person lets you bypass the ATS black hole and get your application seen by someone who can actually hire you.",
+            "why_important": "Direct outreach increases response rates by 40% compared to just applying."
         },
         "send_message": {
             "completed": False,
             "title": "Send a Message",
-            "description": "Reach out to the recruiter or hiring manager",
+            "description": "A personalized message makes you memorable. While 98% of applicants stay silent, a thoughtful note can move you from 'maybe' to 'interview' pile.",
+            "why_important": "Candidates who reach out are 3x more likely to get an interview.",
             "generated_content": None
         },
         "prep_interview": {
             "completed": False,
             "title": "Prep Interview Questions",
-            "description": "Prepare answers for common interview questions",
+            "description": "Don't wait for the interview invite to prepare. The best candidates practice answers tailored to THIS role — so when you get the call, you're already ahead.",
+            "why_important": "Prepared candidates score 50% higher in interviews than those who wing it.",
             "generated_questions": None
         },
         "track_outcome": {
             "completed": False,
             "title": "Track Outcome",
-            "description": "Update the status of your application",
+            "description": "Keep your job search organized. Knowing where each application stands helps you follow up strategically and learn what's working.",
+            "why_important": "Organized job seekers land roles 2x faster than those who lose track.",
             "outcome": "pending"  # pending, interview_scheduled, rejected, offer
         },
         "follow_up": {
             "completed": False,
             "title": "Follow Up in 7 Days",
-            "description": "Set a reminder to follow up if you haven't heard back",
+            "description": "Most candidates never follow up — and miss out. A polite check-in shows persistence and keeps you top-of-mind when hiring decisions are made.",
+            "why_important": "Following up can increase your chances of a response by 30%.",
             "reminder_date": None
         }
     }
