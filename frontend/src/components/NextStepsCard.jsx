@@ -301,9 +301,15 @@ export default function NextStepsCard({ application, onUpdate }) {
                         <div className={`font-medium text-sm ${step.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                           {step.title}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
+                        <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
                           {step.description}
                         </div>
+                        {step.why_important && !step.completed && (
+                          <div className={`text-xs mt-1.5 font-medium ${config.color} flex items-center gap-1`}>
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-current"></span>
+                            {step.why_important}
+                          </div>
+                        )}
 
                         {/* Step-specific content */}
                         <div className="flex flex-wrap items-center gap-2 mt-2">
