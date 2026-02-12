@@ -41,7 +41,18 @@ Build a website that helps users find jobs best suited for them based on what in
 ## What's Been Implemented (February 11, 2025)
 
 ### Latest Updates ✅
-- **File Naming Convention for Browser Extension Uploads (NEW - Feb 11, 2025)**:
+- **"What to Do Next" Feature (NEW - Feb 11, 2025)**:
+  - Checklist card appears under each "applied" job with 6 actionable steps
+  - Steps: Follow Company, Find Recruiter, Send Message, Prep Interview Qs, Track Outcome, Follow Up
+  - Progress bar shows completion status (e.g., 3/6 completed)
+  - AI-generated content for outreach messages and interview questions (GPT-5.2)
+  - LinkedIn search buttons for company and recruiter discovery
+  - Outcome tracking dropdown (Pending, Interview Scheduled, Rejected, Offer)
+  - 7-day follow-up reminder with date storage
+  - Data persists across sessions via `next_steps_progress` in applications collection
+  - New backend endpoints: GET/PUT `/api/applications/{id}/next-steps`, POST `/api/applications/{id}/next-steps/generate`
+
+- **File Naming Convention for Browser Extension Uploads (Feb 11, 2025)**:
   - Resume uploads now named: `FirstnameLastnameCV.docx` (e.g., `JohnSmithCV.docx`)
   - Cover letter uploads now named: `FirstnameLastnameCL.docx` (e.g., `JohnSmithCL.docx`)
   - Special characters and spaces are stripped from names for clean filenames
