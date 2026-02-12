@@ -5209,11 +5209,12 @@ Requirements:
 Write ONLY the message text, no quotes or explanations."""
 
     try:
-        response = await chat(
+        chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            model="gpt-5.2",
-            messages=[UserMessage(content=prompt)]
+            session_id=f"outreach_{uuid.uuid4().hex[:8]}",
+            system_message="You are a professional career coach helping job applicants write effective outreach messages."
         )
+        response = await chat.send_message(UserMessage(text=prompt))
         return response.strip()
     except Exception as e:
         logger.error(f"Error generating outreach message: {e}")
