@@ -188,12 +188,14 @@ The job matching evaluates candidates against jobs using:
 - ✅ Fallback search mechanism for multi-word queries (fixed Jan 25, 2025)
 - ✅ **Profile v2 Schema Migration (Feb 1, 2025)**: Structured schema with normalized enums for work authorization, skills, education, phone (E.164), location. Auto-fill now uses normalized values.
 - ✅ **Auto-Fill & Auto-Submit with User Confirmation (Feb 8, 2025)**: Implemented server-side Playwright automation that fills AND submits application forms. Users see a confirmation modal with 3 options: Cancel, Fill Only (no submit), Fill & Submit. Button renamed from "Auto-Fill" to "Auto-Apply".
+- ✅ **Job Search Data Expansion (Feb 15, 2026)**: Expanded company lists (60 Greenhouse + 10 Lever), added synonym expansion, fixed search bugs. Business Analyst in Toronto: 0 → 9+ results.
 
 ### P1 - High Priority (Next)
+- [ ] Add Lever and Ashby support in browser extension (content.js needs platform detection)
 - [ ] Add Google Jobs as a search source (user approved)
-- [ ] Interview Tips & Prep feature completion
-- [ ] Email notifications for new job matches
+- [ ] Refactor monolithic backend `server.py` (5800+ lines) into `/routes`, `/models`, `/services`
 - [ ] Implement remaining ATS scrapers: Teamtailor, Jobvite, BambooHR
+- [ ] Email notifications for new job matches
 
 ### P2 - Medium Priority
 - [ ] Implement Playwright-based Ashby scraper (currently non-functional)
