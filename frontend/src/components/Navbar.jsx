@@ -67,7 +67,7 @@ export const Navbar = ({ user }) => {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-foreground hidden sm:block">JobMatch AI</span>
+            <span className="text-lg font-bold text-foreground hidden sm:block">CareerCopilot AI</span>
           </div>
 
           {/* Desktop Navigation */}

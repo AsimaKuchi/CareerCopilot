@@ -466,7 +466,7 @@ async def public_health():
     
     return {
         "status": "healthy",
-        "service": "JobMatch API",
+        "service": "CareerCopilot API",
         "version": "1.0.0",
         "jobs_in_database": job_count,
         "auto_refresh": {
@@ -512,7 +512,7 @@ async def submit_support_request(request: SupportRequest):
                 
                 <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
                     <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                        Sent from JobMatch AI Support Form • {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+                        Sent from CareerCopilot AI Support Form • {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
                     </p>
                 </div>
             </div>
@@ -5786,7 +5786,7 @@ async def get_autofill_script(request: Request, application_id: str):
         return s.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
     
     # Generate the auto-fill script
-    script = f'''// JobMatch AI - Greenhouse Auto-Fill Script
+    script = f'''// CareerCopilot AI - Greenhouse Auto-Fill Script
 // Application: {js_escape(app_doc.get("job_title", ""))} at {js_escape(app_doc.get("company", ""))}
 // Generated for: {js_escape(full_name)}
 
@@ -5835,7 +5835,7 @@ async def get_autofill_script(request: Request, application_id: str):
         return false;
     }}
 
-    console.log('🚀 JobMatch AI Auto-Fill Starting...');
+    console.log('🚀 CareerCopilot AI Auto-Fill Starting...');
     console.log('Applying for:', '{js_escape(app_doc.get("job_title", ""))}');
 
     // Fill first name
@@ -5898,7 +5898,7 @@ async def get_autofill_script(request: Request, application_id: str):
     console.log('📎 If there\\'s a file upload, use the downloaded .docx resume.');
     console.log('🔐 Complete any CAPTCHA if required.');
     
-    alert('JobMatch AI Auto-Fill Complete!\\n\\n✓ Fields have been filled\\n\\nPlease:\\n1. Review all information\\n2. Upload resume file if required\\n3. Complete any CAPTCHA\\n4. Click Submit');
+    alert('CareerCopilot AI Auto-Fill Complete!\\n\\n✓ Fields have been filled\\n\\nPlease:\\n1. Review all information\\n2. Upload resume file if required\\n3. Complete any CAPTCHA\\n4. Click Submit');
 }})();'''
 
     return {
@@ -6801,7 +6801,7 @@ async def get_ats_stats(request: Request):
 
 @api_router.get("/")
 async def root():
-    return {"message": "JobMatch AI API", "status": "healthy"}
+    return {"message": "CareerCopilot AI API", "status": "healthy"}
 
 @api_router.get("/health")
 async def health():

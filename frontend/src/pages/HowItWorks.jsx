@@ -148,7 +148,7 @@ export default function HowItWorks() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-foreground">JobMatch AI</span>
+            <span className="text-xl font-bold text-foreground">CareerCopilot AI</span>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -374,7 +374,7 @@ export default function HowItWorks() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm text-muted-foreground">© 2025 JobMatch AI. All rights reserved.</span>
+            <span className="text-sm text-muted-foreground">© 2025 CareerCopilot AI. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
