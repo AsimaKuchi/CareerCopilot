@@ -1728,6 +1728,8 @@ async def search_greenhouse(request: Request):
             if jobs_found >= 100:
                 break
         
+        logger.info(f"Search filter stats: total={len(all_raw_jobs)}, skipped_non_english={skipped_non_english}, skipped_applied={skipped_applied}, skipped_query={skipped_query}, skipped_location={skipped_location}, matched={jobs_found}")
+        
         # Sort jobs: new jobs (is_new_for_user) first, then by posted date
         matched_jobs.sort(key=lambda x: (
             not x.get("is_new_for_user", False),  # New jobs first (False sorts before True, so we negate)
