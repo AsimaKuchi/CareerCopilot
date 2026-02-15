@@ -1730,18 +1730,24 @@ async def search_greenhouse(request: Request):
         
         logger.info(f"Search filter stats: total={len(all_raw_jobs)}, skipped_non_english={skipped_non_english}, skipped_applied={skipped_applied}, skipped_query={skipped_query}, skipped_location={skipped_location}, matched={jobs_found}")
         
-        # Sort jobs: new jobs (is_new_for_user) first, then by posted date
+        # Sort jobs: new for user first, then recently posted, then by date
         matched_jobs.sort(key=lambda x: (
-            not x.get("is_new_for_user", False),  # New jobs first (False sorts before True, so we negate)
-            not x.get("is_new", False),            # Recently posted second
-            x.get("posted_at", "") or ""           # Then by date
+            0 if x.get("is_new_for_user", False) else 1,
+            0 if x.get("is_new", False) else 1,
+            str(x.get("posted_at") or "")
         ), reverse=False)
         
-        # Re-sort the first group by posted_at descending
+        # Re-sort: new for user first, then by posted date descending
         matched_jobs.sort(key=lambda x: (
-            0 if x.get("is_new_for_user", False) else 1,  # New for user first
-            x.get("posted_at", "") or ""
-        ), reverse=True)
+            0 if x.get("is_new_for_user", False) else 1,
+            str(x.get("posted_at") or "")
+        ), reverse=False)
+        # Reverse to get newest first, but keep new-for-user at top
+        new_for_user = [j for j in matched_jobs if j.get("is_new_for_user")]
+        not_new = [j for j in matched_jobs if not j.get("is_new_for_user")]
+        new_for_user.sort(key=lambda x: str(x.get("posted_at") or ""), reverse=True)
+        not_new.sort(key=lambda x: str(x.get("posted_at") or ""), reverse=True)
+        matched_jobs = new_for_user + not_new
         
         # Now stream the sorted jobs
         for job in matched_jobs:
