@@ -86,13 +86,23 @@ GREENHOUSE_COMPANIES = [
     "anthropic", "postman", "launchdarkly", "mixpanel", "amplitude",
     "marqeta", "adyen", "asana", "intercom", "oscar",
     "faire", "headway", "coursera", "duolingo", "gemini",
-    "zocdoc", "alchemy"
+    "zocdoc", "alchemy",
+    # Canadian-focused & companies with strong Canadian presence - Added Feb 2026
+    "hootsuite", "d2l", "ritual", "grammarly", "lyft",
+    "elastic", "cloudflare", "okta", "zscaler", "twitch",
+    "airtable", "webflow", "vercel", "fivetran", "pagerduty",
+    "reddit", "pinterest", "toast", "robinhood", "sofi",
+    "roblox", "chime", "opendoor", "nextdoor", "scopely",
+    "tulip", "ecobee", "squarespace",
 ]
 
-# VERIFIED Lever company boards (tested and working Jan 2025)
+# VERIFIED Lever company boards (tested and working)
 LEVER_COMPANIES = [
     # Verified Working
-    "lever", "attentive", "medium"
+    "lever", "attentive", "medium",
+    # Canadian-focused & companies with Canadian presence - Added Feb 2026
+    "wealthsimple", "plaid", "spotify", "pointclickcare",
+    "clearco", "koho", "nuvei",
 ]
 
 # VERIFIED Ashby company boards - SKIP for now (requires Playwright)
