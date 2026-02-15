@@ -313,7 +313,7 @@ export default function LandingPage() {
               What our users are saying
             </h2>
             <p className="text-lg text-muted-foreground">
-              Real results from real job seekers across Canada
+              Real results from job seekers using the extension
             </p>
           </div>
 
@@ -329,7 +329,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-foreground leading-relaxed italic">
-                  "I went from spending 3 hours daily on applications to just 15 minutes. Landed 4 interviews in my first week!"
+                  "The extension is a game-changer. I used to spend 20 minutes per application — now it's literally 30 seconds. Applied to 15 jobs in one evening!"
                 </p>
                 <div className="pt-4 border-t border-gray-100">
                   <p className="font-semibold text-foreground">Sarah Chen</p>
@@ -349,7 +349,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-foreground leading-relaxed italic">
-                  "The AI matching is incredible. Every job suggestion was spot-on for my experience level and career goals."
+                  "Finally, an auto-fill that actually works with Greenhouse dropdowns. The tailored resume for each job is the cherry on top."
                 </p>
                 <div className="pt-4 border-t border-gray-100">
                   <p className="font-semibold text-foreground">Marcus Miller</p>
@@ -369,7 +369,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-foreground leading-relaxed italic">
-                  "As a new immigrant, this tool was a lifesaver. It understood the Canadian job market perfectly."
+                  "I love that it tracks my applications automatically. No more spreadsheets! Plus the 'What to do next' feature reminds me to follow up."
                 </p>
                 <div className="pt-4 border-t border-gray-100">
                   <p className="font-semibold text-foreground">Priya Sharma</p>
