@@ -209,9 +209,21 @@ def parse_location(location_str: str, job_country: str = "", job_state: str = ""
         # For longer words, simple contains is fine
         return word in text
     
+    # Non-Canadian country indicators that override city matching
+    non_canadian_countries = ["england", "united kingdom", "uk,", ", uk", "ireland", "australia", 
+                              "germany", "france", "spain", "italy", "netherlands", "singapore", 
+                              "japan", "india", "brazil", "mexico", "israel"]
+    
+    # Ambiguous cities that exist in both Canada and other countries
+    ambiguous_cities = {"london", "hamilton", "richmond", "victoria", "windsor", "kingston"}
+    
     # Detect Canadian city/province
     for city, prov in CANADIAN_CITIES.items():
         if word_match(city, full_location):
+            # For ambiguous cities, check if a non-Canadian country is also mentioned
+            if city in ambiguous_cities:
+                if any(nc in full_location for nc in non_canadian_countries):
+                    continue  # Skip - this is likely the non-Canadian version
             result["city"] = city.title()
             result["province"] = prov
             result["country"] = "CA"
