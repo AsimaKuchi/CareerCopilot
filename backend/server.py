@@ -147,17 +147,17 @@ def is_english_job(title: str) -> bool:
 # ========================
 # Maps common search phrases to expanded variants for broader matching
 QUERY_SYNONYMS = {
-    "business analyst": ["business analyst", "business systems analyst", "business intelligence analyst", "ba ", "business analysis", "business operations analyst"],
-    "data analyst": ["data analyst", "data analytics", "analytics analyst", "bi analyst", "business intelligence analyst", "data analysis"],
-    "software engineer": ["software engineer", "software developer", "swe", "backend engineer", "frontend engineer", "full stack engineer", "fullstack engineer"],
-    "product manager": ["product manager", "product lead", "pm ", "product owner", "product management"],
-    "project manager": ["project manager", "project lead", "pmo", "project management", "scrum master"],
+    "business analyst": ["business analyst", "business systems analyst", "business intelligence analyst", "ba ", "business analysis", "business operations analyst", "data analyst", "operations analyst", "strategy analyst", "systems analyst", "process analyst", "requirements analyst"],
+    "data analyst": ["data analyst", "data analytics", "analytics analyst", "bi analyst", "business intelligence analyst", "data analysis", "business analyst", "insights analyst"],
+    "software engineer": ["software engineer", "software developer", "swe", "backend engineer", "frontend engineer", "full stack engineer", "fullstack engineer", "web developer"],
+    "product manager": ["product manager", "product lead", "pm ", "product owner", "product management", "program manager"],
+    "project manager": ["project manager", "project lead", "pmo", "project management", "scrum master", "program manager"],
     "data scientist": ["data scientist", "data science", "ml engineer", "machine learning engineer", "applied scientist"],
     "ux designer": ["ux designer", "ui designer", "product designer", "ux/ui", "ui/ux", "user experience"],
     "devops": ["devops", "site reliability", "sre", "platform engineer", "infrastructure engineer", "cloud engineer"],
     "qa": ["qa engineer", "quality assurance", "test engineer", "sdet", "qa analyst"],
     "marketing": ["marketing manager", "growth marketing", "digital marketing", "marketing analyst", "marketing coordinator"],
-    "financial analyst": ["financial analyst", "finance analyst", "fp&a", "financial planning"],
+    "financial analyst": ["financial analyst", "finance analyst", "fp&a", "financial planning", "business analyst"],
     "hr": ["human resources", "hr manager", "hr business partner", "people operations", "talent acquisition", "recruiter"],
     "accountant": ["accountant", "accounting", "cpa", "bookkeeper", "accounts payable", "accounts receivable"],
     "consultant": ["consultant", "consulting", "advisory", "strategy consultant", "management consultant"],
