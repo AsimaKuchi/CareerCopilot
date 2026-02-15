@@ -1606,14 +1606,17 @@ async def search_greenhouse(request: Request):
                         # FALLBACK MODE: Any keyword match
                         query_match = any(word in search_text for word in query_words)
                     else:
-                        # STRICT MODE: Phrase matching + synonym expansion
+                        # BALANCED MODE: phrase match OR synonym match OR most words match
                         query_phrase = query.lower()
+                        # Significant words are 4+ chars (skip "in", "of", "the", etc.)
+                        significant_words = [w for w in query_words if len(w) >= 4]
                         query_match = (
                             query_phrase in job_title or
                             all(word in job_title for word in query_words) or
                             query_phrase in search_text or
                             sum(1 for word in query_words if word in search_text) >= 2 or
-                            any(syn in job_title for syn in expanded_phrases)
+                            any(syn in job_title for syn in expanded_phrases) or
+                            (significant_words and all(w in search_text for w in significant_words))
                         )
                 else:
                     # Single word - broad matching
