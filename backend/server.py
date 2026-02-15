@@ -1587,21 +1587,23 @@ async def search_greenhouse(request: Request):
             job_location = (job.get("location") or "").lower()
             search_text = f"{job_title} {job_company} {job_dept}"
             
-            # Query match logic
+            # Query match logic with synonym expansion
             query_match = True
             if query_words:
+                expanded_phrases = expand_query(query)
                 if len(query_words) >= 2:
                     if is_fallback_search:
                         # FALLBACK MODE: Any keyword match
                         query_match = any(word in search_text for word in query_words)
                     else:
-                        # STRICT MODE: Phrase matching
+                        # STRICT MODE: Phrase matching + synonym expansion
                         query_phrase = query.lower()
                         query_match = (
                             query_phrase in job_title or
                             all(word in job_title for word in query_words) or
                             query_phrase in search_text or
-                            sum(1 for word in query_words if word in search_text) >= 2
+                            sum(1 for word in query_words if word in search_text) >= 2 or
+                            any(syn in job_title for syn in expanded_phrases)
                         )
                 else:
                     # Single word - broad matching
