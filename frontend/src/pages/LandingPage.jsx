@@ -254,6 +254,56 @@ export default function LandingPage() {
               </Card>
             ))}
           </div>
+
+          {/* How It Works Steps */}
+          <div className="mt-20">
+            <h3 className="text-2xl font-bold text-foreground text-center mb-12">
+              How it works
+            </h3>
+            <div className="grid md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                  1
+                </div>
+                <h4 className="font-semibold text-foreground mb-2">Install Extension</h4>
+                <p className="text-sm text-muted-foreground">Add our Chrome extension in one click. Takes 10 seconds.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                  2
+                </div>
+                <h4 className="font-semibold text-foreground mb-2">Build Your Profile</h4>
+                <p className="text-sm text-muted-foreground">Enter your info once. We'll use it to fill every application.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                  3
+                </div>
+                <h4 className="font-semibold text-foreground mb-2">Find a Job</h4>
+                <p className="text-sm text-muted-foreground">Browse Greenhouse, Lever, Ashby — wherever jobs live.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                  4
+                </div>
+                <h4 className="font-semibold text-foreground mb-2">Click & Apply</h4>
+                <p className="text-sm text-muted-foreground">One click fills everything. Review, submit, and track automatically.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA Button */}
+          <div className="text-center mt-12">
+            <Button
+              size="lg"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-6 text-lg rounded-full shadow-lg shadow-indigo-500/25"
+              onClick={() => window.open('/api/downloads/browser-extension.zip', '_blank')}
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Download Chrome Extension
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">Free forever. No credit card required.</p>
+          </div>
         </section>
 
         {/* Testimonials Section */}
