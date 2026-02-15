@@ -1,148 +1,167 @@
-<analysis>**original_problem_statement**: The user wants to create a browser extension that auto-fills job application forms on Greenhouse, Lever, and Ashby. The main functionality is to use data from a user's profile on the main application to fill out form fields, with a special focus on correctly handling complex dropdown menus. The extension should detect dropdowns, open them, find and match options against the user's profile, and select the correct one. The user also wants the extension to upload optimized resumes and cover letters specific to each job application. The latest request is to format the uploaded filenames as  and .
+<analysis>**original_problem_statement**: The user wants to create a browser extension that auto-fills job application forms on Greenhouse, Lever, and Ashby using a central user profile. The project has evolved to include:
+- A browser extension that autofills forms on Greenhouse, including text inputs, complex dropdowns, and file uploads.
+- The extension automatically tracks when a user submits an application and updates its status in the main web app.
+- The main web application features a dashboard to manage job applications.
+- For jobs marked as applied, a What to do next checklist appears, providing AI-generated content (e.g., outreach messages, interview questions) and actionable steps to help the user stay organized.
+- The landing page has been updated to be a marketing-focused entry point for the Chrome Extension.
+- The user's latest issue is that the job search functionality does not return expected results for certain queries (e.g., Business Analyst in Toronto).
 
 PRODUCT REQUIREMENTS:
-- **Dropdown Autofill:**
-    - Detect dropdowns using , , , etc.
-    - Handle opening dropdowns and finding options, even when they are rendered in portals (e.g., Radix UI, react-select).
-    - Map answers using normalization, synonyms (yes/no), and numeric buckets (e.g., '3-5 years').
-    - Verify selection and retry if it fails.
-    - Skip sensitive EEO/demographic questions.
-- **File Uploads:**
-    - Upload the job-specific optimized resume and cover letter.
-- **Verbose Logging:** The extension must provide detailed logs for debugging.
-- **Target ATS:** Greenhouse, Lever, Ashby.
+- **Browser Extension:**
+    - Autofill forms on Greenhouse, Lever, and Ashby.
+    - Handle text, dropdowns, and file uploads.
+    - Upload optimized resumes/cover letters with the filename format  / .
+    - Automatically detect form submissions and update the application status via an API call.
+- **Web Application:**
+    - A What to do next checklist for applied jobs with 6 steps, progress tracking, and AI-powered content generation.
+    - A job search feature.
+- **Data Model:**
+    - Store user profiles, application data, and progress for the What to do next feature.
 
 **User's preferred language**: English
 
 **what currently exists?**
-- A backend endpoint () that provides the user's profile data, including base64-encoded DOCX files for the optimized resume and cover letter.
-- A browser extension with a content script () that is highly tailored to autofill forms on **Greenhouse**.
-- The  script successfully fills text inputs and handles  based dropdowns on Greenhouse by using keyboard events. It also handles the uploading of the base64-encoded resume and cover letter files.
+- A full-stack application with a React frontend, a monolithic FastAPI backend (), and a MongoDB database.
+- A browser extension that successfully autofills forms on **Greenhouse**, tracks submissions, and uploads files.
+- The backend serves all data for the web app and the extension, including generating DOCX files on the fly.
+- The frontend includes a landing page heavily focused on marketing the extension, a user profile section, and an application tracking dashboard.
+- The What to do next feature is fully implemented on both the frontend and backend, including AI content generation.
 
 **Last working item**:
--   **Last item agent was working**: The user requested that the uploaded resume and cover letter files be named according to the convention  and , respectively.
--   **Status**: NOT STARTED
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: backend testing agent. The filename is generated in the backend endpoint . After the change, the agent should test the API response to confirm the new filename format and then manually test the extension to verify the file upload.
--   **User Testing Done**: N
+-   **Last item agent was working**: The user reported that searching for Business Analyst jobs in Toronto, Ontario returned no results. The agent investigated and confirmed that this is due to a lack of relevant data in the  database collection, not a bug in the search API itself. The user suggested broadening the search terms used by the (as yet unseen) job scraper scripts.
+-   **Status**: NOT STARTED (on the fix); Investigation is complete.
+-   **Agent Testing Done**: N/A
+-   **Which testing method agent to use?**: Manual Investigation. The agent needs to locate the job scraper scripts, modify them to include broader search terms (e.g., BA, Business Systems Analyst), run the scrapers, and then query the MongoDB database to verify that new, relevant jobs have been added.
+-   **User Testing Done**: N/A
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: File Naming Convention for Uploads (Priority: P0)
+- **Issue 1**: Job search returns limited or no results for specific queries. (Priority: P0)
 
 **Issues Detail**:
--   **Issue 1**: Implement file naming convention for uploads.
-    -   **Attempted fixes**: None. This is a new request.
+-   **Issue 1**:
+    -   **Attempted fixes**: The agent investigated the database and confirmed the issue is a lack of data, not a code bug in the search endpoint.
     -   **Next debug checklist**:
-        1.  Edit the backend file .
-        2.  Locate the  endpoint.
-        3.  Within the endpoint, access the user's first and last name from the profile data.
-        4.  Construct the new filenames:  and .
-        5.  Update the  key in the JSON payload returned for the resume and cover letter.
-    -   **Why fix this issue and what will be achieved with the fix?**: To meet the user's explicit requirement for standardized filenames on uploaded documents.
+        1.  Locate the job scraping scripts within the repository.
+        2.  Identify the list of search terms being used.
+        3.  Expand the search terms for roles like Business Analyst to include variations like BA and Business Systems Analyst.
+        4.  Execute the modified scraper(s).
+        5.  Connect to the MongoDB database and query the  collection to confirm that new jobs matching the broadened criteria have been added for the specified locations.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is critical for user acquisition and retention, as the core value of the application depends on users being able to find relevant jobs to apply for.
     -   **Status**: NOT STARTED
     -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Both. First, test the backend API to ensure the filename in the response is correct. Then, test the frontend (extension) to ensure the file is uploaded with the correct name on a job application page.
+    -   **Should Test frontend/backend/both after fix?**: Backend (data verification).
     -   **Blocked on other issue**: None.
 
 **In progress Task List**:
-There are no tasks currently in progress. The agent was at a logical stopping point before the user made the new file naming request.
+- There are no tasks currently in progress.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks**:
-- **P0: Implement File Naming Convention**: Modify  to change the filename for resumes and cover letters as per the user's last request.
+- **P0: Fix Job Search Data**: Modify the job scrapers to broaden search terms and populate the database with more roles, as detailed in Issues Detail.
 
 **Future Tasks**:
-- **P1: Add Support for Lever and Ashby**: The current  is heavily customized for Greenhouse's  components. It needs to be refactored to detect the ATS (Greenhouse, Lever, Ashby) and apply platform-specific logic for finding and filling dropdowns.
-- **P2: Enhance Dropdown Answer Matching**: The initial requirements included advanced answer mapping (e.g., numeric buckets like 3-5 years, synonym lists). The current implementation focuses on simpler matches. This logic in  needs to be expanded.
-- **P2: Expand Profile-to-Question Mapping**: User logs indicated some questions were skipped due to No answer found. The mapping in  and  needs to be reviewed and expanded to cover more questions from the user's profile.
+- **P1: Add Support for Lever and Ashby**: Refactor  to detect the current Applicant Tracking System (ATS) and apply platform-specific logic. This is a major feature from the original request that is still pending.
+- **P2: Enhance Dropdown Answer Matching**: Improve the  logic to handle more complex dropdown scenarios, such as mapping numeric ranges (e.g., 3-5 years) and using synonym lists.
+- **P3: Refactor Monolithic Backend**: Break down the massive  file into a structured application with separate files for routes, models, and services to improve maintainability.
 
 **Completed work in this session**
-- **Greenhouse Dropdown Autofill (Fixed)**: Implemented a working solution (v4) in  that successfully fills  dropdowns on Greenhouse pages by dispatching keyboard events. This resolved a major recurring issue.
-- **Optimized Resume/Cover Letter Upload**:
-    - The backend () was updated to generate DOCX files from text and return them as base64 strings.
-    - The extension () was updated to decode this base64 data and upload the files to the form.
-- **Backend Data Mapping**: The  endpoint was improved to map database values (e.g., ) to human-readable strings (e.g., Yes) for better matching on the frontend.
+- **Landing Page Overhaul**: Updated the  to heavily market the Chrome extension with new statistics, icons, a How it Works section, and updated testimonials.
+- **'What to do next' Feature**: Implemented a checklist for applied jobs with progress tracking and AI-generated content for outreach and interview prep.
+- **'What to do next' Enhancement**: Added compelling descriptions explaining *why* each step is important for the user's job search.
+- **Automatic Submission Tracking**: The browser extension now detects when a user submits an application and sends an API call to the backend to update the application's status to applied.
+- **File Naming Convention**: Implemented the user's request to format uploaded resume and cover letter filenames as  and .
 
 **Earlier issues found/mentioned but not fixed**
-The primary missed items are not bugs but rather features from the original scope that have not been implemented yet. These are captured in the **Future Tasks** section:
 - Support for Lever and Ashby.
 - Advanced answer mapping for dropdowns (numeric buckets, synonyms).
+These are now listed under **Future Tasks**.
 
 **Known issue recurrence from previous fork**
-- **Issue**: Dropdown filling on Greenhouse was a highly recurring issue within this session.
-- **Recurrence count**: At least 3 major failed attempts before the working  script.
-- **Status**: RESOLVED
-- **Note**: The fix is very specific to Greenhouse's current DOM structure and event handling (). If Greenhouse updates its UI, this feature is very likely to break again. Any further work on dropdowns must be done carefully, preserving the working logic of using keyboard events on the combobox input.
+-   **Issue**: Dropdown filling on Greenhouse.
+-   **Recurrence count**: 3+
+-   **Status**: RESOLVED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend**: Python (Flask), MongoDB.
-- **Browser Extension**: JavaScript, DOM manipulation, programmatic event dispatching (), base64 decoding.
-- **ATS Integration**: The solution is built to interact with the DOM of third-party Applicant Tracking Systems, specifically  components used by Greenhouse.
+- **Backend**: Python (FastAPI), MongoDB, Pydantic (for data modeling).
+- **Frontend**: React,  (for icons),  (for toasts).
+- **Browser Extension**: JavaScript, DOM manipulation,  for background script communication,  for storing settings.
 - **File Handling**: On-the-fly DOCX generation () and transfer via base64 encoding.
 
 **key DB schema**
--   ****: Stores job-specific data.
-    -   : string (Used for matching)
-    -   : string (Plain text content)
-    -   : string (Plain text content)
--   ****: Stores general user information used for autofill (e.g., name, location, work authorization).
+-   ****:
+    -   : string
+    -   : string (e.g., saved, applied)
+    -   : string
+    -   : string
+    -   : object (Stores state for the What to do next feature)
 
 **changes in tech stack**
-- No changes were made to the core tech stack.
+- No changes to the core tech stack.
 
 **All files of reference**
--   : The main backend file that gathers data, generates files, and serves the extension. **This needs to be modified for the next task.**
--   : The core extension script, which was iterated on multiple times to fix dropdowns. Contains the working  logic.
--   : Used as a reference for UI text to ensure data mapping was correct.
+-   : The single source of truth for all backend logic. **CRITICAL file, but needs refactoring.**
+-   : The core logic for the extension's interaction with job sites.
+-   : Handles communication between the content script and the backend API.
+-   : The primary marketing page.
+-   : The application tracking dashboard.
+-   : The What to do next component.
 
-**Areas that need refactoring**
--   : The script is currently hardcoded for Greenhouse. It needs to be refactored to support multiple ATS (Lever, Ashby) by adding a detection layer and separate logic branches for each.
+**Areas that need refactoring**:
+-   ****: This file is over 5,800 lines long and contains all backend code (routes, data models, business logic). It is extremely difficult to maintain and should be broken down into a standard FastAPI project structure (e.g., , , ). **This is a critical architectural debt.**
+-   : The script is hardcoded for Greenhouse. It needs to be refactored to support multiple ATS (Lever, Ashby) by adding a detection layer.
 
 **key api endpoints**
--   : The single most important endpoint. The extension calls this with the current  to get a complete payload for autofilling, including profile data and file data.
+-   : Provides all data for the extension to fill a form.
+-   : Updates an application's status to applied. Called by the extension.
+-   : Fetches the What to do next data for an application.
+-   : Updates the completion status of a What to do next step.
+-   : Generates AI content for a What to do next step.
+-   : The job search endpoint.
 
 **Critical Info for New Agent**
-- Your immediate task is to implement the file naming convention (). This is a backend change in .
-- The dropdown filling logic in  is fragile and specific to Greenhouse. Be very careful if you need to modify it. The working solution involves dispatching keyboard events (, ) to the  element, not just clicking the container.
-- The project only supports Greenhouse right now. Expanding to Lever and Ashby is a future task that will require significant new logic.
+- Your immediate task is to address the job search data limitation. You must find the job scraper scripts (which have not been viewed yet), expand their search terms, and re-populate the database.
+- The backend is a single, massive  file. Be prepared to navigate a very long file to make changes. Proposing a refactor of this file should be a priority once the immediate issue is resolved.
+- The browser extension logic is split between  (DOM interaction) and  (authenticated API calls).
 
 **documents and test reports created in this job**
-- The agent created and updated a  file in the root directory for user testing.
-- No formal test reports were generated.
+- : Test report from the testing agent for the What to do next feature. The agent found and fixed a critical bug based on this report.
+- : Updated to reflect completed features and future tasks.
+- : The installable browser extension file, updated multiple times.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (Latest/Pending):** When you upload the resume and cover letter for each job. Can you submit them with the users FirstnameLastnameCV for Resume and FirstnameLastnameCL for cover letter. - **This is the next task.**
-2.  **User:** Okay I want to now include the optimized resume and the cover letter for each job the user applies for in the browser extension - **Completed.**
-3.  **User:** That worked! Now I want to keep it how it is. Where is the optimized resume and cover letter stored... - **Completed.** Confirmed the dropdown fix worked.
-4.  **User:** Provided console logs from  of the extension, showing continued failure. - **Addressed.**
-5.  **User:** Provided console logs showing another failed attempt. - **Addressed.**
-6.  **User:** Asked for clarification on installing the extension. - **Addressed.**
-7.  **User:** Provided logs from the first major rewrite, showing it also failed. - **Addressed.**
-8.  **User:** Provided initial logs showing , kicking off the dropdown debugging. - **Addressed.**
-9.  **User:** Asked for the download link. - **Addressed.**
-10. **User (Initial PRD):** Provided the detailed technical requirements for dropdown filling. - **Partially Implemented.**
+1.  **User**: Broaden search terms - Make the scrapers search for more job titles... (PENDING - This is the next task)
+2.  **User**: I searched up Business Analyst Job and Toronto, Ontario didnt find anything? (BUG REPORT - Investigated)
+3.  **User**: Asks to change How it works and Why choose us to emphasize the chrome extension. (COMPLETED)
+4.  **User**: Asks to change the homepage statistics. (COMPLETED)
+5.  **User**: Asks for the direct download link for the extension. (COMPLETED)
+6.  **User**: Asks for the chrome extension link and API URL. (COMPLETED)
+7.  **User**: Asks to add compelling why descriptions to the What to do next feature. (COMPLETED)
+8.  **User**: Asks to download the extension ZIP file to test. (ADDRESSED - Agent regenerated the zip)
+9.  **User**: Specifies AI content generation choice and data storage preference for the What to do next feature. (COMPLETED)
+10. **User**: Requests the What to do next feature. (COMPLETED)
 
 **Project Health Check:**
--   **Broken**: Functionality on Lever and Ashby is non-existent.
--   **Mocked**: N/A.
+-   **Broken**: Job search functionality is unreliable due to limited data.
+-   **Mocked**: N/A
+-   **Refactoring Needed**: The monolithic  is a critical liability and needs immediate attention after the job search issue is fixed.
 
 **3rd Party Integrations**
--   **Greenhouse**: The extension is actively developed to integrate with Greenhouse job application forms.
--   **Lever**: Planned but not implemented.
--   **Ashby**: Planned but not implemented.
+- **Greenhouse**: The extension actively integrates with Greenhouse job application forms.
+- **Lever**: Planned integration.
+- **Ashby**: Planned integration.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO
+-   **Testing agent used after significant changes**: YES. The agent used  to test the What to do next feature, which successfully identified and helped fix a critical bug.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None. The move to a Greenhouse-specific solution was a deliberate trade-off for functionality.
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
--   Not provided, but testing requires being logged into the main application via the extension popup to fetch profile data.
+- No credentials have been provided. To test the full application flow, one must sign up for an account, create a profile, and use the extension on a live Greenhouse job posting.
 
 **What agent forgot to execute**
-- The agent has not yet implemented the filename change from the user's most recent message.
-- Full support for Lever and Ashby, as mentioned in the initial problem statement, has not been implemented. This is a major pending piece of the original scope.</analysis>
+- The agent has not yet implemented the fix for the job search data issue, as it was the very last user request. All other requests from this session were addressed.
+- Major features from the original problem statement (Lever and Ashby support) remain in the backlog.</analysis>
