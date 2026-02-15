@@ -1574,13 +1574,22 @@ async def search_greenhouse(request: Request):
             existing_job_ids = set(j.get("job_id") for j in existing_cache.get("jobs", []))
         
         # Filter and process jobs
+        skipped_non_english = 0
+        skipped_applied = 0
+        skipped_query = 0
+        skipped_location = 0
+        expanded_phrases = expand_query(query) if query else []
+        logger.info(f"Expanded query phrases: {expanded_phrases}")
+        
         for job in all_raw_jobs:
             # Skip already applied jobs
             if job.get("job_id") in applied_job_ids:
+                skipped_applied += 1
                 continue
             
             # Skip non-English job postings
             if not is_english_job(job.get("title", "")):
+                skipped_non_english += 1
                 continue
             
             job_title = (job.get("title") or "").lower()
@@ -1592,7 +1601,6 @@ async def search_greenhouse(request: Request):
             # Query match logic with synonym expansion
             query_match = True
             if query_words:
-                expanded_phrases = expand_query(query)
                 if len(query_words) >= 2:
                     if is_fallback_search:
                         # FALLBACK MODE: Any keyword match
@@ -1610,6 +1618,10 @@ async def search_greenhouse(request: Request):
                 else:
                     # Single word - broad matching
                     query_match = any(word in search_text for word in query_words)
+            
+            if not query_match:
+                skipped_query += 1
+                continue
             
             # Location match logic using comprehensive location parsing
             location_match = True
