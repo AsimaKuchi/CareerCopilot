@@ -1665,7 +1665,6 @@ async def search_greenhouse(request: Request):
                     location_match = any(keyword in job_location for keyword in location_keywords) if location_keywords else True
             
             if not location_match:
-                skipped_location += 1
                 continue
             
             # Mark if this is a NEW job for the user
