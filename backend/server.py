@@ -1679,7 +1679,7 @@ async def search_greenhouse(request: Request):
                 job_for_match = {
                     "job_title": job.get("title"),
                     "employer_name": job.get("company"),
-                    "job_description": job.get("title", "") + " " + job.get("department", ""),
+                    "job_description": (job.get("title") or "") + " " + (job.get("department") or ""),
                     "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
                     "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
                     "job_is_remote": "remote" in job.get("location", "").lower(),
