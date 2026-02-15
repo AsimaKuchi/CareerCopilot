@@ -147,7 +147,7 @@ def is_english_job(title: str) -> bool:
 # ========================
 # Maps common search phrases to expanded variants for broader matching
 QUERY_SYNONYMS = {
-    "business analyst": ["business analyst", "business systems analyst", "business intelligence analyst", "ba ", "business analysis", "business operations analyst", "data analyst", "operations analyst", "strategy analyst", "systems analyst", "process analyst", "requirements analyst"],
+    "business analyst": ["business analyst", "business systems analyst", "business intelligence analyst", "business analysis", "business operations analyst", "data analyst", "operations analyst", "strategy analyst", "systems analyst", "process analyst", "requirements analyst"],
     "data analyst": ["data analyst", "data analytics", "analytics analyst", "bi analyst", "business intelligence analyst", "data analysis", "business analyst", "insights analyst"],
     "software engineer": ["software engineer", "software developer", "swe", "backend engineer", "frontend engineer", "full stack engineer", "fullstack engineer", "web developer"],
     "product manager": ["product manager", "product lead", "pm ", "product owner", "product management", "program manager"],
