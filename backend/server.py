@@ -1618,7 +1618,6 @@ async def search_greenhouse(request: Request):
                     query_match = any(word in search_text for word in query_words)
             
             if not query_match:
-                skipped_query += 1
                 continue
             
             # Location match logic using comprehensive location parsing
