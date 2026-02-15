@@ -1435,19 +1435,21 @@ async def search_greenhouse_jobs(query: str = "", location: str = "", limit: int
     
     logger.info(f"Greenhouse: fetched from {success_count} companies, total {len(all_jobs)} jobs")
     
-    # Filter by query and location
+    # Filter by query and location with synonym expansion
+    expanded_phrases = expand_query(query) if query else []
     filtered_jobs = []
     for job in all_jobs:
         job_title = (job.get("title") or "").lower()
         job_company = (job.get("company") or "").lower()
         job_dept = (job.get("department") or "").lower()
         job_location = (job.get("location") or "").lower()
+        search_text = f"{job_title} {job_company} {job_dept}"
         
-        # Match query - any word must match title, company, or department
+        # Match query - any word must match title, company, or department + synonym expansion
         query_match = not query_words or any(
             word in job_title or word in job_company or word in job_dept
             for word in query_words
-        )
+        ) or any(syn in job_title for syn in expanded_phrases)
         
         # Match location
         location_match = not location_lower or location_lower in job_location
