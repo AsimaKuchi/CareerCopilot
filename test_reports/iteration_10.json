@@ -1,0 +1,80 @@
+{
+  "summary": "Fixed critical bug in Greenhouse streaming search - UnboundLocalError for skipped_applied and skipped_non_english variables. All 12 backend tests now pass. Business Analyst search in Toronto returns 9+ results (was 0 before fixes).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_business_analyst_search.py",
+    "/app/test_reports/pytest/business_analyst_search_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed: UnboundLocalError in server.py line 1582/1587 - variables 'skipped_applied' and 'skipped_non_english' were used but not initialized in stream_multi_platform_jobs() function"
+  ],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_business_analyst_search.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "Skipped per request"
+  },
+  "seed_data_creation": "Test session token 'test_session_ba_970e1447' was pre-created in MongoDB by main agent",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Business Analyst search bug is fixed. The Greenhouse streaming search endpoint (/api/jobs/greenhouse/search) now works correctly. Test file: /app/backend/tests/test_business_analyst_search.py covers health check, SSE streaming, auth validation, NoneType fix, sort fix, location filtering, and synonym expansion. All fixes verified: 1) Company lists expanded, 2) QUERY_SYNONYMS enabled, 3) NoneType fix for department field (job.get('department') or ''), 4) Sort fix using str() consistently, 5) Unbound variable fix for skipped_applied and skipped_non_english.",
+  "verified_features": [
+    "GET /api/public/health returns 11,403 jobs (>11,000 threshold)",
+    "POST /api/jobs/greenhouse/search with 'business analyst' + 'toronto, ontario' returns 9 jobs (was 0)",
+    "POST /api/jobs/greenhouse/search with 'analyst' + no location returns many jobs",
+    "POST /api/jobs/greenhouse/search with 'software engineer' returns many jobs",
+    "POST /api/jobs/greenhouse/search with 'data analyst' + 'canada' returns jobs",
+    "Location filtering excludes London, England jobs from Toronto searches",
+    "Synonym expansion works - 'business analyst' finds 'data analyst', 'financial analyst' etc",
+    "Auth required - 401 returned without token",
+    "Auth required - 401 returned with invalid token",
+    "NoneType fix verified - search handles jobs with None department field",
+    "Sort fix verified - search completes without type comparison errors"
+  ],
+  "tests_executed": {
+    "backend_api_tests": {
+      "file": "/app/backend/tests/test_business_analyst_search.py",
+      "count": 12,
+      "passed": 12,
+      "failed": 0,
+      "categories": [
+        "TestHealthEndpoint (2 tests) - health status, job count >= 11000",
+        "TestGreenhouseSearchSSE (4 tests) - business analyst toronto, analyst no location, software engineer, data analyst canada",
+        "TestLocationFiltering (1 test) - Toronto excludes London England",
+        "TestSynonymExpansion (1 test) - business analyst finds data analyst",
+        "TestAuthRequired (2 tests) - no token, invalid token",
+        "TestNoneTypeFix (1 test) - handles None department",
+        "TestSortFix (1 test) - sorting doesn't crash"
+      ]
+    }
+  },
+  "bug_fixed": {
+    "issue": "Greenhouse streaming search returning 0 results and crashing with UnboundLocalError",
+    "root_cause": "Variables 'skipped_applied' and 'skipped_non_english' were used at lines 1582 and 1587 in stream_multi_platform_jobs() but never initialized",
+    "fix_applied": "Added initialization: 'skipped_applied = 0' and 'skipped_non_english = 0' after 'matched_jobs = []'",
+    "files_modified": ["/app/backend/server.py"],
+    "lines_changed": "Lines 1558-1561 - added two counter initialization lines"
+  },
+  "original_bug_rca": {
+    "reported_issue": "Searching 'Business Analyst' in 'Toronto, Ontario' returned 0 results",
+    "root_causes": [
+      "1. Limited company lists in scrapers (now expanded to 55+ Greenhouse, 10+ Lever companies)",
+      "2. No synonym expansion for job titles (added QUERY_SYNONYMS dictionary with 15+ job families)",
+      "3. NoneType bug: job.get('department', '') + ... crashed when department was None (fixed with 'or \"\"')",
+      "4. Sort error comparing str/int types (fixed by using str() consistently)",
+      "5. UnboundLocalError for counter variables (fixed by initializing skipped_applied and skipped_non_english)"
+    ],
+    "current_status": "All root causes addressed. Search returns 9+ results for 'business analyst' in 'toronto, ontario'"
+  }
+}
