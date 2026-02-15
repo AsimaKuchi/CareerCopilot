@@ -369,8 +369,21 @@ def is_job_valid_for_canadian_search(parsed_location: Dict, user_city: str = Non
     raw_lower = parsed_location["raw_location"].lower()
     if "canada" in raw_lower:
         return True, "Job mentions Canada"
+    
+    # Non-Canadian country indicators
+    non_canadian_indicators = ["england", "united kingdom", "uk,", ", uk", "ireland", "australia",
+                               "germany", "france", "spain", "italy", "netherlands", "singapore",
+                               "japan", "india", "brazil", "mexico", "israel"]
+    has_non_canadian = any(nc in raw_lower for nc in non_canadian_indicators)
+    
+    # Ambiguous cities that exist in both Canada and other countries
+    ambiguous_cities = {"london", "hamilton", "richmond", "victoria", "windsor", "kingston"}
+    
     for city in CANADIAN_CITIES.keys():
         if city in raw_lower:
+            # Skip ambiguous cities if non-Canadian country is mentioned
+            if city in ambiguous_cities and has_non_canadian:
+                continue
             return True, f"Job mentions {city.title()}"
     
     # Unknown location - reject to be safe
