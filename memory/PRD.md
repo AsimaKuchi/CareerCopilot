@@ -38,9 +38,19 @@ Build a website that helps users find jobs best suited for them based on what in
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (February 11, 2025)
+## What's Been Implemented (February 15, 2026)
 
 ### Latest Updates ✅
+- **Job Search Data Expansion & Bug Fixes (Feb 15, 2026)**:
+  - Expanded Greenhouse company list from 32 to 60 companies (added hootsuite, d2l, ritual, reddit, pinterest, lyft, etc.)
+  - Expanded Lever company list from 3 to 10 companies (added wealthsimple, spotify, plaid, pointclickcare, etc.)
+  - Database grew from 5,455 to 11,403+ jobs; Canadian jobs from 509 to 969; Toronto jobs from 111 to 316
+  - Added QUERY_SYNONYMS dictionary with 15+ job families for intelligent search expansion
+  - "Business Analyst" search now returns 9+ relevant results (was 0 before)
+  - Fixed critical NoneType bug: `job.get("department")` could return None causing crash
+  - Fixed sort TypeError: mixed str/int comparison in job result sorting
+  - Fixed location ambiguity: "London, England" no longer misidentified as London, Ontario
+  - Improved `location_utils.py` with ambiguous city detection for 6 cities (London, Hamilton, Richmond, Victoria, Windsor, Kingston)
 - **"What to Do Next" Feature (NEW - Feb 11, 2025)**:
   - Checklist card appears under each "applied" job with 6 actionable steps
   - Steps: Follow Company, Find Recruiter, Send Message, Prep Interview Qs, Track Outcome, Follow Up
