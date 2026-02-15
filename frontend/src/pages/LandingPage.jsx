@@ -217,12 +217,16 @@ export default function LandingPage() {
         {/* Why Choose Us Section */}
         <section id="how-it-works" className="max-w-6xl mx-auto py-20">
           <div className="text-center mb-16 animate-fade-in">
+            <div className="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Chrome className="w-4 h-4" />
+              Chrome Extension
+            </div>
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              Why choose a quality-first approach?
+              Apply to jobs in seconds, not hours
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Most job tools optimize for volume.{" "}
-              <span className="text-foreground font-semibold">We optimize for interviews.</span>
+              Our Chrome extension lives right where you job hunt.{" "}
+              <span className="text-foreground font-semibold">Find a job. Click. Apply. Done.</span>
             </p>
           </div>
 
