@@ -1667,7 +1667,8 @@ async def search_greenhouse(request: Request):
                     location_keywords = [w for w in location_words if w not in ["area", "greater", "the", "of", "in"]]
                     location_match = any(keyword in job_location for keyword in location_keywords) if location_keywords else True
             
-            if not (query_match and location_match):
+            if not location_match:
+                skipped_location += 1
                 continue
             
             # Mark if this is a NEW job for the user
