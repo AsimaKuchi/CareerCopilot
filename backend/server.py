@@ -1557,6 +1557,8 @@ async def search_greenhouse(request: Request):
         
         jobs_found = 0
         matched_jobs = []
+        skipped_applied = 0
+        skipped_non_english = 0
         
         # PARALLEL FETCH: Get all jobs at once (much faster than sequential)
         total_companies = len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES)
