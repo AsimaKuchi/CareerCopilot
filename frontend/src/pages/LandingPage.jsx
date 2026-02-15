@@ -173,30 +173,38 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="glass-light text-center p-6 shadow-sm">
               <CardContent className="p-0">
-                <p className="text-2xl font-bold text-foreground">2,800+</p>
-                <p className="text-sm text-muted-foreground mt-1">users reviewing applications before applying</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-light text-center p-6 shadow-sm">
-              <CardContent className="p-0">
-                <p className="text-2xl font-bold text-foreground">45,000+</p>
-                <p className="text-sm text-muted-foreground mt-1">applications reviewed — not blindly sent</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-light text-center p-6 shadow-sm">
-              <CardContent className="p-0">
-                <div className="flex justify-center mb-1">
-                  <CheckCircle className="w-6 h-6 text-emerald-500" />
+                <div className="flex justify-center mb-2">
+                  <Clock className="w-6 h-6 text-indigo-500" />
                 </div>
-                <p className="text-sm text-muted-foreground">Human-approved applications only</p>
+                <p className="text-2xl font-bold text-foreground">25+ min</p>
+                <p className="text-sm text-muted-foreground mt-1">Average time saved per application</p>
               </CardContent>
             </Card>
             <Card className="glass-light text-center p-6 shadow-sm">
               <CardContent className="p-0">
-                <div className="flex justify-center mb-1">
-                  <MapPin className="w-6 h-6 text-indigo-500" />
+                <div className="flex justify-center mb-2">
+                  <Zap className="w-6 h-6 text-amber-500" />
                 </div>
-                <p className="text-sm text-muted-foreground">Ontario + Canada-focused job discovery</p>
+                <p className="text-2xl font-bold text-foreground">3–5x faster</p>
+                <p className="text-sm text-muted-foreground mt-1">From job page → ready to submit</p>
+              </CardContent>
+            </Card>
+            <Card className="glass-light text-center p-6 shadow-sm">
+              <CardContent className="p-0">
+                <div className="flex justify-center mb-2">
+                  <Target className="w-6 h-6 text-emerald-500" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">Quality-first</p>
+                <p className="text-sm text-muted-foreground mt-1">Strong-fit roles only — no resume spam</p>
+              </CardContent>
+            </Card>
+            <Card className="glass-light text-center p-6 shadow-sm">
+              <CardContent className="p-0">
+                <div className="flex justify-center mb-2">
+                  <Shield className="w-6 h-6 text-blue-500" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">100% human</p>
+                <p className="text-sm text-muted-foreground mt-1">You approve every submission</p>
               </CardContent>
             </Card>
           </div>
