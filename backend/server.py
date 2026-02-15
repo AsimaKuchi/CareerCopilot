@@ -1724,7 +1724,7 @@ async def search_greenhouse(request: Request):
             if jobs_found >= 100:
                 break
         
-        logger.info(f"Search filter stats: total={len(all_raw_jobs)}, skipped_non_english={skipped_non_english}, skipped_applied={skipped_applied}, skipped_query={skipped_query}, skipped_location={skipped_location}, matched={jobs_found}")
+        logger.info(f"Search complete: {jobs_found} jobs matched from {len(all_raw_jobs)} total")
         
         # Sort jobs: new for user first, then recently posted, then by date
         matched_jobs.sort(key=lambda x: (
