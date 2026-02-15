@@ -19,6 +19,9 @@ import {
   AlertTriangle,
   MapPin,
   Zap,
+  Chrome,
+  MousePointerClick,
+  Download,
 } from "lucide-react";
 
 // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
