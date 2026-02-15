@@ -141,6 +141,38 @@ def is_english_job(title: str) -> bool:
             return False
     return True
 
+
+# ========================
+# QUERY SYNONYM EXPANSION
+# ========================
+# Maps common search phrases to expanded variants for broader matching
+QUERY_SYNONYMS = {
+    "business analyst": ["business analyst", "business systems analyst", "business intelligence analyst", "ba ", "business analysis", "business operations analyst"],
+    "data analyst": ["data analyst", "data analytics", "analytics analyst", "bi analyst", "business intelligence analyst", "data analysis"],
+    "software engineer": ["software engineer", "software developer", "swe", "backend engineer", "frontend engineer", "full stack engineer", "fullstack engineer"],
+    "product manager": ["product manager", "product lead", "pm ", "product owner", "product management"],
+    "project manager": ["project manager", "project lead", "pmo", "project management", "scrum master"],
+    "data scientist": ["data scientist", "data science", "ml engineer", "machine learning engineer", "applied scientist"],
+    "ux designer": ["ux designer", "ui designer", "product designer", "ux/ui", "ui/ux", "user experience"],
+    "devops": ["devops", "site reliability", "sre", "platform engineer", "infrastructure engineer", "cloud engineer"],
+    "qa": ["qa engineer", "quality assurance", "test engineer", "sdet", "qa analyst"],
+    "marketing": ["marketing manager", "growth marketing", "digital marketing", "marketing analyst", "marketing coordinator"],
+    "financial analyst": ["financial analyst", "finance analyst", "fp&a", "financial planning"],
+    "hr": ["human resources", "hr manager", "hr business partner", "people operations", "talent acquisition", "recruiter"],
+    "accountant": ["accountant", "accounting", "cpa", "bookkeeper", "accounts payable", "accounts receivable"],
+    "consultant": ["consultant", "consulting", "advisory", "strategy consultant", "management consultant"],
+    "operations": ["operations manager", "operations analyst", "ops manager", "business operations"],
+}
+
+def expand_query(query: str) -> list:
+    """Expand a search query with synonyms for broader matching."""
+    query_lower = query.lower().strip()
+    expanded = [query_lower]
+    for key, synonyms in QUERY_SYNONYMS.items():
+        if key in query_lower or query_lower in key:
+            expanded.extend(synonyms)
+    return list(set(expanded))
+
 # Static downloads directory - files served directly by FastAPI static mount
 STATIC_DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "static_downloads")
 os.makedirs(STATIC_DOWNLOADS_DIR, exist_ok=True)
