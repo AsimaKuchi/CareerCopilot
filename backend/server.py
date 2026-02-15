@@ -1574,12 +1574,7 @@ async def search_greenhouse(request: Request):
             existing_job_ids = set(j.get("job_id") for j in existing_cache.get("jobs", []))
         
         # Filter and process jobs
-        skipped_non_english = 0
-        skipped_applied = 0
-        skipped_query = 0
-        skipped_location = 0
         expanded_phrases = expand_query(query) if query else []
-        logger.info(f"Expanded query phrases: {expanded_phrases}")
         
         for job in all_raw_jobs:
             # Skip already applied jobs
