@@ -61,6 +61,11 @@ Build a website that helps users find jobs best suited for them based on what in
   - Uses GPT-4o via Emergent LLM key; results cached 7 days in `career_analyses` collection
   - `DELETE /api/ai/career-paths` — clears cache to force regeneration
 
+- **Learning Resources Endpoint (Feb 21, 2026)**:
+  - `GET /api/ai/learning-resources?skills=Tableau,Python,SQL` — curated free/low-cost resources for skill gaps
+  - 46 skills covered with 60+ resources from Coursera, Khan Academy, freeCodeCamp, Google, Microsoft, AWS, HubSpot, etc.
+  - Fuzzy matching for partial skill names; summary includes total hours, free vs paid count, estimated completion time
+
 - **Skills Dropdown Combobox (Feb 15, 2026)**:
   - Replaced plain text input with searchable multi-select dropdown for 350+ predefined skills
   - Skills organized across 30+ categories including tech, business, healthcare, trades, hospitality, legal, etc.
