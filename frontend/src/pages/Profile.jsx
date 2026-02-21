@@ -58,6 +58,8 @@ export default function Profile({ user }) {
   const [newLocation, setNewLocation] = useState("");
   const [newIndustry, setNewIndustry] = useState("");
   const [editingSkillIndex, setEditingSkillIndex] = useState(null);
+  const [prefillSuggestions, setPrefillSuggestions] = useState(null);
+  const [prefillLoading, setPrefillLoading] = useState(false);
 
   const yearsOptions = [
     { value: "<1", label: "<1 year" },
