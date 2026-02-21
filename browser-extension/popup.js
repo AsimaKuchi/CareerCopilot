@@ -55,7 +55,7 @@ async function handleConnect() {
   const apiUrl = elements.apiUrl.value.trim();
   
   if (!apiUrl) {
-    showError(elements.loginError, 'Please enter your JobMatch AI URL');
+    showError(elements.loginError, 'Please enter your CareerCopilot AI URL');
     return;
   }
 
@@ -78,7 +78,7 @@ async function handleConnect() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error('Please log in to JobMatch AI website first, then try again.');
+        throw new Error('Please log in to CareerCopilot AI website first (Sign In with Google), then try connecting again.');
       }
       throw new Error('Could not connect. Check the URL and try again.');
     }
