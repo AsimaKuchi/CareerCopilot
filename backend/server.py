@@ -3284,7 +3284,8 @@ Return ONLY valid JSON, no markdown."""
         clean = response.strip()
         clean = re.sub(r'^```json\s*', '', clean)
         clean = re.sub(r'\s*```$', '', clean)
-        result = json.loads(clean.strip())
+        import json as json_mod
+        result = json_mod.loads(clean.strip())
 
         if "recommended_paths" not in result:
             raise ValueError("Missing recommended_paths")
@@ -3307,8 +3308,8 @@ Return ONLY valid JSON, no markdown."""
         logger.info(f"Generated career path analysis for user {user.user_id}")
         return result
 
-    except json.JSONDecodeError as e:
-        logger.error(f"Career paths JSON parse error: {e}")
+    except ValueError as e:
+        logger.error(f"Career paths parse error: {e}")
         raise HTTPException(status_code=500, detail="Failed to parse career analysis. Please try again.")
     except Exception as e:
         logger.error(f"Career path analysis error: {e}")
