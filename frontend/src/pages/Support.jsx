@@ -43,6 +43,7 @@ export default function Support() {
     "Billing Question",
     "Job Search Help",
     "Resume/Cover Letter Help",
+    "Leave a Review",
     "Other"
   ];
 
