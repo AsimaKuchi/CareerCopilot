@@ -452,6 +452,53 @@ export default function Profile({ user }) {
             </CardContent>
           </Card>
 
+          {/* Pre-fill from Resume Banner */}
+          {prefillLoading && (
+            <Card className="border-indigo-200 bg-indigo-50/50 animate-fade-in">
+              <CardContent className="py-4 flex items-center gap-3">
+                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin shrink-0" />
+                <p className="text-sm text-indigo-700">Analyzing your resume for profile data...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {prefillSuggestions && !prefillLoading && (
+            <Card className="border-indigo-200 bg-indigo-50/50 animate-fade-in" data-testid="prefill-banner">
+              <CardContent className="py-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm text-indigo-800">We found profile data in your resume</p>
+                      <p className="text-xs text-indigo-600 mt-0.5">Only empty fields will be filled — your existing data won't be changed.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setPrefillSuggestions(null)} className="text-indigo-400 hover:text-indigo-600 p-1">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {prefillSuggestions.phone_number && <Badge variant="outline" className="bg-white">Phone: {prefillSuggestions.phone_number}</Badge>}
+                  {prefillSuggestions.highest_education && <Badge variant="outline" className="bg-white">Education: {prefillSuggestions.highest_education}</Badge>}
+                  {prefillSuggestions.skills && <Badge variant="outline" className="bg-white">{prefillSuggestions.skills.length} skills</Badge>}
+                  {prefillSuggestions.new_skills && <Badge variant="outline" className="bg-white">{prefillSuggestions.new_skills.length} new skills</Badge>}
+                  {prefillSuggestions.job_titles && <Badge variant="outline" className="bg-white">Job titles: {prefillSuggestions.job_titles.join(", ")}</Badge>}
+                  {prefillSuggestions.address_city && <Badge variant="outline" className="bg-white">Location: {prefillSuggestions.address_city}</Badge>}
+                  {prefillSuggestions.experience_years && <Badge variant="outline" className="bg-white">{prefillSuggestions.experience_years} yrs experience</Badge>}
+                  {prefillSuggestions.first_name && <Badge variant="outline" className="bg-white">Name: {prefillSuggestions.first_name} {prefillSuggestions.last_name || ""}</Badge>}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={applyPrefill} data-testid="apply-prefill-btn">
+                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />Pre-fill Profile
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setPrefillSuggestions(null)}>
+                    Dismiss
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Skills Card */}
           <Card className="glass-light animate-fade-in-delay-2" data-testid="skills-card">
             <CardHeader>
