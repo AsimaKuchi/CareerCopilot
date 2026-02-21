@@ -201,6 +201,58 @@ export default function Profile({ user }) {
     }
   };
 
+  const extractFieldsFromResume = async () => {
+    setPrefillLoading(true);
+    try {
+      const res = await fetch(`${API}/profile/resume/extract-fields`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.has_suggestions) {
+          setPrefillSuggestions(data.suggestions);
+        }
+      }
+    } catch {
+      /* silent */
+    } finally {
+      setPrefillLoading(false);
+    }
+  };
+
+  const applyPrefill = async () => {
+    if (!prefillSuggestions) return;
+    const updates = {};
+    const s = prefillSuggestions;
+
+    if (s.phone_number) updates.phone_number = s.phone_number;
+    if (s.highest_education) updates.highest_education = s.highest_education;
+    if (s.address_city) updates.address_city = s.address_city;
+    if (s.address_state) updates.address_state = s.address_state;
+    if (s.address_country) updates.address_country = s.address_country;
+    if (s.experience_years) updates.experience_years = s.experience_years;
+    if (s.first_name) updates.first_name = s.first_name;
+    if (s.last_name) updates.last_name = s.last_name;
+
+    if (s.skills) {
+      updates.skills = s.skills.map(name => ({ name, years: null }));
+    } else if (s.new_skills) {
+      const existing = profile?.skills || [];
+      const added = s.new_skills.map(name => ({ name, years: null }));
+      updates.skills = [...existing, ...added];
+    }
+
+    if (s.job_titles) updates.job_titles = s.job_titles;
+
+    await updateProfile(updates);
+    setPrefillSuggestions(null);
+    toast.success("Profile updated with resume data!");
+    fetchProfile();
+  };
+
+
+
   const addSkill = () => {
     if (!newSkill.trim()) return;
     // Add skill as object with name and optional years
