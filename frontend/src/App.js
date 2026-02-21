@@ -9,6 +9,7 @@ import Profile from "@/pages/Profile";
 import JobSearch from "@/pages/JobSearch";
 import Applications from "@/pages/Applications";
 import InterviewPrep from "@/pages/InterviewPrep";
+import CareerPaths from "@/pages/CareerPaths";
 import Support from "@/pages/Support";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -160,6 +161,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             {({ user }) => <InterviewPrep user={user} />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/career-paths"
+        element={
+          <ProtectedRoute>
+            {({ user }) => <CareerPaths user={user} />}
           </ProtectedRoute>
         }
       />

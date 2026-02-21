@@ -21,6 +21,7 @@ import {
   X,
   Home,
   HelpCircle,
+  Compass,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -48,6 +49,7 @@ export const Navbar = ({ user }) => {
     { icon: Search, label: "Find Jobs", path: "/jobs" },
     { icon: FileText, label: "Applications", path: "/applications" },
     { icon: MessageSquare, label: "Interview Prep", path: "/interview-prep" },
+    { icon: Compass, label: "Career Paths", path: "/career-paths" },
     { icon: User, label: "Profile", path: "/profile" },
     { icon: HelpCircle, label: "Support", path: "/support" },
     { icon: Home, label: "Home", path: "/" },
