@@ -7,7 +7,7 @@ import time
 def test_broader_analyst_search():
     """Test broader analyst searches to understand job availability"""
     
-    base_url = "https://auto-apply-hub-2.preview.emergentagent.com"
+    base_url = "https://copilot-ai-7.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"

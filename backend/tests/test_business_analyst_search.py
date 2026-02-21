@@ -20,7 +20,7 @@ import time
 # Get BASE_URL from environment - DO NOT add default
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://auto-apply-hub-2.preview.emergentagent.com"
+    BASE_URL = "https://copilot-ai-7.preview.emergentagent.com"
 
 # Test credentials from main agent
 TEST_SESSION_TOKEN = "test_session_ba_970e1447"

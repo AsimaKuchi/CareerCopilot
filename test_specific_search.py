@@ -6,7 +6,7 @@ import time
 
 def test_exact_user_search():
     """Test the EXACT search scenario from review request"""
-    base_url = "https://auto-apply-hub-2.preview.emergentagent.com"
+    base_url = "https://copilot-ai-7.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     print("🎯 TESTING EXACT USER SEARCH SCENARIO")
