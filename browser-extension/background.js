@@ -28,12 +28,68 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.runtime.openOptionsPage();
   }
   
+  // Handle profile fetch from popup (with proper cookie handling)
+  if (message.action === 'FETCH_PROFILE') {
+    handleFetchProfile(message.apiUrl).then(sendResponse);
+    return true; // Keep channel open for async response
+  }
+  
   // Handle submission tracking from content script
   if (message.action === 'TRACK_SUBMISSION') {
     handleTrackSubmission(message.data).then(sendResponse);
     return true; // Keep channel open for async response
   }
 });
+
+// Fetch user profile with cookies (runs in background service worker)
+async function handleFetchProfile(apiUrl) {
+  console.log('[CareerCopilot AI] Fetching profile from:', apiUrl);
+  
+  try {
+    // First, check if we have any cookies for this domain
+    const url = new URL(apiUrl);
+    const cookies = await chrome.cookies.getAll({ domain: url.hostname });
+    
+    console.log('[CareerCopilot AI] Found cookies:', cookies.length);
+    
+    // Make API call with credentials (cookies)
+    const response = await fetch(`${apiUrl}/api/profile`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        return { 
+          error: 'Please sign in to CareerCopilot AI website first (use "Sign in with Google"), then try connecting again.' 
+        };
+      }
+      return { 
+        error: `Connection failed (${response.status}). Please check the URL and try again.` 
+      };
+    }
+    
+    const userData = await response.json();
+    console.log('[CareerCopilot AI] Profile fetched successfully');
+    return { data: userData };
+    
+  } catch (error) {
+    console.error('[CareerCopilot AI] Error fetching profile:', error);
+    
+    // Provide helpful error messages based on error type
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      return { 
+        error: 'Could not reach CareerCopilot AI. Please check the URL and your internet connection.' 
+      };
+    }
+    
+    return { error: error.message || 'Connection failed. Please try again.' };
+  }
+}
 
 // Track submission API call (runs in background with cookie access)
 async function handleTrackSubmission(data) {
