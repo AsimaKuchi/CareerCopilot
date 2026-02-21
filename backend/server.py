@@ -7489,6 +7489,15 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
+
+@public_router.get("/extension/download")
+async def download_extension():
+    path = "/app/browser-extension.zip"
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Extension file not found")
+    return FileResponse(path, filename="CareerCopilot-Extension.zip", media_type="application/zip")
+
+
 @api_router.get("/test-download")
 async def test_download():
     """Test endpoint - downloads a simple DOCX file without authentication."""
