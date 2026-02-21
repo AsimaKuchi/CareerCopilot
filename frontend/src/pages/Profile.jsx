@@ -189,6 +189,8 @@ export default function Profile({ user }) {
       
       setProfile(prev => ({ ...prev, resume_filename: response.data.filename, resume_text: "uploaded" }));
       toast.success("Resume uploaded successfully!");
+      // Trigger field extraction for pre-fill
+      extractFieldsFromResume();
     } catch (error) {
       console.error("Resume upload error:", error);
       const message = error.response?.data?.detail || error.message || "Failed to upload resume";
