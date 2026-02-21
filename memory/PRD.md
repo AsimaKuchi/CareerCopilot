@@ -1,4 +1,4 @@
-# JobMatch AI - Product Requirements Document
+# CareerCopilot AI - Product Requirements Document
 
 ## Original Problem Statement
 Build a website that helps users find jobs best suited for them based on what info they provide and automatically applies to them based off their approval. Also optimizes resumes to ATS standard based off each job, using their resume. Make a cover letter for each job and interview tips and prep.
@@ -51,6 +51,15 @@ Build a website that helps users find jobs best suited for them based on what in
   - Fixed sort TypeError: mixed str/int comparison in job result sorting
   - Fixed location ambiguity: "London, England" no longer misidentified as London, Ontario
   - Improved `location_utils.py` with ambiguous city detection for 6 cities (London, Hamilton, Richmond, Victoria, Windsor, Kingston)
+
+- **Website Rename (Feb 15, 2026)**:
+  - Renamed from "JobMatch AI" to "CareerCopilot AI" across all frontend pages, navbar, backend responses, and HTML title
+
+- **Skills Dropdown Combobox (Feb 15, 2026)**:
+  - Replaced plain text input with searchable multi-select dropdown for 150+ predefined skills
+  - Skills organized across 15+ categories: Programming, Cloud/DevOps, Data, AI/ML, Business, Finance, Marketing, HR, etc.
+  - Users can search/filter predefined skills AND type custom skills not in the list
+  - Portal-based dropdown rendering to prevent z-index/overflow clipping issues
 - **"What to Do Next" Feature (NEW - Feb 11, 2025)**:
   - Checklist card appears under each "applied" job with 6 actionable steps
   - Steps: Follow Company, Find Recruiter, Send Message, Prep Interview Qs, Track Outcome, Follow Up
