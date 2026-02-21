@@ -3156,6 +3156,174 @@ Generate interview prep for {req.job_title} at {req.company} following this stru
         raise HTTPException(status_code=500, detail="Failed to generate interview prep")
 
 
+
+# ========================
+# CAREER PATH ANALYSIS
+# ========================
+
+@api_router.post("/ai/career-paths")
+async def analyze_career_paths(request: Request):
+    """Analyze user's resume and profile to suggest realistic career paths."""
+    user = await get_current_user(request)
+
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+
+    if not profile:
+        raise HTTPException(status_code=400, detail="Please complete your profile first")
+
+    profile = decrypt_sensitive_data(profile)
+
+    # Check for cached analysis (within 7 days)
+    cached = await db.career_analyses.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+
+    if cached:
+        try:
+            cached_date = datetime.fromisoformat(cached.get("created_at", ""))
+            age_days = (datetime.now(timezone.utc) - cached_date).days
+            if age_days < 7:
+                logger.info(f"Returning cached career analysis (age: {age_days} days)")
+                return cached.get("analysis")
+        except Exception:
+            pass
+
+    resume_text = profile.get("resume_text", "")
+    if not resume_text or len(resume_text) < 100:
+        raise HTTPException(status_code=400, detail="Please upload your resume for career path analysis")
+
+    skills = get_skill_names(profile.get("skills", []))
+    experience_years = profile.get("experience_years", 0)
+    current_titles = profile.get("job_titles", [])
+    education = profile.get("highest_education", "")
+    seniority = profile.get("seniority_level", "")
+    industries = profile.get("industries", [])
+    location = profile.get("address_city", "") or profile.get("address_state", "") or profile.get("address_country", "")
+
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"career_paths_{user.user_id}_{uuid.uuid4().hex[:8]}",
+        system_message="""You are an expert career advisor with deep knowledge of career transitions, salary data, and skill requirements.
+
+Analyze a person's resume and suggest realistic career paths.
+
+RULES:
+1. Only suggest paths where they have 60%+ of required skills
+2. Include 3-5 paths: current path advancement, adjacent moves, and 1-2 stretch roles
+3. Base salary estimates on real market data (conservative, not optimistic)
+4. Provide specific, actionable skill gaps
+
+OUTPUT FORMAT (JSON only, no markdown):
+{
+  "current_path": {
+    "title": "Business Analyst",
+    "salary_avg": 75000,
+    "market_demand": "high",
+    "job_security": "stable",
+    "growth_potential": "moderate"
+  },
+  "recommended_paths": [
+    {
+      "title": "Data Analyst",
+      "match_score": 85,
+      "category": "adjacent",
+      "skills_you_have": ["SQL", "Excel", "Python"],
+      "skills_to_learn": ["Tableau", "R", "Statistical Analysis"],
+      "salary_range": {"min": 70000, "max": 95000, "avg": 85000},
+      "salary_increase": "+$10k",
+      "time_to_transition": "3-6 months",
+      "market_demand": "high",
+      "job_count_estimate": 1200,
+      "difficulty": "moderate",
+      "reasoning": "Your SQL and Python skills transfer directly. Adding Tableau would make you highly competitive.",
+      "next_steps": [
+        "Learn Tableau (free course, 20 hours)",
+        "Build 2-3 portfolio projects with data visualization",
+        "Apply to junior Data Analyst roles"
+      ]
+    }
+  ]
+}
+
+CATEGORIES: "current" (advance in role), "adjacent" (easy transition), "stretch" (requires more effort)
+MARKET DEMAND: "very_high", "high", "medium", "low"
+TIME TO TRANSITION: "1-3 months", "3-6 months", "6-12 months", "1-2 years"
+DIFFICULTY: "easy" (80%+ match), "moderate" (60-80%), "hard" (<60%)"""
+    ).with_model("openai", "gpt-4o")
+
+    skills_text = ", ".join(skills[:30]) if skills else "Not specified"
+    titles_text = ", ".join(current_titles) if current_titles else "Not specified"
+    industries_text = ", ".join(industries) if industries else "Any"
+
+    prompt = f"""Analyze this person's career and suggest realistic next career paths.
+
+PROFILE:
+- Years of Experience: {experience_years}
+- Current/Target Titles: {titles_text}
+- Skills: {skills_text}
+- Education: {education or 'Not specified'}
+- Seniority: {seniority or 'Not specified'}
+- Industries: {industries_text}
+- Location: {location or 'Canada'}
+
+RESUME (trimmed):
+{resume_text[:4000]}
+
+Suggest 3-5 realistic career paths with salary ranges for {location or 'Canadian market'}.
+Return ONLY valid JSON, no markdown."""
+
+    try:
+        response = await chat.send_message(UserMessage(text=prompt))
+
+        clean = response.strip()
+        clean = re.sub(r'^```json\s*', '', clean)
+        clean = re.sub(r'\s*```$', '', clean)
+        result = json.loads(clean.strip())
+
+        if "recommended_paths" not in result:
+            raise ValueError("Missing recommended_paths")
+
+        result["generated_at"] = datetime.now(timezone.utc).isoformat()
+        result["user_location"] = location
+        result["experience_years"] = experience_years
+
+        await db.career_analyses.update_one(
+            {"user_id": user.user_id},
+            {"$set": {
+                "user_id": user.user_id,
+                "analysis": result,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "resume_hash": hash(resume_text[:500]),
+            }},
+            upsert=True,
+        )
+
+        logger.info(f"Generated career path analysis for user {user.user_id}")
+        return result
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Career paths JSON parse error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse career analysis. Please try again.")
+    except Exception as e:
+        logger.error(f"Career path analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@api_router.delete("/ai/career-paths")
+async def clear_career_analysis(request: Request):
+    """Clear cached career analysis to force regeneration."""
+    user = await get_current_user(request)
+    await db.career_analyses.delete_many({"user_id": user.user_id})
+    return {"message": "Career analysis cache cleared"}
+
+
+
 # ========================
 # JOB COMPARISON / ANALYZE MATCH ROUTES
 # ========================
