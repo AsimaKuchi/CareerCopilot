@@ -67,23 +67,39 @@ async function handleConnect() {
   hideError(elements.loginError);
 
   try {
-    // Try to fetch user profile from the API
-    const response = await fetch(`${cleanUrl}/api/profile`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
+    // Step 1: Check if the API is reachable (non-credentialed health check)
+    try {
+      const healthResponse = await fetch(`${cleanUrl}/api/health`, {
+        method: 'GET',
+        credentials: 'omit' // No credentials for initial check
+      });
+      
+      if (!healthResponse.ok) {
+        throw new Error('Could not reach CareerCopilot AI. Please check the URL and try again.');
       }
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Please log in to CareerCopilot AI website first (Sign In with Google), then try connecting again.');
-      }
-      throw new Error('Could not connect. Check the URL and try again.');
+    } catch (healthError) {
+      // Network error or API unreachable
+      throw new Error('Could not connect to CareerCopilot AI. Please check the URL is correct.');
     }
-
-    const userData = await response.json();
+    
+    // Step 2: Now try to fetch profile using a different approach
+    // Since CORS with credentials from extensions is tricky, we use background script
+    const userData = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        { action: 'FETCH_PROFILE', apiUrl: cleanUrl },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error('Extension error. Please reload and try again.'));
+            return;
+          }
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
+          }
+          resolve(response.data);
+        }
+      );
+    });
     
     // Store connection info
     await chrome.storage.local.set({
