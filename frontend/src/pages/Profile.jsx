@@ -27,6 +27,8 @@ import {
   Pencil,
   Mail,
   GraduationCap,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import {
   Select,
