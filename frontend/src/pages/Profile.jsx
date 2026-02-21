@@ -478,23 +478,14 @@ export default function Profile({ user }) {
                   </Popover>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <Input
-                  data-testid="skill-input"
-                  placeholder="Add a skill (e.g., JavaScript, Project Management)"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && addSkill()}
-                  className="bg-white/5 border-white/10"
-                />
-                <Button
-                  data-testid="add-skill-btn"
-                  onClick={addSkill}
-                  className="bg-indigo-500 hover:bg-indigo-600"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
+              <SkillsCombobox
+                selectedSkills={profile?.skills || []}
+                onAddSkill={(skillName) => {
+                  const newSkillObj = { name: skillName, years: null };
+                  const skills = [...(profile?.skills || []), newSkillObj];
+                  updateProfile({ skills });
+                }}
+              />
             </CardContent>
           </Card>
 
