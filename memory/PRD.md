@@ -55,7 +55,11 @@ Build a website that helps users find jobs best suited for them based on what in
 - **Website Rename (Feb 15, 2026)**:
   - Renamed from "JobMatch AI" to "CareerCopilot AI" across all frontend pages, navbar, backend responses, and HTML title
 
-- **Skills Dropdown Combobox (Feb 15, 2026)**:
+- **Career Path Analysis Endpoint (Feb 21, 2026)**:
+  - `POST /api/ai/career-paths` — AI analyzes resume + profile to suggest 3-5 career paths
+  - Returns current path analysis, adjacent moves, and stretch roles with salary ranges, skill gaps, and action steps
+  - Uses GPT-4o via Emergent LLM key; results cached 7 days in `career_analyses` collection
+  - `DELETE /api/ai/career-paths` — clears cache to force regeneration
   - Replaced plain text input with searchable multi-select dropdown for 150+ predefined skills
   - Skills organized across 15+ categories: Programming, Cloud/DevOps, Data, AI/ML, Business, Finance, Marketing, HR, etc.
   - Users can search/filter predefined skills AND type custom skills not in the list
