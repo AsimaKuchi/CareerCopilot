@@ -3548,6 +3548,160 @@ async def get_learning_resources(request: Request, skills: str = None):
     }
 
 
+@api_router.get("/ai/career-paths/{path_title}/jobs")
+async def get_jobs_for_career_path(
+    request: Request,
+    path_title: str,
+    location: Optional[str] = None,
+    min_match_score: int = 60,
+):
+    """
+    Find real job listings for a career path and score user qualification.
+
+    Path params:
+      - path_title: career path title (e.g. "Data Analyst")
+    Query params:
+      - location: optional location filter (defaults to user profile city)
+      - min_match_score: minimum match % to include (default 60)
+    """
+    user = await get_current_user(request)
+
+    profile = await db.user_profiles.find_one(
+        {"user_id": user.user_id}, {"_id": 0}
+    )
+    if not profile:
+        raise HTTPException(status_code=400, detail="Profile required")
+
+    profile = decrypt_sensitive_data(profile)
+
+    if not location:
+        location = (
+            profile.get("address_city")
+            or profile.get("address_state")
+            or "Canada"
+        )
+
+    try:
+        # --- 1. Search stored jobs (Greenhouse / Lever) ---
+        title_words = [w for w in path_title.split() if len(w) >= 3]
+        title_regex = "|".join(re.escape(w) for w in title_words) if title_words else re.escape(path_title)
+
+        query_filter = {"title": {"$regex": title_regex, "$options": "i"}}
+        if location:
+            query_filter["$or"] = [
+                {"location": {"$regex": location.split(",")[0].strip(), "$options": "i"}},
+                {"is_remote": True},
+            ]
+
+        cached_jobs = await db.stored_jobs.find(
+            query_filter, {"_id": 0}
+        ).sort("posted_at", -1).limit(60).to_list(60)
+
+        # --- 2. Search JSearch API for aggregator results ---
+        jsearch_jobs = []
+        if RAPIDAPI_KEY:
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp = await client.get(
+                        "https://jsearch.p.rapidapi.com/search",
+                        params={
+                            "query": f"{path_title} {location}",
+                            "num_pages": "2",
+                        },
+                        headers={
+                            "X-RapidAPI-Key": RAPIDAPI_KEY,
+                            "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+                        },
+                    )
+                    if resp.status_code == 200:
+                        jsearch_jobs = resp.json().get("data", [])[:30]
+            except Exception:
+                logger.warning("JSearch API unavailable for career-path job search")
+
+        # --- 3. Normalise JSearch results into the same shape ---
+        normalised_jsearch = []
+        for j in jsearch_jobs:
+            city = j.get("job_city") or ""
+            state = j.get("job_state") or ""
+            normalised_jsearch.append({
+                "job_id": j.get("job_id"),
+                "title": j.get("job_title"),
+                "company": j.get("employer_name"),
+                "location": f"{city}, {state}".strip(", "),
+                "description": (j.get("job_description") or "")[:500],
+                "apply_link": j.get("job_apply_link"),
+                "posted_at": j.get("job_posted_at_datetime_utc"),
+                "source": "aggregator",
+            })
+
+        all_jobs = cached_jobs + normalised_jsearch
+
+        # --- 4. Deduplicate ---
+        seen = set()
+        unique_jobs = []
+        for job in all_jobs:
+            jid = job.get("job_id") or job.get("title", "") + job.get("company", "")
+            if jid not in seen:
+                seen.add(jid)
+                unique_jobs.append(job)
+
+        # --- 5. Score each job against user profile ---
+        matched_jobs = []
+        for job in unique_jobs[:60]:
+            job_for_match = {
+                "job_title": job.get("title"),
+                "employer_name": job.get("company"),
+                "job_description": job.get("description") or job.get("title", ""),
+                "job_city": (job.get("location") or "").split(",")[0].strip(),
+                "job_state": (job.get("location") or "").split(",")[-1].strip() if "," in (job.get("location") or "") else "",
+                "job_is_remote": "remote" in (job.get("location") or "").lower(),
+            }
+
+            match_eval = evaluate_job_match(job_for_match, profile)
+
+            if match_eval["score"] >= min_match_score:
+                matched_jobs.append({
+                    "job": {
+                        "job_id": job.get("job_id"),
+                        "title": job.get("title"),
+                        "company": job.get("company"),
+                        "location": job.get("location"),
+                        "apply_link": job.get("apply_link") or job.get("url"),
+                        "posted_at": job.get("posted_at"),
+                        "source": job.get("source", "ats_board"),
+                    },
+                    "match_score": match_eval["score"],
+                    "match_recommendation": match_eval["recommendation"],
+                    "strengths": match_eval["strengths"],
+                    "gaps": match_eval["gaps"],
+                    "ready_to_apply": match_eval["score"] >= 75,
+                })
+
+        matched_jobs.sort(key=lambda x: x["match_score"], reverse=True)
+        top_jobs = matched_jobs[:30]
+
+        return {
+            "career_path": path_title,
+            "location": location,
+            "total_jobs_found": len(unique_jobs),
+            "qualified_jobs": len(matched_jobs),
+            "jobs": top_jobs,
+            "summary": {
+                "ready_to_apply_now": sum(1 for j in top_jobs if j["match_score"] >= 75),
+                "close_match": sum(1 for j in top_jobs if 65 <= j["match_score"] < 75),
+                "stretch_roles": sum(1 for j in top_jobs if j["match_score"] < 65),
+                "avg_match_score": round(
+                    sum(j["match_score"] for j in top_jobs) / len(top_jobs), 1
+                ) if top_jobs else 0,
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"Career-path job search error: {e}")
+        raise HTTPException(status_code=500, detail=f"Job search failed: {str(e)}")
+
+
+
 
 # ========================
 # JOB COMPARISON / ANALYZE MATCH ROUTES
