@@ -66,6 +66,12 @@ Build a website that helps users find jobs best suited for them based on what in
   - 46 skills covered with 60+ resources from Coursera, Khan Academy, freeCodeCamp, Google, Microsoft, AWS, HubSpot, etc.
   - Fuzzy matching for partial skill names; summary includes total hours, free vs paid count, estimated completion time
 
+- **Career Path Job Matching Endpoint (Feb 21, 2026)**:
+  - `GET /api/ai/career-paths/{path_title}/jobs?location=Toronto&min_match_score=60`
+  - Searches stored Greenhouse/Lever jobs + JSearch API for a given career path title
+  - Scores each job against user profile via `evaluate_job_match()`, returns top 30 with strengths/gaps
+  - Summary: ready_to_apply_now, close_match, stretch_roles, avg_match_score
+
 - **Skills Dropdown Combobox (Feb 15, 2026)**:
   - Replaced plain text input with searchable multi-select dropdown for 350+ predefined skills
   - Skills organized across 30+ categories including tech, business, healthcare, trades, hospitality, legal, etc.
