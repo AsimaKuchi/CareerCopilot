@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { Check, ChevronsUpDown, Plus, Search, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { ChevronsUpDown, Plus, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 const SKILLS_LIST = [
   // Programming Languages
@@ -76,7 +76,9 @@ export default function SkillsCombobox({ selectedSkills = [], onAddSkill, classN
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const inputRef = useRef(null);
+  const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const existingNames = selectedSkills.map(s =>
     (typeof s === "string" ? s : s?.name || "").toLowerCase()
@@ -89,17 +91,43 @@ export default function SkillsCombobox({ selectedSkills = [], onAddSkill, classN
       !existingNames.includes(skillLower) &&
       (searchLower === "" || skillLower.includes(searchLower))
     );
-  }).slice(0, 40);
+  }).slice(0, 50);
 
   const isCustom = search.trim() &&
     !SKILLS_LIST.some(s => s.toLowerCase() === search.trim().toLowerCase()) &&
     !existingNames.includes(search.trim().toLowerCase());
 
+  const updatePosition = useCallback(() => {
+    if (wrapperRef.current) {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) updatePosition();
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onScroll = () => updatePosition();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [open, updatePosition]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
         dropdownRef.current && !dropdownRef.current.contains(e.target) &&
-        inputRef.current && !inputRef.current.contains(e.target)
+        wrapperRef.current && !wrapperRef.current.contains(e.target)
       ) {
         setOpen(false);
       }
@@ -128,8 +156,10 @@ export default function SkillsCombobox({ selectedSkills = [], onAddSkill, classN
     }
   };
 
+  const showDropdown = open && (filtered.length > 0 || isCustom);
+
   return (
-    <div className={cn("relative", className)}>
+    <div ref={wrapperRef} className={cn("relative", className)}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
@@ -156,19 +186,26 @@ export default function SkillsCombobox({ selectedSkills = [], onAddSkill, classN
         </button>
       </div>
 
-      {open && (filtered.length > 0 || isCustom) && (
+      {showDropdown && createPortal(
         <div
           ref={dropdownRef}
-          className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-md border bg-popover shadow-md animate-in fade-in-0 zoom-in-95"
+          style={{
+            position: "absolute",
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 9999,
+          }}
+          className="max-h-64 overflow-y-auto rounded-md border bg-popover shadow-lg animate-in fade-in-0 zoom-in-95"
         >
           {isCustom && (
             <button
               data-testid="add-custom-skill-btn"
               onClick={() => handleSelect(search.trim())}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent text-left border-b"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent text-left border-b sticky top-0 bg-popover"
             >
               <Plus className="w-4 h-4 text-indigo-500 shrink-0" />
-              <span>Add <strong>"{search.trim()}"</strong> as custom skill</span>
+              <span>Add <strong>&quot;{search.trim()}&quot;</strong> as custom skill</span>
             </button>
           )}
           {filtered.map((skill) => (
@@ -183,11 +220,12 @@ export default function SkillsCombobox({ selectedSkills = [], onAddSkill, classN
             </button>
           ))}
           {filtered.length === 0 && !isCustom && (
-            <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+            <div className="px-3 py-6 text-sm text-muted-foreground text-center">
               No matching skills found
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
