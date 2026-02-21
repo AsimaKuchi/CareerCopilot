@@ -41,6 +41,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import SkillsCombobox from "@/components/SkillsCombobox";
 
 export default function Profile({ user }) {
   const [profile, setProfile] = useState(null);
