@@ -1927,6 +1927,107 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         logger.error(f"Resume upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to upload resume: {str(e)}")
 
+
+@api_router.post("/profile/resume/extract-fields")
+async def extract_fields_from_resume(request: Request):
+    """Extract profile fields (email, phone, skills, education, location, job titles) from uploaded resume text.
+    Returns only fields that are currently empty in the user's profile."""
+    user = await get_current_user(request)
+
+    profile = await db.user_profiles.find_one({"user_id": user.user_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=400, detail="Profile not found")
+
+    profile = decrypt_sensitive_data(profile)
+    resume_text = profile.get("resume_text", "")
+    if not resume_text or len(resume_text) < 50:
+        raise HTTPException(status_code=400, detail="No resume text available")
+
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    import json as json_mod
+
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"extract_{user.user_id}_{uuid.uuid4().hex[:6]}",
+        system_message="""Extract structured profile fields from a resume. Return ONLY valid JSON, no markdown.
+{
+  "email": "string or null",
+  "phone": "string in E.164-ish format or null",
+  "skills": ["skill1", "skill2"],
+  "highest_education": "one of: high_school, associate, bachelors, masters, phd, bootcamp, certification, or null",
+  "education_details": "e.g. Bachelor of Commerce, University of Toronto",
+  "job_titles": ["most recent title", "second most recent"],
+  "city": "string or null",
+  "state_province": "string or null",
+  "country": "string or null",
+  "experience_years": number or null,
+  "first_name": "string or null",
+  "last_name": "string or null"
+}
+Rules:
+- For highest_education pick the HIGHEST level found.
+- For skills, list up to 20 distinct professional skills.
+- For job_titles, list the 1-3 most recent titles.
+- Phone: include country code if visible, e.g. +14165551234
+- Return null for anything you can't confidently extract."""
+    ).with_model("openai", "gpt-4o-mini")
+
+    try:
+        response = await chat.send_message(
+            UserMessage(text=f"Extract profile fields from this resume:\n\n{resume_text[:3000]}")
+        )
+        clean = re.sub(r'^```json\s*', '', response.strip())
+        clean = re.sub(r'\s*```$', '', clean).strip()
+        extracted = json_mod.loads(clean)
+    except Exception as e:
+        logger.error(f"Resume field extraction failed: {e}")
+        raise HTTPException(status_code=500, detail="Could not extract fields from resume")
+
+    # Determine which profile fields are currently empty
+    existing_skills = profile.get("skills") or []
+    existing_skill_names = {(s.get("name") if isinstance(s, dict) else s).lower() for s in existing_skills}
+
+    suggestions = {}
+
+    if not profile.get("phone_number") and extracted.get("phone"):
+        suggestions["phone_number"] = extracted["phone"]
+
+    if not profile.get("highest_education") and extracted.get("highest_education"):
+        suggestions["highest_education"] = extracted["highest_education"]
+        if extracted.get("education_details"):
+            suggestions["education_details"] = extracted["education_details"]
+
+    if not existing_skills and extracted.get("skills"):
+        suggestions["skills"] = extracted["skills"][:20]
+    elif extracted.get("skills"):
+        new_skills = [s for s in extracted["skills"] if s.lower() not in existing_skill_names]
+        if new_skills:
+            suggestions["new_skills"] = new_skills[:15]
+
+    if not profile.get("job_titles") and extracted.get("job_titles"):
+        suggestions["job_titles"] = extracted["job_titles"]
+
+    if not profile.get("address_city") and extracted.get("city"):
+        suggestions["address_city"] = extracted["city"]
+    if not profile.get("address_state") and extracted.get("state_province"):
+        suggestions["address_state"] = extracted["state_province"]
+    if not profile.get("address_country") and extracted.get("country"):
+        suggestions["address_country"] = extracted["country"]
+
+    if not profile.get("experience_years") and extracted.get("experience_years"):
+        suggestions["experience_years"] = extracted["experience_years"]
+
+    if not profile.get("first_name") and extracted.get("first_name"):
+        suggestions["first_name"] = extracted["first_name"]
+    if not profile.get("last_name") and extracted.get("last_name"):
+        suggestions["last_name"] = extracted["last_name"]
+
+    return {
+        "suggestions": suggestions,
+        "has_suggestions": len(suggestions) > 0,
+    }
+
+
 @api_router.post("/profile/resume/reparse")
 async def reparse_resume(request: Request):
     """Re-extract text from stored resume raw content."""
