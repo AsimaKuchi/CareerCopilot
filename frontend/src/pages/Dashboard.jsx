@@ -178,15 +178,19 @@ export default function Dashboard({ user }) {
             </CardContent>
           </Card>
 
-          <Card className="glass-light card-hover animate-fade-in-delay-2" data-testid="stat-pending">
+          <Card className="glass-light card-hover animate-fade-in-delay-2" data-testid="stat-time-saved">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Pending Review</p>
-                  <p className="text-3xl font-bold text-foreground">{stats?.pending || 0}</p>
+                  <p className="text-sm text-muted-foreground mb-1">Time Saved</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {(stats?.time_saved?.total_minutes || 0) >= 60
+                      ? `${stats?.time_saved?.total_hours || 0}h`
+                      : `${stats?.time_saved?.total_minutes || 0}m`}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-amber-400" />
+                  <Timer className="w-6 h-6 text-amber-400" />
                 </div>
               </div>
             </CardContent>
@@ -207,6 +211,55 @@ export default function Dashboard({ user }) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Time Saved Breakdown */}
+        {(stats?.time_saved?.total_minutes || 0) > 0 && (
+          <Card className="glass-light mb-8 animate-fade-in" data-testid="time-saved-breakdown">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Zap className="w-5 h-5 text-amber-400" />
+                Time Saved Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-500/5">
+                  <Briefcase className="w-5 h-5 text-indigo-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {stats.time_saved.breakdown?.autofill_min || 0} min
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.time_saved.applications_autofilled || 0} applications auto-filled
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5">
+                  <FileText className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {stats.time_saved.breakdown?.resume_min || 0} min
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.time_saved.resumes_generated || 0} resumes optimized
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-rose-500/5">
+                  <Sparkles className="w-5 h-5 text-rose-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {stats.time_saved.breakdown?.cover_letter_min || 0} min
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.time_saved.cover_letters_generated || 0} cover letters generated
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="mb-8">
