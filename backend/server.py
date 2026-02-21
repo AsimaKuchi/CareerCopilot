@@ -7285,12 +7285,46 @@ async def get_dashboard_stats(request: Request):
         if profile.get("preferred_locations"): completeness += 10
         if profile.get("experience_years"): completeness += 10
     
+    # Calculate time saved estimates
+    # Average time per manual application: ~25 min
+    # With autofill: ~5 min per application (saving ~20 min each)
+    # Resume optimization: ~30 min saved per optimization
+    # Cover letter generation: ~45 min saved per letter
+    TIME_SAVED_PER_APPLICATION_MIN = 20
+    TIME_SAVED_PER_RESUME_MIN = 30
+    TIME_SAVED_PER_COVER_LETTER_MIN = 45
+
+    resumes_generated = await db.applications.count_documents(
+        {"user_id": user.user_id, "optimized_resume": {"$exists": True, "$ne": None, "$ne": ""}}
+    )
+    cover_letters_generated = await db.applications.count_documents(
+        {"user_id": user.user_id, "cover_letter": {"$exists": True, "$ne": None, "$ne": ""}}
+    )
+
+    time_saved_min = (
+        applied * TIME_SAVED_PER_APPLICATION_MIN
+        + resumes_generated * TIME_SAVED_PER_RESUME_MIN
+        + cover_letters_generated * TIME_SAVED_PER_COVER_LETTER_MIN
+    )
+
     return {
         "total_applications": total,
         "applied": applied,
         "pending": pending,
         "recent_applications": recent,
-        "profile_completeness": completeness
+        "profile_completeness": completeness,
+        "time_saved": {
+            "total_minutes": time_saved_min,
+            "total_hours": round(time_saved_min / 60, 1),
+            "applications_autofilled": applied,
+            "resumes_generated": resumes_generated,
+            "cover_letters_generated": cover_letters_generated,
+            "breakdown": {
+                "autofill_min": applied * TIME_SAVED_PER_APPLICATION_MIN,
+                "resume_min": resumes_generated * TIME_SAVED_PER_RESUME_MIN,
+                "cover_letter_min": cover_letters_generated * TIME_SAVED_PER_COVER_LETTER_MIN,
+            },
+        },
     }
 
 # ========================
