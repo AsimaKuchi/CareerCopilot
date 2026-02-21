@@ -292,7 +292,9 @@ export default function Support() {
                   <Textarea
                     id="description"
                     name="description"
-                    placeholder="Please describe your issue or question in detail..."
+                    placeholder={formData.reason === "Leave a Review"
+                      ? "Tell us about your experience with CareerCopilot AI — what did you like, what could be better?"
+                      : "Please describe your issue or question in detail..."}
                     value={formData.description}
                     onChange={handleChange}
                     rows={5}
@@ -301,7 +303,9 @@ export default function Support() {
                     data-testid="support-description"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Include any relevant details, error messages, or steps to reproduce the issue.
+                    {formData.reason === "Leave a Review"
+                      ? "Your feedback helps us improve. Thank you!"
+                      : "Include any relevant details, error messages, or steps to reproduce the issue."}
                   </p>
                 </div>
 
