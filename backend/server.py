@@ -7596,28 +7596,54 @@ async def serve_test_form():
 app.include_router(api_router)
 app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
 
-# Get frontend URL for CORS - allow Lovable domains
-FRONTEND_URL = os.environ.get('CORS_ORIGINS', '')
-origins = [origin.strip() for origin in FRONTEND_URL.split(',') if origin.strip()]
+# Custom CORS middleware to handle chrome-extension origins
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
-# Add common Lovable domains for Phase 1 integration
-lovable_origins = [
-    "https://*.lovable.app",
-    "https://*.lovableproject.com", 
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:8080"
-]
-origins.extend(lovable_origins)
+class CustomCORSMiddleware(BaseHTTPMiddleware):
+    """Custom CORS middleware that properly handles chrome-extension origins with credentials."""
+    
+    async def dispatch(self, request, call_next):
+        origin = request.headers.get("origin", "")
+        
+        # Handle preflight OPTIONS requests
+        if request.method == "OPTIONS":
+            response = Response(status_code=200)
+        else:
+            response = await call_next(request)
+        
+        # Allow chrome-extension origins and common web origins
+        allowed_origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8080",
+        ]
+        
+        # Check if origin is allowed (chrome-extension, localhost, or preview domains)
+        is_allowed = (
+            origin.startswith("chrome-extension://") or
+            origin in allowed_origins or
+            "lovable.app" in origin or
+            "lovableproject.com" in origin or
+            "emergentagent.com" in origin or
+            "preview.emergentagent.com" in origin
+        )
+        
+        if is_allowed and origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        else:
+            # For non-credentialed requests, allow wildcard
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        
+        return response
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],  # Allow all origins for public API
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+app.add_middleware(CustomCORSMiddleware)
 
 # ========================
 # SCHEDULED JOB INGESTION
