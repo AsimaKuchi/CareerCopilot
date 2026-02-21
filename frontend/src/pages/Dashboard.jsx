@@ -22,6 +22,8 @@ import {
   Building,
   ExternalLink,
   DollarSign,
+  Timer,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
