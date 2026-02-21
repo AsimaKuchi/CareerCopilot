@@ -72,6 +72,14 @@ Build a website that helps users find jobs best suited for them based on what in
   - Scores each job against user profile via `evaluate_job_match()`, returns top 30 with strengths/gaps
   - Summary: ready_to_apply_now, close_match, stretch_roles, avg_match_score
 
+- **Career Paths Frontend Page (Feb 21, 2026)**:
+  - New `/career-paths` route with full interactive UI page
+  - Current path banner with salary, demand, security, growth
+  - Accordion cards for each recommended path: match score, salary bar, skills breakdown, reasoning, next steps
+  - Learning Resources modal: fetches from `/api/ai/learning-resources`, shows summary + per-skill courses with external links
+  - Jobs modal: fetches from `/api/ai/career-paths/{title}/jobs`, shows match scores, strengths/gaps, apply links
+  - Added "Career Paths" nav link with Compass icon in navbar
+
 - **Skills Dropdown Combobox (Feb 15, 2026)**:
   - Replaced plain text input with searchable multi-select dropdown for 350+ predefined skills
   - Skills organized across 30+ categories including tech, business, healthcare, trades, hospitality, legal, etc.
