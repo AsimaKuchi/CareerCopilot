@@ -60,10 +60,13 @@ Build a website that helps users find jobs best suited for them based on what in
   - Returns current path analysis, adjacent moves, and stretch roles with salary ranges, skill gaps, and action steps
   - Uses GPT-4o via Emergent LLM key; results cached 7 days in `career_analyses` collection
   - `DELETE /api/ai/career-paths` — clears cache to force regeneration
-  - Replaced plain text input with searchable multi-select dropdown for 150+ predefined skills
-  - Skills organized across 15+ categories: Programming, Cloud/DevOps, Data, AI/ML, Business, Finance, Marketing, HR, etc.
+
+- **Skills Dropdown Combobox (Feb 15, 2026)**:
+  - Replaced plain text input with searchable multi-select dropdown for 350+ predefined skills
+  - Skills organized across 30+ categories including tech, business, healthcare, trades, hospitality, legal, etc.
   - Users can search/filter predefined skills AND type custom skills not in the list
   - Portal-based dropdown rendering to prevent z-index/overflow clipping issues
+
 - **"What to Do Next" Feature (NEW - Feb 11, 2025)**:
   - Checklist card appears under each "applied" job with 6 actionable steps
   - Steps: Follow Company, Find Recruiter, Send Message, Prep Interview Qs, Track Outcome, Follow Up
