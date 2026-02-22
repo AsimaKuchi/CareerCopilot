@@ -98,7 +98,7 @@ export default function Support() {
         <header className="border-b border-white/10 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
-              <Link to="/" className="text-2xl font-bold text-indigo-400">
+              <Link to="/dashboard" className="text-2xl font-bold text-indigo-400">
                 CareerCopilot AI
               </Link>
             </div>
@@ -119,9 +119,9 @@ export default function Support() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild variant="outline">
-                  <Link to="/">
+                  <Link to="/dashboard">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Home
+                    Back to Dashboard
                   </Link>
                 </Button>
                 <Button 
@@ -153,11 +153,11 @@ export default function Support() {
       <header className="border-b border-white/10 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="text-2xl font-bold text-indigo-400">
+            <Link to="/dashboard" className="text-2xl font-bold text-indigo-400">
               CareerCopilot AI
             </Link>
             <Button asChild variant="ghost" size="sm">
-              <Link to="/">
+              <Link to="/dashboard">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Link>
