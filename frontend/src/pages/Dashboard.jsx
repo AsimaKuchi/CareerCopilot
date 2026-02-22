@@ -479,7 +479,14 @@ export default function Dashboard({ user }) {
                       </div>
                       
                       <div className="mt-3 flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs capitalize">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs capitalize ${
+                            ['greenhouse', 'lever', 'ashby'].includes(job.source?.toLowerCase())
+                              ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                              : ''
+                          }`}
+                        >
                           {job.source}
                         </Badge>
                         <ExternalLink className="w-3 h-3 text-muted-foreground" />
