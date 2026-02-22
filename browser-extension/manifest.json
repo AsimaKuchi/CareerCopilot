@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CareerCopilot AI - Auto-Fill",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Auto-fill job applications with your optimized resume and cover letter from CareerCopilot AI",
   "permissions": [
     "activeTab",
@@ -23,6 +23,9 @@
     "https://*.myworkdayjobs.com/*",
     "https://*.taleo.net/*",
     "https://*.icims.com/*",
+    "https://*.randstad.ca/*",
+    "https://www.randstad.ca/*",
+    "https://*.randstad.com/*",
     "https://*.emergentagent.com/*",
     "https://*.preview.emergentagent.com/*"
   ],
@@ -54,7 +57,10 @@
         "https://*.jobvite.com/*",
         "https://*.myworkdayjobs.com/*",
         "https://*.taleo.net/*",
-        "https://*.icims.com/*"
+        "https://*.icims.com/*",
+        "https://*.randstad.ca/*",
+        "https://www.randstad.ca/*",
+        "https://*.randstad.com/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],
