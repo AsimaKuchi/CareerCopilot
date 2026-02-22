@@ -450,7 +450,7 @@ export default function LandingPage() {
               </p>
               <Button
                 data-testid="cta-get-started-btn"
-                onClick={handleGoogleLogin}
+                onClick={() => navigate('/auth')}
                 size="lg"
                 className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow h-14 px-10 text-base mt-4"
               >
