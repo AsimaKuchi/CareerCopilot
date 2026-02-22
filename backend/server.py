@@ -67,6 +67,35 @@ resend.api_key = os.environ.get('RESEND_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'Fuzail.abukhari@gmail.com')
 
+# Password hashing
+from passlib.context import CryptContext
+import secrets
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def generate_token() -> str:
+    return secrets.token_urlsafe(32)
+
+def validate_password_strength(password: str) -> tuple[bool, str]:
+    """Validate password meets strength requirements: 8+ chars, uppercase, number, special char."""
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least one uppercase letter"
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least one number"
+    if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
+        return False, "Password must contain at least one special character (!@#$%^&*...)"
+    return True, ""
+
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://copilot-ai-7.preview.emergentagent.com')
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
