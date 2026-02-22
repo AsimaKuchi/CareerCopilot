@@ -38,9 +38,30 @@ Build a website that helps users find jobs best suited for them based on what in
 /app/frontend/src/components/   # Shared components (Navbar)
 ```
 
-## What's Been Implemented (February 15, 2026)
+## What's Been Implemented (February 22, 2026)
 
 ### Latest Updates ✅
+
+- **Email/Password Authentication (Feb 22, 2026)**:
+  - New `/auth` page with both Google and Email sign-in options
+  - Sign Up with email: name, email, password fields with real-time validation
+  - Password requirements: 8+ chars, uppercase, number, special character (visual feedback)
+  - Email verification required before login (24-hour token expiry)
+  - Forgot Password flow with email reset link (1-hour token expiry)
+  - Reset Password page with password strength validation
+  - Resend verification email option
+  - Uses Resend for transactional emails (test mode returns verification URL in response)
+  - New pages: Auth.jsx, VerifyEmail.jsx, ResetPassword.jsx
+  - Routes: /auth, /verify-email, /reset-password
+  - Landing page CTAs now go to /auth instead of direct Google OAuth
+
+- **Chrome Extension CORS Fix (Feb 22, 2026)**:
+  - Added custom CORS middleware to handle chrome-extension:// origins
+  - Extension now uses background script for authenticated API calls
+  - Added cookies permission to manifest for proper session handling
+  - Updated manifest to v1.0.1 with CareerCopilot AI branding
+  - Added emergentagent.com host permissions
+
 - **Job Search Data Expansion & Bug Fixes (Feb 15, 2026)**:
   - Expanded Greenhouse company list from 32 to 60 companies (added hootsuite, d2l, ritual, reddit, pinterest, lyft, etc.)
   - Expanded Lever company list from 3 to 10 companies (added wealthsimple, spotify, plaid, pointclickcare, etc.)
