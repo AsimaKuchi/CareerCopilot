@@ -1010,8 +1010,334 @@ async def logout(request: Request, response: Response):
     return {"message": "Logged out successfully"}
 
 # ========================
-# PROFILE ROUTES
+# EMAIL AUTHENTICATION
 # ========================
+
+class EmailSignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+class EmailLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+async def send_verification_email(email: str, token: str, name: str):
+    """Send email verification link."""
+    verify_url = f"{FRONTEND_URL}/verify-email?token={token}"
+    
+    html_content = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #6366f1; margin: 0;">CareerCopilot AI</h1>
+        </div>
+        <h2 style="color: #1f2937;">Welcome, {name}!</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+            Thanks for signing up for CareerCopilot AI. Please verify your email address by clicking the button below:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{verify_url}" style="background-color: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Verify Email Address
+            </a>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">
+            Or copy and paste this link into your browser:<br>
+            <a href="{verify_url}" style="color: #6366f1;">{verify_url}</a>
+        </p>
+        <p style="color: #6b7280; font-size: 14px;">
+            This link will expire in 24 hours.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            If you didn't create an account, you can safely ignore this email.
+        </p>
+    </div>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [email],
+        "subject": "Verify your CareerCopilot AI account",
+        "html": html_content
+    }
+    
+    await asyncio.to_thread(resend.Emails.send, params)
+
+async def send_password_reset_email(email: str, token: str, name: str):
+    """Send password reset link."""
+    reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
+    
+    html_content = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #6366f1; margin: 0;">CareerCopilot AI</h1>
+        </div>
+        <h2 style="color: #1f2937;">Reset Your Password</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+            Hi {name}, we received a request to reset your password. Click the button below to create a new password:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{reset_url}" style="background-color: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                Reset Password
+            </a>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">
+            Or copy and paste this link into your browser:<br>
+            <a href="{reset_url}" style="color: #6366f1;">{reset_url}</a>
+        </p>
+        <p style="color: #6b7280; font-size: 14px;">
+            This link will expire in 1 hour.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            If you didn't request a password reset, you can safely ignore this email.
+        </p>
+    </div>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [email],
+        "subject": "Reset your CareerCopilot AI password",
+        "html": html_content
+    }
+    
+    await asyncio.to_thread(resend.Emails.send, params)
+
+@api_router.post("/auth/signup")
+async def email_signup(data: EmailSignupRequest):
+    """Sign up with email and password."""
+    # Validate password strength
+    is_valid, error_msg = validate_password_strength(data.password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": data.email.lower()})
+    if existing_user:
+        if existing_user.get("email_verified", False):
+            raise HTTPException(status_code=400, detail="An account with this email already exists")
+        else:
+            # User exists but not verified - update and resend verification
+            verification_token = generate_token()
+            await db.users.update_one(
+                {"email": data.email.lower()},
+                {"$set": {
+                    "name": data.name,
+                    "password_hash": hash_password(data.password),
+                    "verification_token": verification_token,
+                    "verification_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+                }}
+            )
+            await send_verification_email(data.email.lower(), verification_token, data.name)
+            return {"message": "Verification email sent. Please check your inbox."}
+    
+    # Create new user
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    verification_token = generate_token()
+    
+    new_user = {
+        "user_id": user_id,
+        "email": data.email.lower(),
+        "name": data.name,
+        "password_hash": hash_password(data.password),
+        "auth_type": "email",
+        "email_verified": False,
+        "verification_token": verification_token,
+        "verification_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(new_user)
+    
+    # Create default profile
+    default_profile = {
+        "user_id": user_id,
+        "profile_version": 2,
+        "resume_text": None,
+        "resume_filename": None,
+        "skills": [],
+        "experience_years": 0,
+        "job_titles": [],
+        "preferred_locations": [],
+        "salary_min": None,
+        "salary_max": None,
+        "job_type": [],
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_profiles.insert_one(default_profile)
+    
+    # Send verification email
+    await send_verification_email(data.email.lower(), verification_token, data.name)
+    
+    return {"message": "Account created! Please check your email to verify your account."}
+
+@api_router.post("/auth/verify-email")
+async def verify_email(request: Request):
+    """Verify email address with token."""
+    body = await request.json()
+    token = body.get("token")
+    
+    if not token:
+        raise HTTPException(status_code=400, detail="Verification token required")
+    
+    user = await db.users.find_one({"verification_token": token})
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+    
+    # Check if token expired
+    expires_at = datetime.fromisoformat(user.get("verification_expires", "2000-01-01T00:00:00"))
+    if datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc):
+        raise HTTPException(status_code=400, detail="Verification link has expired. Please request a new one.")
+    
+    # Mark email as verified
+    await db.users.update_one(
+        {"verification_token": token},
+        {
+            "$set": {"email_verified": True},
+            "$unset": {"verification_token": "", "verification_expires": ""}
+        }
+    )
+    
+    return {"message": "Email verified successfully! You can now log in."}
+
+@api_router.post("/auth/resend-verification")
+async def resend_verification(data: ResendVerificationRequest):
+    """Resend verification email."""
+    user = await db.users.find_one({"email": data.email.lower()})
+    
+    if not user:
+        # Don't reveal if email exists
+        return {"message": "If an account exists with this email, a verification link will be sent."}
+    
+    if user.get("email_verified", False):
+        raise HTTPException(status_code=400, detail="Email is already verified")
+    
+    # Generate new token
+    verification_token = generate_token()
+    await db.users.update_one(
+        {"email": data.email.lower()},
+        {"$set": {
+            "verification_token": verification_token,
+            "verification_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+        }}
+    )
+    
+    await send_verification_email(data.email.lower(), verification_token, user.get("name", "there"))
+    
+    return {"message": "If an account exists with this email, a verification link will be sent."}
+
+@api_router.post("/auth/login")
+async def email_login(data: EmailLoginRequest, response: Response):
+    """Login with email and password."""
+    user = await db.users.find_one({"email": data.email.lower()})
+    
+    if not user or not user.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not verify_password(data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not user.get("email_verified", False):
+        raise HTTPException(status_code=401, detail="Please verify your email before logging in")
+    
+    # Create session
+    session_token = generate_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    session_doc = {
+        "user_id": user["user_id"],
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Remove old sessions for this user
+    await db.user_sessions.delete_many({"user_id": user["user_id"]})
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7 * 24 * 60 * 60,
+        path="/"
+    )
+    
+    return {
+        "user_id": user["user_id"],
+        "email": user["email"],
+        "name": user.get("name"),
+        "picture": user.get("picture")
+    }
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Request password reset email."""
+    user = await db.users.find_one({"email": data.email.lower()})
+    
+    # Always return same message to prevent email enumeration
+    if not user or user.get("auth_type") != "email":
+        return {"message": "If an account exists with this email, a password reset link will be sent."}
+    
+    # Generate reset token
+    reset_token = generate_token()
+    await db.users.update_one(
+        {"email": data.email.lower()},
+        {"$set": {
+            "reset_token": reset_token,
+            "reset_expires": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        }}
+    )
+    
+    await send_password_reset_email(data.email.lower(), reset_token, user.get("name", "there"))
+    
+    return {"message": "If an account exists with this email, a password reset link will be sent."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Reset password with token."""
+    # Validate password strength
+    is_valid, error_msg = validate_password_strength(data.password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    user = await db.users.find_one({"reset_token": data.token})
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    
+    # Check if token expired
+    expires_at = datetime.fromisoformat(user.get("reset_expires", "2000-01-01T00:00:00"))
+    if datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+    
+    # Update password and clear reset token
+    await db.users.update_one(
+        {"reset_token": data.token},
+        {
+            "$set": {"password_hash": hash_password(data.password)},
+            "$unset": {"reset_token": "", "reset_expires": ""}
+        }
+    )
+    
+    # Clear all sessions for this user (force re-login)
+    await db.user_sessions.delete_many({"user_id": user["user_id"]})
+    
+    return {"message": "Password reset successfully! You can now log in with your new password."}
 
 @api_router.get("/profile")
 async def get_profile(request: Request):
