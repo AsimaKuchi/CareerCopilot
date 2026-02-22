@@ -214,6 +214,104 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Company Logo Carousel */}
+        <section className="max-w-6xl mx-auto pb-16 overflow-hidden">
+          <p className="text-center text-sm text-muted-foreground mb-8">
+            Works with applications at top companies
+          </p>
+          <div className="relative">
+            {/* Gradient fade edges */}
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10"></div>
+            
+            {/* Scrolling container */}
+            <div className="flex animate-scroll">
+              {/* First set of logos */}
+              <div className="flex items-center gap-12 px-6 shrink-0">
+                {[
+                  { name: "Google", color: "#4285F4" },
+                  { name: "Microsoft", color: "#00A4EF" },
+                  { name: "Amazon", color: "#FF9900" },
+                  { name: "Meta", color: "#0668E1" },
+                  { name: "Apple", color: "#555555" },
+                  { name: "Netflix", color: "#E50914" },
+                  { name: "Spotify", color: "#1DB954" },
+                  { name: "Shopify", color: "#96BF48" },
+                  { name: "Stripe", color: "#635BFF" },
+                  { name: "Slack", color: "#4A154B" },
+                  { name: "Airbnb", color: "#FF5A5F" },
+                  { name: "Uber", color: "#000000" },
+                  { name: "LinkedIn", color: "#0A66C2" },
+                  { name: "Twitter", color: "#1DA1F2" },
+                  { name: "Salesforce", color: "#00A1E0" },
+                  { name: "Adobe", color: "#FF0000" },
+                  { name: "JPMorgan", color: "#003087" },
+                  { name: "Goldman Sachs", color: "#7399C6" },
+                  { name: "TD Bank", color: "#34A853" },
+                  { name: "RBC", color: "#0051A5" },
+                  { name: "Scotiabank", color: "#EC111A" },
+                  { name: "BMO", color: "#0075BE" },
+                  { name: "CIBC", color: "#C41F3E" },
+                  { name: "Deloitte", color: "#86BC25" },
+                ].map((company, i) => (
+                  <div 
+                    key={`logo-1-${i}`}
+                    className="flex items-center justify-center h-8 opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <span 
+                      className="text-lg font-semibold whitespace-nowrap"
+                      style={{ color: company.color }}
+                    >
+                      {company.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/* Duplicate set for seamless loop */}
+              <div className="flex items-center gap-12 px-6 shrink-0">
+                {[
+                  { name: "Google", color: "#4285F4" },
+                  { name: "Microsoft", color: "#00A4EF" },
+                  { name: "Amazon", color: "#FF9900" },
+                  { name: "Meta", color: "#0668E1" },
+                  { name: "Apple", color: "#555555" },
+                  { name: "Netflix", color: "#E50914" },
+                  { name: "Spotify", color: "#1DB954" },
+                  { name: "Shopify", color: "#96BF48" },
+                  { name: "Stripe", color: "#635BFF" },
+                  { name: "Slack", color: "#4A154B" },
+                  { name: "Airbnb", color: "#FF5A5F" },
+                  { name: "Uber", color: "#000000" },
+                  { name: "LinkedIn", color: "#0A66C2" },
+                  { name: "Twitter", color: "#1DA1F2" },
+                  { name: "Salesforce", color: "#00A1E0" },
+                  { name: "Adobe", color: "#FF0000" },
+                  { name: "JPMorgan", color: "#003087" },
+                  { name: "Goldman Sachs", color: "#7399C6" },
+                  { name: "TD Bank", color: "#34A853" },
+                  { name: "RBC", color: "#0051A5" },
+                  { name: "Scotiabank", color: "#EC111A" },
+                  { name: "BMO", color: "#0075BE" },
+                  { name: "CIBC", color: "#C41F3E" },
+                  { name: "Deloitte", color: "#86BC25" },
+                ].map((company, i) => (
+                  <div 
+                    key={`logo-2-${i}`}
+                    className="flex items-center justify-center h-8 opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <span 
+                      className="text-lg font-semibold whitespace-nowrap"
+                      style={{ color: company.color }}
+                    >
+                      {company.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Why Choose Us Section */}
         <section id="how-it-works" className="max-w-6xl mx-auto py-20">
           <div className="text-center mb-16 animate-fade-in">
