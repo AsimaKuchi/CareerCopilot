@@ -152,7 +152,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
               <Button
                 data-testid="get-started-btn"
-                onClick={handleGoogleLogin}
+                onClick={() => navigate('/auth')}
                 size="lg"
                 className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-14 px-8 text-base"
               >
