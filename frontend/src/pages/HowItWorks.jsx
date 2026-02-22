@@ -346,7 +346,7 @@ export default function HowItWorks() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Button
                   data-testid="cta-get-started-btn"
-                  onClick={handleGoogleLogin}
+                  onClick={() => navigate('/auth')}
                   size="lg"
                   className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow h-14 px-10 text-base"
                 >
