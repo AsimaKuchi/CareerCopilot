@@ -112,7 +112,7 @@ export default function LandingPage() {
             </Button>
             <Button
               data-testid="header-signin-btn"
-              onClick={handleGoogleLogin}
+              onClick={() => navigate('/auth')}
               className="bg-indigo-500 hover:bg-indigo-600 text-white"
             >
               Sign In
