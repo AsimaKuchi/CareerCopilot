@@ -1117,7 +1117,12 @@ async def send_password_reset_email(email: str, token: str, name: str):
         "html": html_content
     }
     
-    await asyncio.to_thread(resend.Emails.send, params)
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to send password reset email to {email}: {e}")
+        return False
 
 @api_router.post("/auth/signup")
 async def email_signup(data: EmailSignupRequest):
