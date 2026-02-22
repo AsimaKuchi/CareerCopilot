@@ -125,6 +125,9 @@ const AppRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
       <Route path="/support" element={<Support />} />
       <Route
