@@ -11,6 +11,9 @@ import Applications from "@/pages/Applications";
 import InterviewPrep from "@/pages/InterviewPrep";
 import CareerPaths from "@/pages/CareerPaths";
 import Support from "@/pages/Support";
+import Auth from "@/pages/Auth";
+import VerifyEmail from "@/pages/VerifyEmail";
+import ResetPassword from "@/pages/ResetPassword";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
