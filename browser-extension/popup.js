@@ -177,7 +177,8 @@ function detectATS(url) {
     { pattern: /\.jobvite\.com/i, name: 'Jobvite' },
     { pattern: /\.myworkdayjobs\.com/i, name: 'Workday' },
     { pattern: /\.taleo\.net/i, name: 'Taleo' },
-    { pattern: /\.icims\.com/i, name: 'iCIMS' }
+    { pattern: /\.icims\.com/i, name: 'iCIMS' },
+    { pattern: /\.randstad\.ca|\.randstad\.com|www\.randstad\./i, name: 'Randstad' }
   ];
 
   for (const ats of atsPatterns) {
