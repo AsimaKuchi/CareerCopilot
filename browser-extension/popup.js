@@ -145,22 +145,72 @@ async function checkCurrentPage() {
     const url = tab?.url || '';
     
     const atsInfo = detectATS(url);
+    const hasForm = await checkForApplicationForm(tab.id);
     
     if (atsInfo.supported) {
+      // Known ATS - high confidence
       elements.statusCard.className = 'status-card supported';
       elements.statusIcon.textContent = '✅';
       elements.statusTitle.textContent = `${atsInfo.name} Detected`;
       elements.statusText.textContent = 'This page is supported! Click below to auto-fill your application.';
       elements.autoFillBtn.style.display = 'flex';
+    } else if (hasForm) {
+      // Unknown site but has form fields - can try to fill
+      elements.statusCard.className = 'status-card supported';
+      elements.statusIcon.textContent = '📝';
+      elements.statusTitle.textContent = 'Application Form Detected';
+      elements.statusText.textContent = 'Found form fields on this page. Click below to auto-fill.';
+      elements.autoFillBtn.style.display = 'flex';
     } else {
+      // No form detected - but still allow manual attempt
       elements.statusCard.className = 'status-card unsupported';
-      elements.statusIcon.textContent = '📋';
-      elements.statusTitle.textContent = 'Not an Application Page';
-      elements.statusText.textContent = 'Navigate to a job application page on Greenhouse, Lever, Ashby, or other supported ATS to auto-fill.';
-      elements.autoFillBtn.style.display = 'none';
+      elements.statusIcon.textContent = '🔍';
+      elements.statusTitle.textContent = 'No Form Detected';
+      elements.statusText.textContent = 'No application form found, but you can still try to auto-fill.';
+      elements.autoFillBtn.style.display = 'flex';
+      elements.autoFillBtn.innerHTML = '<span>Try Auto-Fill Anyway</span>';
     }
   } catch (error) {
     console.error('Error checking page:', error);
+    // Still show button on error
+    elements.autoFillBtn.style.display = 'flex';
+  }
+}
+
+async function checkForApplicationForm(tabId) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        // Check for common job application form indicators
+        const indicators = [
+          'input[type="email"]',
+          'input[name*="name" i]',
+          'input[name*="phone" i]',
+          'input[type="file"]',
+          'input[name*="resume" i]',
+          'input[name*="cv" i]',
+          'textarea[name*="cover" i]',
+          'form'
+        ];
+        
+        for (const sel of indicators) {
+          if (document.querySelector(sel)) return true;
+        }
+        
+        // Check for job-related keywords in page text
+        const pageText = document.body?.innerText?.toLowerCase() || '';
+        const jobKeywords = ['apply', 'application', 'resume', 'cv', 'cover letter', 'experience', 'qualifications'];
+        const hasJobKeywords = jobKeywords.some(kw => pageText.includes(kw));
+        
+        return hasJobKeywords;
+      }
+    });
+    
+    return results?.[0]?.result || false;
+  } catch (e) {
+    console.log('Could not check for form:', e);
+    return false;
   }
 }
 
