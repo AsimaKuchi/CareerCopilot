@@ -1187,9 +1187,16 @@ async def email_signup(data: EmailSignupRequest):
     await db.user_profiles.insert_one(default_profile)
     
     # Send verification email
-    await send_verification_email(data.email.lower(), verification_token, data.name)
+    email_sent = await send_verification_email(data.email.lower(), verification_token, data.name)
     
-    return {"message": "Account created! Please check your email to verify your account."}
+    if email_sent:
+        return {"message": "Account created! Please check your email to verify your account."}
+    else:
+        # Email failed but account was created - provide verification link directly for testing
+        return {
+            "message": "Account created! Email service is in test mode. Use the verification link below.",
+            "verification_url": f"{FRONTEND_URL}/verify-email?token={verification_token}"
+        }
 
 @api_router.post("/auth/verify-email")
 async def verify_email(request: Request):
