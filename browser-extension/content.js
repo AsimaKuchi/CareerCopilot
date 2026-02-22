@@ -337,14 +337,160 @@
 
   async function fillTextFields(data, profile, results) {
     const pi = data.personal_info || {};
-    if (pi.first_name) await fillInput('#first_name', pi.first_name) && results.filled.push('First Name');
-    if (pi.last_name) await fillInput('#last_name', pi.last_name) && results.filled.push('Last Name');
-    if (pi.email) await fillInput('#email', pi.email) && results.filled.push('Email');
-    if (pi.phone) await fillInput('#phone', pi.phone) && results.filled.push('Phone');
+    
+    // ========================================
+    // GENERIC FIELD FILLING - works on any site
+    // ========================================
+    
+    // First Name - try multiple selectors and label patterns
+    if (pi.first_name) {
+      const filled = await fillFieldByPatterns(
+        [
+          '#first_name', 
+          'input[name="first_name"]',
+          'input[name="firstName"]',
+          'input[name="fname"]',
+          'input[id*="first" i][id*="name" i]',
+          'input[name*="first" i][name*="name" i]',
+          'input[autocomplete="given-name"]',
+          'input[placeholder*="first name" i]'
+        ],
+        ['first name', 'given name', 'prénom'],
+        pi.first_name
+      );
+      if (filled) results.filled.push('First Name');
+    }
+    
+    // Last Name
+    if (pi.last_name) {
+      const filled = await fillFieldByPatterns(
+        [
+          '#last_name',
+          'input[name="last_name"]',
+          'input[name="lastName"]',
+          'input[name="lname"]',
+          'input[id*="last" i][id*="name" i]',
+          'input[name*="last" i][name*="name" i]',
+          'input[autocomplete="family-name"]',
+          'input[placeholder*="last name" i]'
+        ],
+        ['last name', 'family name', 'surname', 'nom de famille'],
+        pi.last_name
+      );
+      if (filled) results.filled.push('Last Name');
+    }
+    
+    // Email
+    if (pi.email) {
+      const filled = await fillFieldByPatterns(
+        [
+          '#email',
+          'input[type="email"]',
+          'input[name="email"]',
+          'input[name="emailAddress"]',
+          'input[id*="email" i]',
+          'input[autocomplete="email"]',
+          'input[placeholder*="email" i]'
+        ],
+        ['email', 'e-mail', 'courriel'],
+        pi.email
+      );
+      if (filled) results.filled.push('Email');
+    }
+    
+    // Phone
+    if (pi.phone) {
+      const filled = await fillFieldByPatterns(
+        [
+          '#phone',
+          'input[type="tel"]',
+          'input[name="phone"]',
+          'input[name="phoneNumber"]',
+          'input[name="telephone"]',
+          'input[id*="phone" i]',
+          'input[autocomplete="tel"]',
+          'input[placeholder*="phone" i]'
+        ],
+        ['phone', 'telephone', 'mobile', 'cell', 'téléphone'],
+        pi.phone
+      );
+      if (filled) results.filled.push('Phone');
+    }
     
     // LinkedIn
-    const li = document.querySelector('input[id*="linkedin" i]');
-    if (li && pi.linkedin) await fillInput(li, pi.linkedin) && results.filled.push('LinkedIn');
+    if (pi.linkedin) {
+      const filled = await fillFieldByPatterns(
+        [
+          'input[id*="linkedin" i]',
+          'input[name*="linkedin" i]',
+          'input[placeholder*="linkedin" i]'
+        ],
+        ['linkedin'],
+        pi.linkedin
+      );
+      if (filled) results.filled.push('LinkedIn');
+    }
+    
+    // GitHub
+    if (pi.github) {
+      const filled = await fillFieldByPatterns(
+        [
+          'input[id*="github" i]',
+          'input[name*="github" i]',
+          'input[placeholder*="github" i]'
+        ],
+        ['github'],
+        pi.github
+      );
+      if (filled) results.filled.push('GitHub');
+    }
+    
+    // Portfolio/Website
+    if (pi.portfolio) {
+      const filled = await fillFieldByPatterns(
+        [
+          'input[id*="portfolio" i]',
+          'input[id*="website" i]',
+          'input[name*="portfolio" i]',
+          'input[name*="website" i]',
+          'input[type="url"]'
+        ],
+        ['portfolio', 'website', 'personal site'],
+        pi.portfolio
+      );
+      if (filled) results.filled.push('Portfolio/Website');
+    }
+    
+    // Full Name (if site asks for combined name)
+    if (pi.full_name || (pi.first_name && pi.last_name)) {
+      const fullName = pi.full_name || `${pi.first_name} ${pi.last_name}`;
+      const filled = await fillFieldByPatterns(
+        [
+          'input[name="full_name"]',
+          'input[name="fullName"]',
+          'input[name="name"]',
+          'input[autocomplete="name"]'
+        ],
+        ['full name', 'your name', 'name'],
+        fullName,
+        true // exactLabelMatch to avoid matching "first name" or "last name"
+      );
+      if (filled) results.filled.push('Full Name');
+    }
+    
+    // City
+    if (profile.city) {
+      const filled = await fillFieldByPatterns(
+        [
+          'input[name="city"]',
+          'input[id*="city" i]',
+          'input[autocomplete="address-level2"]'
+        ],
+        ['city', 'ville'],
+        profile.city
+      );
+      if (filled) results.filled.push('City');
+    }
     
     // Preferred name
     for (const label of document.querySelectorAll('label')) {
@@ -352,13 +498,70 @@
         const forId = label.getAttribute('for');
         if (forId) {
           const inp = document.getElementById(forId);
-          if (inp?.tagName === 'INPUT' && !inp.value) {
+          if (inp?.tagName === 'INPUT' && !inp.value && inp.type !== 'password') {
             await fillInput(inp, profile.firstName);
             results.filled.push('Preferred Name');
           }
         }
       }
     }
+  }
+  
+  // Helper to fill field by CSS selectors or label text
+  async function fillFieldByPatterns(selectors, labelPatterns, value, exactLabelMatch = false) {
+    if (!value) return false;
+    
+    // Try CSS selectors first
+    for (const sel of selectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (el && !el.value && el.type !== 'password' && el.type !== 'hidden' && isVisible(el)) {
+          log(`Filling ${sel} with value`);
+          return await fillInput(el, value);
+        }
+      } catch (e) {
+        // Invalid selector, skip
+      }
+    }
+    
+    // Try finding by label text
+    for (const label of document.querySelectorAll('label')) {
+      const labelText = label.textContent.toLowerCase().replace(/\*/g, '').trim();
+      
+      for (const pattern of labelPatterns) {
+        const matches = exactLabelMatch 
+          ? labelText === pattern.toLowerCase()
+          : labelText.includes(pattern.toLowerCase());
+          
+        if (matches) {
+          // Find associated input
+          const forId = label.getAttribute('for');
+          let input = forId ? document.getElementById(forId) : null;
+          
+          // If no "for" attribute, look for input inside or next to label
+          if (!input) {
+            input = label.querySelector('input:not([type="password"]):not([type="hidden"])');
+          }
+          if (!input) {
+            input = label.parentElement?.querySelector('input:not([type="password"]):not([type="hidden"])');
+          }
+          if (!input) {
+            // Check next sibling
+            const next = label.nextElementSibling;
+            if (next?.tagName === 'INPUT' && next.type !== 'password' && next.type !== 'hidden') {
+              input = next;
+            }
+          }
+          
+          if (input && !input.value && input.type !== 'password' && isVisible(input)) {
+            log(`Filling by label "${pattern}" with value`);
+            return await fillInput(input, value);
+          }
+        }
+      }
+    }
+    
+    return false;
   }
 
   async function fillInput(sel, val) {
