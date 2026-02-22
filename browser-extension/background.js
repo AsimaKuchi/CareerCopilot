@@ -134,22 +134,49 @@ async function handleTrackSubmission(data) {
   }
 }
 
-// Update badge when on supported pages
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+// Update badge when on pages with forms
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    const isSupported = checkIfSupported(tab.url);
+    // Skip chrome:// and other internal pages
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:')) {
+      chrome.action.setBadgeText({ tabId, text: '' });
+      return;
+    }
     
-    if (isSupported) {
+    const isKnownATS = checkIfKnownATS(tab.url);
+    
+    if (isKnownATS) {
+      // Known ATS - green checkmark
       chrome.action.setBadgeText({ tabId, text: '✓' });
       chrome.action.setBadgeBackgroundColor({ tabId, color: '#10b981' });
     } else {
-      chrome.action.setBadgeText({ tabId, text: '' });
+      // For other sites, check if there's a form
+      try {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: () => {
+            const hasForm = document.querySelector('form, input[type="email"], input[type="file"]');
+            return !!hasForm;
+          }
+        });
+        
+        if (results?.[0]?.result) {
+          // Has form - show blue dot
+          chrome.action.setBadgeText({ tabId, text: '●' });
+          chrome.action.setBadgeBackgroundColor({ tabId, color: '#6366f1' });
+        } else {
+          chrome.action.setBadgeText({ tabId, text: '' });
+        }
+      } catch (e) {
+        // Can't inject script (e.g., restricted page)
+        chrome.action.setBadgeText({ tabId, text: '' });
+      }
     }
   }
 });
 
-function checkIfSupported(url) {
-  const supportedPatterns = [
+function checkIfKnownATS(url) {
+  const knownPatterns = [
     /boards\.greenhouse\.io/i,
     /jobs\.greenhouse\.io/i,
     /jobs\.lever\.co/i,
@@ -164,11 +191,10 @@ function checkIfSupported(url) {
     /\.taleo\.net/i,
     /\.icims\.com/i,
     /\.randstad\.ca/i,
-    /\.randstad\.com/i,
-    /www\.randstad\./i
+    /\.randstad\.com/i
   ];
   
-  return supportedPatterns.some(pattern => pattern.test(url));
+  return knownPatterns.some(pattern => pattern.test(url));
 }
 
 console.log('[JobMatch AI] Background service worker loaded');
