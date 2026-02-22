@@ -12,7 +12,7 @@ Build a website that helps users find jobs best suited for them based on what in
 ## User Choices
 - **AI Provider**: OpenAI GPT-5.2 (via Emergent Universal Key)
 - **Job Data Source**: JSearch API + Greenhouse + Lever + SmartRecruiters + Pinpoint (real-time scraping)
-- **Authentication**: Google Social Login (Emergent OAuth)
+- **Authentication**: Google OAuth + Email/Password (both available)
 - **Design**: Light theme with glassmorphism
 
 ## Architecture
