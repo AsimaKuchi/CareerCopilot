@@ -162,7 +162,10 @@ function checkIfSupported(url) {
     /\.jobvite\.com/i,
     /\.myworkdayjobs\.com/i,
     /\.taleo\.net/i,
-    /\.icims\.com/i
+    /\.icims\.com/i,
+    /\.randstad\.ca/i,
+    /\.randstad\.com/i,
+    /www\.randstad\./i
   ];
   
   return supportedPatterns.some(pattern => pattern.test(url));
