@@ -2170,12 +2170,58 @@ async def get_saved_jobs(request: Request):
             "total": 0
         }
     
-    # Sort jobs with new ones first
+    # Define priority ATS sources (jobs from these appear first)
+    priority_sources = {"greenhouse", "lever", "ashby"}
+    
+    # Sort jobs: 
+    # 1. Priority ATS sources first (Greenhouse, Lever, Ashby)
+    # 2. New jobs before seen jobs
+    # 3. Most recent posted_at first
     jobs = saved.get("jobs", [])
     jobs.sort(key=lambda x: (
-        0 if x.get("is_new_for_user", False) else 1,
-        x.get("posted_at", "") or ""
-    ), reverse=True)
+        0 if x.get("source", "").lower() in priority_sources else 1,  # Priority sources first
+        0 if x.get("is_new_for_user", False) else 1,  # New jobs first
+        x.get("posted_at", "") or ""  # Most recent first (reversed below)
+    ), reverse=False)
+    
+    # Reverse to get most recent first within each group
+    # We need a more sophisticated sort for date descending
+    def sort_key(job):
+        source = job.get("source", "").lower()
+        is_priority = source in priority_sources
+        is_new = job.get("is_new_for_user", False)
+        posted_at = job.get("posted_at", "") or "1970-01-01"
+        
+        # Lower tuple = higher priority
+        # is_priority: 0 for ATS, 1 for others
+        # is_new: 0 for new, 1 for seen
+        # posted_at: negate for descending (use negative or reverse string)
+        return (
+            0 if is_priority else 1,
+            0 if is_new else 1,
+            posted_at  # Will be sorted descending via reverse=True
+        )
+    
+    jobs.sort(key=sort_key, reverse=True)
+    # Fix: reverse=True makes posted_at descending but breaks priority order
+    # Need custom approach
+    
+    # Better approach: sort in stages
+    def multi_sort_key(job):
+        source = job.get("source", "").lower()
+        is_priority = 0 if source in priority_sources else 1
+        is_new = 0 if job.get("is_new_for_user", False) else 1
+        # For date, we want descending, so negate by using max date minus actual
+        posted_at = job.get("posted_at", "") or "1970-01-01"
+        return (is_priority, is_new, posted_at)
+    
+    # Sort ascending by priority and new status, but we need date descending
+    # So we'll sort twice: first by date desc, then stable sort by priority
+    jobs.sort(key=lambda x: x.get("posted_at", "") or "1970-01-01", reverse=True)  # Date desc
+    jobs.sort(key=lambda x: (
+        0 if x.get("source", "").lower() in priority_sources else 1,
+        0 if x.get("is_new_for_user", False) else 1
+    ))  # Stable sort: priority groups preserved, date order maintained within
     
     return {
         "jobs": jobs,
