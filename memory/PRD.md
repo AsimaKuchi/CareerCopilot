@@ -190,7 +190,13 @@ Build a website that helps users find jobs best suited for them based on what in
   - Download preserves headings (bold), bullet points (indented), and proper spacing
 
 ### Backend API Endpoints
-- `POST /api/auth/session` - Exchange session_id for session_token
+- `POST /api/auth/session` - Exchange session_id for session_token (Google OAuth)
+- `POST /api/auth/signup` - Sign up with email/password (NEW - Feb 22, 2026)
+- `POST /api/auth/login` - Login with email/password (NEW - Feb 22, 2026)
+- `POST /api/auth/verify-email` - Verify email with token (NEW - Feb 22, 2026)
+- `POST /api/auth/forgot-password` - Request password reset email (NEW - Feb 22, 2026)
+- `POST /api/auth/reset-password` - Reset password with token (NEW - Feb 22, 2026)
+- `POST /api/auth/resend-verification` - Resend verification email (NEW - Feb 22, 2026)
 - `GET /api/auth/me` - Get current user
 - `POST /api/auth/logout` - Logout user
 - `GET/PUT /api/profile` - Profile management (includes new fields)
