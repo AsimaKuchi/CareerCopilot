@@ -586,7 +586,53 @@
         mimeType: resume.mime_type
       });
       
-      const inp = document.querySelector('#resume');
+      // Try multiple selectors for resume file input
+      const resumeSelectors = [
+        '#resume',
+        'input[type="file"][name*="resume" i]',
+        'input[type="file"][id*="resume" i]',
+        'input[type="file"][name*="cv" i]',
+        'input[type="file"][id*="cv" i]',
+        'input[type="file"][accept*="pdf"]',
+        'input[type="file"][accept*="doc"]',
+        'input[type="file"]:not([name*="cover" i]):not([name*="letter" i])'
+      ];
+      
+      let inp = null;
+      for (const sel of resumeSelectors) {
+        inp = document.querySelector(sel);
+        if (inp) {
+          log(`Found resume input: ${sel}`);
+          break;
+        }
+      }
+      
+      // Also try finding by label text
+      if (!inp) {
+        for (const label of document.querySelectorAll('label')) {
+          const text = label.textContent.toLowerCase();
+          if (text.includes('resume') || text.includes('cv') || text.includes('curriculum')) {
+            const forId = label.getAttribute('for');
+            if (forId) {
+              inp = document.getElementById(forId);
+              if (inp?.type === 'file') break;
+            }
+            // Check for input inside label
+            const fileInput = label.querySelector('input[type="file"]');
+            if (fileInput) {
+              inp = fileInput;
+              break;
+            }
+            // Check parent/siblings
+            const parent = label.closest('div, fieldset, section');
+            if (parent) {
+              inp = parent.querySelector('input[type="file"]');
+              if (inp) break;
+            }
+          }
+        }
+      }
+      
       if (inp) {
         try {
           const f = b64ToFile(resume.file_data, resume.filename, resume.mime_type);
@@ -594,6 +640,7 @@
           dt.items.add(f);
           inp.files = dt.files;
           inp.dispatchEvent(new Event('change', { bubbles: true }));
+          inp.dispatchEvent(new Event('input', { bubbles: true }));
           
           const label = resume.is_optimized ? 'Resume (Optimized for this job)' : 'Resume';
           results.filled.push(label);
