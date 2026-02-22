@@ -1071,7 +1071,12 @@ async def send_verification_email(email: str, token: str, name: str):
         "html": html_content
     }
     
-    await asyncio.to_thread(resend.Emails.send, params)
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to send verification email to {email}: {e}")
+        return False
 
 async def send_password_reset_email(email: str, token: str, name: str):
     """Send password reset link."""
