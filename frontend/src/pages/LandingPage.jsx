@@ -229,86 +229,88 @@ export default function LandingPage() {
               {/* First set of logos */}
               <div className="flex items-center gap-16 px-8 shrink-0">
                 {[
-                  { name: "Google", domain: "google.com" },
-                  { name: "Microsoft", domain: "microsoft.com" },
-                  { name: "Amazon", domain: "amazon.com" },
-                  { name: "Meta", domain: "meta.com" },
-                  { name: "Apple", domain: "apple.com" },
-                  { name: "Netflix", domain: "netflix.com" },
-                  { name: "Spotify", domain: "spotify.com" },
-                  { name: "Shopify", domain: "shopify.com" },
-                  { name: "Stripe", domain: "stripe.com" },
-                  { name: "Slack", domain: "slack.com" },
-                  { name: "Airbnb", domain: "airbnb.com" },
-                  { name: "Uber", domain: "uber.com" },
-                  { name: "LinkedIn", domain: "linkedin.com" },
-                  { name: "Salesforce", domain: "salesforce.com" },
-                  { name: "Adobe", domain: "adobe.com" },
-                  { name: "JPMorgan", domain: "jpmorgan.com" },
-                  { name: "Goldman Sachs", domain: "goldmansachs.com" },
-                  { name: "TD Bank", domain: "td.com" },
-                  { name: "RBC", domain: "rbc.com" },
-                  { name: "Deloitte", domain: "deloitte.com" },
-                  { name: "KPMG", domain: "kpmg.com" },
-                  { name: "Morgan Stanley", domain: "morganstanley.com" },
+                  { name: "Google", logo: "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" },
+                  { name: "Microsoft", logo: "https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" },
+                  { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/200px-Amazon_logo.svg.png" },
+                  { name: "Apple", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/100px-Apple_logo_black.svg.png" },
+                  { name: "Netflix", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/200px-Netflix_2015_logo.svg.png" },
+                  { name: "Spotify", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/100px-Spotify_logo_without_text.svg.png" },
+                  { name: "Shopify", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shopify_logo_2018.svg/200px-Shopify_logo_2018.svg.png" },
+                  { name: "Stripe", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/200px-Stripe_Logo%2C_revised_2016.svg.png" },
+                  { name: "Slack", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Slack_icon_2019.svg/100px-Slack_icon_2019.svg.png" },
+                  { name: "Airbnb", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Airbnb_Logo_B%C3%A9lo.svg/150px-Airbnb_Logo_B%C3%A9lo.svg.png" },
+                  { name: "LinkedIn", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/100px-LinkedIn_logo_initials.png" },
+                  { name: "Salesforce", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Salesforce.com_logo.svg/200px-Salesforce.com_logo.svg.png" },
+                  { name: "Adobe", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Adobe_Corporate_Logo.svg/150px-Adobe_Corporate_Logo.svg.png" },
+                  { name: "JPMorgan", logo: null, color: "#003087" },
+                  { name: "Goldman Sachs", logo: null, color: "#7399C6" },
+                  { name: "Deloitte", logo: null, color: "#86BC25" },
+                  { name: "TD Bank", logo: null, color: "#34A853" },
+                  { name: "RBC", logo: null, color: "#0051A5" },
                 ].map((company, i) => (
                   <div 
                     key={`logo-1-${i}`}
-                    className="flex items-center justify-center h-10 opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
+                    className="flex items-center justify-center h-10 opacity-60 hover:opacity-100 transition-opacity"
                   >
-                    <img 
-                      src={`https://logo.clearbit.com/${company.domain}`}
-                      alt={company.name}
-                      className="h-8 w-auto object-contain"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                    <span className="text-sm font-semibold text-gray-500 hidden">{company.name}</span>
+                    {company.logo ? (
+                      <img 
+                        src={company.logo}
+                        alt={company.name}
+                        className="h-8 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span 
+                        className="text-lg font-bold whitespace-nowrap"
+                        style={{ color: company.color }}
+                      >
+                        {company.name}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
               {/* Duplicate set for seamless loop */}
               <div className="flex items-center gap-16 px-8 shrink-0">
                 {[
-                  { name: "Google", domain: "google.com" },
-                  { name: "Microsoft", domain: "microsoft.com" },
-                  { name: "Amazon", domain: "amazon.com" },
-                  { name: "Meta", domain: "meta.com" },
-                  { name: "Apple", domain: "apple.com" },
-                  { name: "Netflix", domain: "netflix.com" },
-                  { name: "Spotify", domain: "spotify.com" },
-                  { name: "Shopify", domain: "shopify.com" },
-                  { name: "Stripe", domain: "stripe.com" },
-                  { name: "Slack", domain: "slack.com" },
-                  { name: "Airbnb", domain: "airbnb.com" },
-                  { name: "Uber", domain: "uber.com" },
-                  { name: "LinkedIn", domain: "linkedin.com" },
-                  { name: "Salesforce", domain: "salesforce.com" },
-                  { name: "Adobe", domain: "adobe.com" },
-                  { name: "JPMorgan", domain: "jpmorgan.com" },
-                  { name: "Goldman Sachs", domain: "goldmansachs.com" },
-                  { name: "TD Bank", domain: "td.com" },
-                  { name: "RBC", domain: "rbc.com" },
-                  { name: "Deloitte", domain: "deloitte.com" },
-                  { name: "KPMG", domain: "kpmg.com" },
-                  { name: "Morgan Stanley", domain: "morganstanley.com" },
+                  { name: "Google", logo: "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" },
+                  { name: "Microsoft", logo: "https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" },
+                  { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/200px-Amazon_logo.svg.png" },
+                  { name: "Apple", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/100px-Apple_logo_black.svg.png" },
+                  { name: "Netflix", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/200px-Netflix_2015_logo.svg.png" },
+                  { name: "Spotify", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/100px-Spotify_logo_without_text.svg.png" },
+                  { name: "Shopify", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shopify_logo_2018.svg/200px-Shopify_logo_2018.svg.png" },
+                  { name: "Stripe", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/200px-Stripe_Logo%2C_revised_2016.svg.png" },
+                  { name: "Slack", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Slack_icon_2019.svg/100px-Slack_icon_2019.svg.png" },
+                  { name: "Airbnb", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Airbnb_Logo_B%C3%A9lo.svg/150px-Airbnb_Logo_B%C3%A9lo.svg.png" },
+                  { name: "LinkedIn", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/100px-LinkedIn_logo_initials.png" },
+                  { name: "Salesforce", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Salesforce.com_logo.svg/200px-Salesforce.com_logo.svg.png" },
+                  { name: "Adobe", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Adobe_Corporate_Logo.svg/150px-Adobe_Corporate_Logo.svg.png" },
+                  { name: "JPMorgan", logo: null, color: "#003087" },
+                  { name: "Goldman Sachs", logo: null, color: "#7399C6" },
+                  { name: "Deloitte", logo: null, color: "#86BC25" },
+                  { name: "TD Bank", logo: null, color: "#34A853" },
+                  { name: "RBC", logo: null, color: "#0051A5" },
                 ].map((company, i) => (
                   <div 
                     key={`logo-2-${i}`}
-                    className="flex items-center justify-center h-10 opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
+                    className="flex items-center justify-center h-10 opacity-60 hover:opacity-100 transition-opacity"
                   >
-                    <img 
-                      src={`https://logo.clearbit.com/${company.domain}`}
-                      alt={company.name}
-                      className="h-8 w-auto object-contain"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                    <span className="text-sm font-semibold text-gray-500 hidden">{company.name}</span>
+                    {company.logo ? (
+                      <img 
+                        src={company.logo}
+                        alt={company.name}
+                        className="h-8 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span 
+                        className="text-lg font-bold whitespace-nowrap"
+                        style={{ color: company.color }}
+                      >
+                        {company.name}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
