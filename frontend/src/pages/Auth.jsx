@@ -38,6 +38,7 @@ const SignUpForm = ({ onSwitchToLogin }) => {
 
   const passwordErrors = password ? validatePassword(password) : [];
   const isPasswordValid = passwordErrors.length === 0;
+  const [verificationUrl, setVerificationUrl] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +56,12 @@ const SignUpForm = ({ onSwitchToLogin }) => {
       if (!res.ok) throw new Error(data.detail || "Signup failed");
 
       setSuccess(true);
-      toast.success("Check your email for verification link!");
+      if (data.verification_url) {
+        setVerificationUrl(data.verification_url);
+        toast.success("Account created! Use the verification link below.");
+      } else {
+        toast.success("Check your email for verification link!");
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -69,13 +75,29 @@ const SignUpForm = ({ onSwitchToLogin }) => {
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Mail className="w-8 h-8 text-green-600" />
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Check your email</h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          {verificationUrl ? "Verify your email" : "Check your email"}
+        </h3>
         <p className="text-gray-600 mb-6">
-          We've sent a verification link to <strong>{email}</strong>
+          {verificationUrl ? (
+            <>Account created for <strong>{email}</strong>. Click below to verify:</>
+          ) : (
+            <>We've sent a verification link to <strong>{email}</strong></>
+          )}
         </p>
-        <Button variant="outline" onClick={() => setSuccess(false)}>
-          Use different email
-        </Button>
+        {verificationUrl && (
+          <Button 
+            className="mb-4"
+            onClick={() => window.location.href = verificationUrl}
+          >
+            Verify Email Now
+          </Button>
+        )}
+        <div>
+          <Button variant="outline" onClick={() => { setSuccess(false); setVerificationUrl(null); }}>
+            Use different email
+          </Button>
+        </div>
       </div>
     );
   }
