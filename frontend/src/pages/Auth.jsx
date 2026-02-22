@@ -219,18 +219,21 @@ const LoginForm = ({ onForgotPassword }) => {
       });
 
       const data = await res.json();
+      
       if (!res.ok) {
-        if (data.detail?.includes("verify")) {
+        const errorMsg = data.detail || "Login failed";
+        if (errorMsg.toLowerCase().includes("verify")) {
           setNeedsVerification(true);
+          setLoading(false);
           return;
         }
-        throw new Error(data.detail || "Login failed");
+        throw new Error(errorMsg);
       }
 
       toast.success("Welcome back!");
       navigate("/dashboard", { replace: true, state: { user: data } });
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Login failed");
     } finally {
       setLoading(false);
     }
