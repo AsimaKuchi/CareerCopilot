@@ -465,7 +465,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-foreground leading-relaxed italic">
-                  "Finally, an auto-fill that actually works with Greenhouse dropdowns. The tailored resume for each job is the cherry on top."
+                  "Finally, an auto-fill that actually works with every job site's dropdowns. The tailored resume for each job is the cherry on top."
                 </p>
                 <div className="pt-4 border-t border-gray-100">
                   <p className="font-semibold text-foreground">Marcus Miller</p>
