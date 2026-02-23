@@ -99,7 +99,7 @@ export default function Support() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <Link to="/dashboard" className="text-2xl font-bold text-indigo-400">
-                CareerCopilot AI
+                MyCareerCoPilot
               </Link>
             </div>
           </div>
@@ -154,7 +154,7 @@ export default function Support() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link to="/dashboard" className="text-2xl font-bold text-indigo-400">
-              CareerCopilot AI
+              MyCareerCoPilot
             </Link>
             <Button asChild variant="ghost" size="sm">
               <Link to="/dashboard">
@@ -293,7 +293,7 @@ export default function Support() {
                     id="description"
                     name="description"
                     placeholder={formData.reason === "Leave a Review"
-                      ? "Tell us about your experience with CareerCopilot AI — what did you like, what could be better?"
+                      ? "Tell us about your experience with MyCareerCoPilot — what did you like, what could be better?"
                       : "Please describe your issue or question in detail..."}
                     value={formData.description}
                     onChange={handleChange}
