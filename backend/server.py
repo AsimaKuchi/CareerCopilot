@@ -1048,11 +1048,11 @@ async def send_verification_email(email: str, token: str, name: str):
     html_content = f"""
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #6366f1; margin: 0;">CareerCopilot AI</h1>
+            <h1 style="color: #6366f1; margin: 0;">MyCareerCoPilot</h1>
         </div>
         <h2 style="color: #1f2937;">Welcome, {name}!</h2>
         <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
-            Thanks for signing up for CareerCopilot AI. Please verify your email address by clicking the button below:
+            Thanks for signing up for MyCareerCoPilot. Please verify your email address by clicking the button below:
         </p>
         <div style="text-align: center; margin: 30px 0;">
             <a href="{verify_url}" style="background-color: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
@@ -1076,7 +1076,7 @@ async def send_verification_email(email: str, token: str, name: str):
     params = {
         "from": SENDER_EMAIL,
         "to": [email],
-        "subject": "Verify your CareerCopilot AI account",
+        "subject": "Verify your MyCareerCoPilot account",
         "html": html_content
     }
     
@@ -1094,7 +1094,7 @@ async def send_password_reset_email(email: str, token: str, name: str):
     html_content = f"""
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #6366f1; margin: 0;">CareerCopilot AI</h1>
+            <h1 style="color: #6366f1; margin: 0;">MyCareerCoPilot</h1>
         </div>
         <h2 style="color: #1f2937;">Reset Your Password</h2>
         <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
@@ -1122,7 +1122,7 @@ async def send_password_reset_email(email: str, token: str, name: str):
     params = {
         "from": SENDER_EMAIL,
         "to": [email],
-        "subject": "Reset your CareerCopilot AI password",
+        "subject": "Reset your MyCareerCoPilot password",
         "html": html_content
     }
     
