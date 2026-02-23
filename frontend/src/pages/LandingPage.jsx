@@ -585,7 +585,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm text-muted-foreground">© 2025 CareerCopilot AI. All rights reserved.</span>
+            <span className="text-sm text-muted-foreground">© 2025 MyCareerCoPilot. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
