@@ -1141,13 +1141,13 @@ async def send_welcome_email(email: str, first_name: str):
     html_content = f"""
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #6366f1; margin: 0; font-size: 28px;">MyCareerCopilot</h1>
+            <h1 style="color: #6366f1; margin: 0; font-size: 28px;">MyCareerCoPilot</h1>
         </div>
         
         <h2 style="color: #1f2937; margin-bottom: 10px;">Hi {first_name},</h2>
         
         <p style="color: #1f2937; font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
-            Welcome to MyCareerCopilot! 🎉
+            Welcome to MyCareerCoPilot! 🎉
         </p>
         
         <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
@@ -1183,7 +1183,7 @@ async def send_welcome_email(email: str, first_name: str):
         </div>
         
         <div style="background-color: #eef2ff; border-radius: 12px; padding: 24px; margin: 24px 0;">
-            <h3 style="color: #4338ca; margin-top: 0; margin-bottom: 16px; font-size: 18px;">Why you'll love MyCareerCopilot:</h3>
+            <h3 style="color: #4338ca; margin-top: 0; margin-bottom: 16px; font-size: 18px;">Why you'll love MyCareerCoPilot:</h3>
             <ul style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
                 <li>Save 25+ minutes per application with smart auto-fill</li>
                 <li>Apply to fewer jobs, get more interviews</li>
@@ -1208,7 +1208,7 @@ async def send_welcome_email(email: str, first_name: str):
         
         <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-top: 24px;">
             Best of luck on your job search!<br>
-            <strong>The MyCareerCopilot Team</strong>
+            <strong>The MyCareerCoPilot Team</strong>
         </p>
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
@@ -1222,7 +1222,7 @@ async def send_welcome_email(email: str, first_name: str):
     params = {
         "from": SENDER_EMAIL,
         "to": [email],
-        "subject": "Welcome to MyCareerCopilot! 🚀",
+        "subject": "Welcome to MyCareerCoPilot! 🚀",
         "html": html_content
     }
     
