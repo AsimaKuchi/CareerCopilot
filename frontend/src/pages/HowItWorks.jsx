@@ -194,13 +194,11 @@ export default function HowItWorks() {
                     </div>
 
                     {/* Step Content */}
-                    <div className="flex-1 p-6 lg:p-8 space-y-4">
+                    <div className="flex-1 p-6 lg:p-8 space-y-3">
                       <div>
                         <h2 className="text-2xl font-bold text-foreground mb-1">{step.title}</h2>
-                        <p className="text-lg text-muted-foreground">{step.subtitle}</p>
+                        <p className="text-base text-muted-foreground">{step.subtitle}</p>
                       </div>
-
-                      <p className="text-foreground">{step.description}</p>
 
                       <ul className="space-y-2">
                         {step.points.map((point, j) => (
@@ -211,53 +209,8 @@ export default function HowItWorks() {
                         ))}
                       </ul>
 
-                      {/* Extras for Step 2 */}
-                      {step.extras && (
-                        <div className="pt-4 border-t border-gray-100">
-                          <p className="text-foreground font-medium mb-3">You'll see:</p>
-                          <div className="grid sm:grid-cols-3 gap-3">
-                            {step.extras.map((extra, j) => (
-                              <div key={j} className="flex items-center gap-2 p-3 rounded-lg bg-gray-50">
-                                <extra.icon className={`w-5 h-5 ${extra.color}`} />
-                                <span className="text-sm text-foreground">{extra.text}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Actions for Step 3 */}
-                      {step.actions && (
-                        <div className="pt-4 border-t border-gray-100">
-                          <p className="text-foreground font-medium mb-3">You choose what to:</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {step.actions.map((action, j) => (
-                              <div key={j} className="flex items-center gap-2 p-3 rounded-lg bg-gray-50">
-                                <action.icon className={`w-5 h-5 ${action.color}`} />
-                                <span className="text-sm text-foreground">{action.text}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Tracking for Step 4 */}
-                      {step.tracking && (
-                        <div className="pt-4 border-t border-gray-100">
-                          <p className="text-foreground font-medium mb-3">You always know:</p>
-                          <div className="grid sm:grid-cols-3 gap-3">
-                            {step.tracking.map((item, j) => (
-                              <div key={j} className="flex items-center gap-2 p-3 rounded-lg bg-gray-50">
-                                <FileCheck className="w-5 h-5 text-indigo-500" />
-                                <span className="text-sm text-foreground">{item}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Highlight */}
-                      <div className="pt-4">
+                      <div className="pt-3">
                         <p className="text-foreground font-semibold flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-indigo-500" />
                           {step.highlight}
