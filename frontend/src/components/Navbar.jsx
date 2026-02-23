@@ -65,14 +65,21 @@ export const Navbar = ({ user }) => {
             className="flex items-center gap-1 cursor-pointer"
             onClick={() => navigate("/dashboard")}
           >
-            <span className="text-lg font-bold tracking-tight">
-              <span className="text-gray-900">MyCareer</span>
-              <span className="text-indigo-500"> CoPilot</span>
-            </span>
-            <svg className="w-4 h-4 text-gray-600 -mt-2 -ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 2L11 13" />
-              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-            </svg>
+            <div className="relative leading-tight">
+              <div className="flex items-center">
+                <span className="text-lg font-bold text-gray-900 tracking-tight">MyCareer</span>
+                <svg className="w-3.5 h-3.5 text-gray-500 ml-0.5 -mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                </svg>
+              </div>
+              <div className="flex items-center -mt-1">
+                <svg className="w-2.5 h-3.5 text-indigo-400 -mr-0.5 flex-shrink-0" viewBox="0 0 12 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M11 1C6 1 2 4 2 8C2 12 6 14 6 14" />
+                </svg>
+                <span className="text-lg font-bold text-indigo-500 tracking-tight">CoPilot</span>
+              </div>
+            </div>
           </div>
 
           {/* Desktop Navigation */}
