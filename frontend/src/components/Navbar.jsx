@@ -66,10 +66,7 @@ export const Navbar = ({ user }) => {
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/dashboard")}
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-foreground hidden sm:block">CareerCopilot AI</span>
+            <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/262dd5d46f73f5ca7ab99148cffcdd2f7a718123ca50ece2046bcb3a68e90f2c.png" alt="CareerCopilot" className="h-8 w-auto" />
           </div>
 
           {/* Desktop Navigation */}

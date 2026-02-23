@@ -97,10 +97,7 @@ export default function LandingPage() {
       <header className="relative z-10 px-6 py-6">
         <nav className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-foreground">CareerCopilot AI</span>
+            <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/262dd5d46f73f5ca7ab99148cffcdd2f7a718123ca50ece2046bcb3a68e90f2c.png" alt="CareerCopilot" className="h-9 w-auto" />
           </div>
           <div className="flex items-center gap-3">
             <Button
