@@ -256,7 +256,7 @@ export default function LandingPage() {
                       <img 
                         src={company.logo}
                         alt={company.name}
-                        className="h-8 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                        className="h-8 w-auto object-contain"
                         loading="lazy"
                       />
                     ) : (
@@ -300,7 +300,7 @@ export default function LandingPage() {
                       <img 
                         src={company.logo}
                         alt={company.name}
-                        className="h-8 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                        className="h-8 w-auto object-contain"
                         loading="lazy"
                       />
                     ) : (
