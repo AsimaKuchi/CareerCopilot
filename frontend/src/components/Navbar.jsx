@@ -65,7 +65,9 @@ export const Navbar = ({ user }) => {
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/dashboard")}
           >
-            <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/262dd5d46f73f5ca7ab99148cffcdd2f7a718123ca50ece2046bcb3a68e90f2c.png" alt="CareerCopilot" className="h-20 w-auto -my-4" />
+            <div className="h-9 overflow-hidden flex items-center">
+              <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/262dd5d46f73f5ca7ab99148cffcdd2f7a718123ca50ece2046bcb3a68e90f2c.png" alt="CareerCopilot" className="h-24 w-auto object-contain" />
+            </div>
           </div>
 
           {/* Desktop Navigation */}
