@@ -6929,7 +6929,7 @@ async def get_autofill_script(request: Request, application_id: str):
         return s.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
     
     # Generate the auto-fill script
-    script = f'''// CareerCopilot AI - Greenhouse Auto-Fill Script
+    script = f'''// MyCareerCoPilot - Greenhouse Auto-Fill Script
 // Application: {js_escape(app_doc.get("job_title", ""))} at {js_escape(app_doc.get("company", ""))}
 // Generated for: {js_escape(full_name)}
 
@@ -6978,7 +6978,7 @@ async def get_autofill_script(request: Request, application_id: str):
         return false;
     }}
 
-    console.log('🚀 CareerCopilot AI Auto-Fill Starting...');
+    console.log('🚀 MyCareerCoPilot Auto-Fill Starting...');
     console.log('Applying for:', '{js_escape(app_doc.get("job_title", ""))}');
 
     // Fill first name
@@ -7041,7 +7041,7 @@ async def get_autofill_script(request: Request, application_id: str):
     console.log('📎 If there\\'s a file upload, use the downloaded .docx resume.');
     console.log('🔐 Complete any CAPTCHA if required.');
     
-    alert('CareerCopilot AI Auto-Fill Complete!\\n\\n✓ Fields have been filled\\n\\nPlease:\\n1. Review all information\\n2. Upload resume file if required\\n3. Complete any CAPTCHA\\n4. Click Submit');
+    alert('MyCareerCoPilot Auto-Fill Complete!\\n\\n✓ Fields have been filled\\n\\nPlease:\\n1. Review all information\\n2. Upload resume file if required\\n3. Complete any CAPTCHA\\n4. Click Submit');
 }})();'''
 
     return {
@@ -7978,7 +7978,7 @@ async def get_ats_stats(request: Request):
 
 @api_router.get("/")
 async def root():
-    return {"message": "CareerCopilot AI API", "status": "healthy"}
+    return {"message": "MyCareerCoPilot API", "status": "healthy"}
 
 @api_router.get("/health")
 async def health():
@@ -7990,7 +7990,7 @@ async def download_extension():
     path = "/app/browser-extension.zip"
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Extension file not found")
-    return FileResponse(path, filename="CareerCopilot-Extension.zip", media_type="application/zip")
+    return FileResponse(path, filename="MyCareerCoPilot-Extension.zip", media_type="application/zip")
 
 
 @api_router.get("/test-download")
