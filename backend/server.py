@@ -1327,6 +1327,10 @@ async def verify_email(request: Request):
         }
     )
     
+    # Send welcome email after successful verification
+    first_name = user.get("name", "there").split()[0] if user.get("name") else "there"
+    await send_welcome_email(user.get("email"), first_name)
+    
     return {"message": "Email verified successfully! You can now log in."}
 
 @api_router.post("/auth/resend-verification")
