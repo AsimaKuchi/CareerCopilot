@@ -1124,6 +1124,107 @@ async def send_password_reset_email(email: str, token: str, name: str):
         logger.warning(f"Failed to send password reset email to {email}: {e}")
         return False
 
+async def send_welcome_email(email: str, first_name: str):
+    """Send welcome email to new users after successful signup/verification."""
+    dashboard_url = f"{FRONTEND_URL}/dashboard"
+    support_url = f"{FRONTEND_URL}/support"
+    
+    html_content = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #6366f1; margin: 0; font-size: 28px;">MyCareerCopilot</h1>
+        </div>
+        
+        <h2 style="color: #1f2937; margin-bottom: 10px;">Hi {first_name},</h2>
+        
+        <p style="color: #1f2937; font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
+            Welcome to MyCareerCopilot! 🎉
+        </p>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+            Thank you for signing up. You've just taken the first step toward a smarter, more efficient job search that prioritizes quality over quantity.
+        </p>
+        
+        <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; margin: 24px 0;">
+            <h3 style="color: #1f2937; margin-top: 0; margin-bottom: 16px; font-size: 18px;">Here's what to do next:</h3>
+            
+            <div style="margin-bottom: 16px;">
+                <p style="color: #4b5563; font-size: 15px; margin: 0; line-height: 1.6;">
+                    <strong style="color: #6366f1;">1. Complete your profile</strong> - Add your skills, experience, and job preferences so we can find the best-fit roles for you
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <p style="color: #4b5563; font-size: 15px; margin: 0; line-height: 1.6;">
+                    <strong style="color: #6366f1;">2. Upload your resume</strong> - Our AI will auto-fill your profile to save you time
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <p style="color: #4b5563; font-size: 15px; margin: 0; line-height: 1.6;">
+                    <strong style="color: #6366f1;">3. Install the Chrome extension</strong> - Auto-fill applications in seconds on any job site
+                </p>
+            </div>
+            
+            <div>
+                <p style="color: #4b5563; font-size: 15px; margin: 0; line-height: 1.6;">
+                    <strong style="color: #6366f1;">4. Start your job search</strong> - Find roles that actually match your background
+                </p>
+            </div>
+        </div>
+        
+        <div style="background-color: #eef2ff; border-radius: 12px; padding: 24px; margin: 24px 0;">
+            <h3 style="color: #4338ca; margin-top: 0; margin-bottom: 16px; font-size: 18px;">Why you'll love MyCareerCopilot:</h3>
+            <ul style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Save 25+ minutes per application with smart auto-fill</li>
+                <li>Apply to fewer jobs, get more interviews</li>
+                <li>AI-powered cover letters and resume optimization</li>
+                <li>Track all your applications in one place</li>
+            </ul>
+        </div>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+            We're here to help you land your next great role - not just apply to hundreds of jobs.
+        </p>
+        
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{dashboard_url}" style="background-color: #6366f1; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block;">
+                Get Started Now →
+            </a>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+            Need help? Just reply to this email or visit our <a href="{support_url}" style="color: #6366f1; text-decoration: none;">Support page</a>.
+        </p>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-top: 24px;">
+            Best of luck on your job search!<br>
+            <strong>The MyCareerCopilot Team</strong>
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        
+        <p style="color: #9ca3af; font-size: 13px; text-align: center; font-style: italic;">
+            💡 Pro tip: Complete your profile 100% to get the most accurate job matches!
+        </p>
+    </div>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [email],
+        "subject": "Welcome to MyCareerCopilot! 🚀",
+        "html": html_content
+    }
+    
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Welcome email sent to {email}")
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to send welcome email to {email}: {e}")
+        return False
+
 @api_router.post("/auth/signup")
 async def email_signup(data: EmailSignupRequest):
     """Sign up with email and password."""
