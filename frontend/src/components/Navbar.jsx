@@ -62,10 +62,17 @@ export const Navbar = ({ user }) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div
-            className="flex items-center cursor-pointer"
+            className="flex items-center gap-1 cursor-pointer"
             onClick={() => navigate("/dashboard")}
           >
-            <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/6f826cfc754262bc264e7713fb836d98142e643585d4237059935acab03f3cbf.png" alt="MyCareer CoPilot" className="h-12 w-auto" />
+            <span className="text-lg font-bold tracking-tight">
+              <span className="text-gray-900">MyCareer</span>
+              <span className="text-indigo-500"> CoPilot</span>
+            </span>
+            <svg className="w-4 h-4 text-gray-600 -mt-2 -ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 2L11 13" />
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+            </svg>
           </div>
 
           {/* Desktop Navigation */}
