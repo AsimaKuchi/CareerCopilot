@@ -53,7 +53,7 @@ export default function VerifyEmail() {
           <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">C</span>
           </div>
-          <span className="font-semibold text-gray-900">CareerCopilot AI</span>
+          <span className="font-semibold text-gray-900">MyCareerCoPilot</span>
         </Link>
       </header>
 
