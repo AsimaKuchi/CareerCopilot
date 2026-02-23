@@ -166,8 +166,7 @@ export default function HowItWorks() {
             </h1>
             
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Our platform helps you find the right jobs, prepare high-quality applications, 
-              and apply with confidence — all with you in control.
+              Find the right jobs. Apply with quality. Track everything. All in one place.
             </p>
           </div>
         </div>
