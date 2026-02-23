@@ -62,12 +62,10 @@ export const Navbar = ({ user }) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center cursor-pointer"
             onClick={() => navigate("/dashboard")}
           >
-            <div className="h-9 overflow-hidden flex items-center">
-              <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/262dd5d46f73f5ca7ab99148cffcdd2f7a718123ca50ece2046bcb3a68e90f2c.png" alt="CareerCopilot" className="h-24 w-auto object-contain" />
-            </div>
+            <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/6f826cfc754262bc264e7713fb836d98142e643585d4237059935acab03f3cbf.png" alt="MyCareer CoPilot" className="h-12 w-auto" />
           </div>
 
           {/* Desktop Navigation */}

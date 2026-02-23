@@ -96,10 +96,8 @@ export default function LandingPage() {
       {/* Header */}
       <header className="relative z-10 px-6 py-6">
         <nav className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-10 overflow-hidden flex items-center">
-              <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/262dd5d46f73f5ca7ab99148cffcdd2f7a718123ca50ece2046bcb3a68e90f2c.png" alt="CareerCopilot" className="h-28 w-auto object-contain" />
-            </div>
+          <div className="flex items-center">
+            <img src="https://static.prod-images.emergentagent.com/jobs/69c185ff-714c-4ca3-bbea-4a8fb5a6c82e/images/6f826cfc754262bc264e7713fb836d98142e643585d4237059935acab03f3cbf.png" alt="MyCareer CoPilot" className="h-14 w-auto" />
           </div>
           <div className="flex items-center gap-3">
             <Button
