@@ -921,6 +921,7 @@ async def create_session(request: Request, response: Response):
     
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     session_token = auth_data.get("session_token")
+    is_new_user = False
     
     # Check if user exists
     existing_user = await db.users.find_one(
@@ -939,12 +940,15 @@ async def create_session(request: Request, response: Response):
             }}
         )
     else:
+        is_new_user = True
         # Create new user
         new_user = {
             "user_id": user_id,
             "email": auth_data["email"],
             "name": auth_data["name"],
             "picture": auth_data.get("picture"),
+            "auth_type": "google",
+            "email_verified": True,  # Google accounts are pre-verified
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.users.insert_one(new_user)
@@ -988,6 +992,11 @@ async def create_session(request: Request, response: Response):
         max_age=7 * 24 * 60 * 60,
         path="/"
     )
+    
+    # Send welcome email for new Google OAuth users
+    if is_new_user:
+        first_name = auth_data.get("name", "there").split()[0] if auth_data.get("name") else "there"
+        await send_welcome_email(auth_data.get("email"), first_name)
     
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return user_doc
