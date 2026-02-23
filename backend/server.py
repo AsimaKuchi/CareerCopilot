@@ -495,7 +495,7 @@ async def public_health():
     
     return {
         "status": "healthy",
-        "service": "CareerCopilot API",
+        "service": "MyCareerCoPilot API",
         "version": "1.0.0",
         "jobs_in_database": job_count,
         "auto_refresh": {
@@ -541,7 +541,7 @@ async def submit_support_request(request: SupportRequest):
                 
                 <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
                     <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                        Sent from CareerCopilot AI Support Form • {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+                        Sent from MyCareerCoPilot Support Form • {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
                     </p>
                 </div>
             </div>
