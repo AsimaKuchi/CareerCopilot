@@ -396,7 +396,7 @@ export default function LandingPage() {
                   3
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">Find a Job</h4>
-                <p className="text-sm text-muted-foreground">Browse Greenhouse, Lever, Ashby — wherever jobs live.</p>
+                <p className="text-sm text-muted-foreground">Browse any job board or company careers page.</p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
