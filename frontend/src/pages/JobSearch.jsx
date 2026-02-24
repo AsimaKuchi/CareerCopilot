@@ -1156,20 +1156,54 @@ export default function JobSearch({ user }) {
         {/* Empty State */}
         {!loading && !initialLoading && jobs.length === 0 && (
           <div className="text-center py-16" data-testid="empty-state">
-            <Wand2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Find Your Dream Job?</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Click &quot;Find Jobs For Me&quot; to automatically discover opportunities matched to your profile, 
-              or search manually using the fields above.
-            </p>
-            <Button
-              onClick={findJobsForMe}
-              disabled={loading}
-              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
-            >
-              <Wand2 className="w-4 h-4 mr-2" />
-              Find Jobs For Me
-            </Button>
+            {companyFilter ? (
+              <>
+                <Building className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  No {query || "matching"} roles at {companyFilter}{location ? ` in ${location}` : ""} right now.
+                </h3>
+                <div className="text-muted-foreground max-w-md mx-auto mb-6 space-y-1">
+                  <p>Try:</p>
+                  <p>- Expanding your location search</p>
+                  <p>- Removing the company filter to see similar roles</p>
+                  <p>- Using different job title keywords</p>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => { setCompanyFilter(""); searchJobsWithParams(query, location, employmentType, jobSource, ""); }}
+                    data-testid="clear-company-filter-btn"
+                  >
+                    Clear Company Filter
+                  </Button>
+                  <Button
+                    onClick={findJobsForMe}
+                    disabled={loading}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                  >
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Find Jobs For Me
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Find Your Dream Job?</h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                  Click &quot;Find Jobs For Me&quot; to automatically discover opportunities matched to your profile, 
+                  or search manually using the fields above.
+                </p>
+                <Button
+                  onClick={findJobsForMe}
+                  disabled={loading}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Find Jobs For Me
+                </Button>
+              </>
+            )}
           </div>
         )}
       </main>
