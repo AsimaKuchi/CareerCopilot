@@ -1936,7 +1936,7 @@ async def fetch_company_jobs_via_jsearch(company_name: str, max_results: int = 5
                     continue
                 
                 title = j.get("job_title", "")
-                if is_non_english_job(title):
+                if not is_english_job(title):
                     continue
                 
                 job_id = j.get("job_id", "")
