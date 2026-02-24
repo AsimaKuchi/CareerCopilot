@@ -8289,6 +8289,33 @@ async def serve_test_form():
 </html>"""
     return HTMLResponse(content=html)
 
+
+# ========================
+# COMPANY SEARCH ANALYTICS
+# ========================
+
+@api_router.post("/analytics/company-search")
+async def track_company_search(request: Request):
+    """Track which companies users search for (helps prioritize job sourcing)."""
+    user = await get_current_user(request)
+    body = await request.json()
+    company = body.get("company", "").strip()
+    
+    if not company:
+        return {"status": "skipped"}
+    
+    await db.company_search_analytics.update_one(
+        {"company": company.lower()},
+        {
+            "$inc": {"search_count": 1},
+            "$set": {"last_searched": datetime.now(timezone.utc).isoformat()},
+            "$addToSet": {"users": user.user_id},
+        },
+        upsert=True,
+    )
+    return {"status": "tracked"}
+
+
 # Include the routers
 app.include_router(api_router)
 app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
