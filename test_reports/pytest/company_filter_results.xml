@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="17" time="61.434" timestamp="2026-02-24T02:21:20.654186+00:00" hostname="agent-env-dfd51b34-e91b-417d-9aaf-e090a8d56106"><testcase classname="tests.test_company_filter.TestCompanySearchAnalytics" name="test_track_company_search_success" time="0.501" /><testcase classname="tests.test_company_filter.TestCompanySearchAnalytics" name="test_track_company_search_microsoft" time="0.110" /><testcase classname="tests.test_company_filter.TestCompanySearchAnalytics" name="test_track_company_search_empty_skipped" time="0.119" /><testcase classname="tests.test_company_filter.TestCompanySearchAnalytics" name="test_track_company_search_without_auth" time="0.106" /><testcase classname="tests.test_company_filter.TestJSearchWithCompanyFilter" name="test_jsearch_without_company_filter" time="6.934" /><testcase classname="tests.test_company_filter.TestJSearchWithCompanyFilter" name="test_jsearch_with_company_filter_microsoft" time="8.228"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">tests/test_company_filter.py:148: in test_jsearch_with_company_filter_microsoft
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="tests.test_company_filter.TestJSearchWithCompanyFilter" name="test_jsearch_with_company_filter_amazon" time="13.875" /><testcase classname="tests.test_company_filter.TestJSearchWithCompanyFilter" name="test_jsearch_without_auth" time="0.166" /><testcase classname="tests.test_company_filter.TestGreenhouseSearchWithCompanyFilter" name="test_greenhouse_search_without_company_filter" time="15.127"><failure message="requests.exceptions.ConnectionError: HTTPSConnectionPool(host='job-autofill-2.preview.emergentagent.com', port=443): Read timed out.">/root/.venv/lib/python3.11/site-packages/urllib3/response.py:899: in _error_catcher
+    yield
+/root/.venv/lib/python3.11/site-packages/urllib3/response.py:1414: in read_chunked
+    self._update_chunk_length()
+/root/.venv/lib/python3.11/site-packages/urllib3/response.py:1329: in _update_chunk_length
+    line = self._fp.fp.readline()  # type: ignore[union-attr]
+           ^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/socket.py:718: in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/ssl.py:1314: in recv_into
+    return self.read(nbytes, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/ssl.py:1166: in read
+    return self._sslobj.read(len, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+/root/.venv/lib/python3.11/site-packages/requests/models.py:820: in generate
+    yield from self.raw.stream(chunk_size, decode_content=True)
+/root/.venv/lib/python3.11/site-packages/urllib3/response.py:1246: in stream
+    yield from self.read_chunked(amt, decode_content=decode_content)
+/root/.venv/lib/python3.11/site-packages/urllib3/response.py:1393: in read_chunked
+    with self._error_catcher():
+/usr/local/lib/python3.11/contextlib.py:158: in __exit__
+    self.gen.throw(typ, value, traceback)
+/root/.venv/lib/python3.11/site-packages/urllib3/response.py:904: in _error_catcher
+    raise ReadTimeoutError(self._pool, None, "Read timed out.") from e  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='job-autofill-2.preview.emergentagent.com', port=443): Read timed out.
+
+During handling of the above exception, another exception occurred:
+tests/test_company_filter.py:206: in test_greenhouse_search_without_company_filter
+    for chunk in response.iter_content(chunk_size=1024):
+/root/.venv/lib/python3.11/site-packages/requests/models.py:826: in generate
+    raise ConnectionError(e)
+E   requests.exceptions.ConnectionError: HTTPSConnectionPool(host='job-autofill-2.preview.emergentagent.com', port=443): Read timed out.</failure></testcase><testcase classname="tests.test_company_filter.TestGreenhouseSearchWithCompanyFilter" name="test_greenhouse_search_with_company_filter_airbnb" time="14.823" /><testcase classname="tests.test_company_filter.TestGreenhouseSearchWithCompanyFilter" name="test_greenhouse_search_with_company_filter_stripe" time="0.128" /><testcase classname="tests.test_company_filter.TestGreenhouseSearchWithCompanyFilter" name="test_greenhouse_search_without_auth" time="0.385" /><testcase classname="tests.test_company_filter.TestPublicJobsAPI" name="test_public_jobs_without_company_filter" time="0.162" /><testcase classname="tests.test_company_filter.TestPublicJobsAPI" name="test_public_jobs_with_company_filter_amazon" time="0.137" /><testcase classname="tests.test_company_filter.TestPublicJobsAPI" name="test_public_jobs_with_company_filter_microsoft" time="0.154" /><testcase classname="tests.test_company_filter.TestTopCompaniesInDB" name="test_amazon_jobs_exist" time="0.172" /><testcase classname="tests.test_company_filter.TestTopCompaniesInDB" name="test_greenhouse_companies_exist" time="0.134" /></testsuite></testsuites>
