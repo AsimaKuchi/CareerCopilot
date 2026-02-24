@@ -2750,8 +2750,8 @@ async def search_jobs(request: Request):
             data = response.json()
             jobs = data.get("data", [])
             
-            # Filter out Bebee jobs (poor quality spam)
-            jobs = [job for job in jobs if "bebee.com" not in job.get("job_apply_link", "").lower()]
+            # Filter out Bebee, Talent.com, and Indeed jobs (require separate login)
+            jobs = [job for job in jobs if not any(domain in job.get("job_apply_link", "").lower() for domain in ["bebee.com", "talent.com", "indeed.com"])]
             
             # Extract user's city and province for location filtering
             user_city = None
