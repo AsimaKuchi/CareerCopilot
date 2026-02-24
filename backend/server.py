@@ -1863,7 +1863,7 @@ async def fetch_amazon_jobs(max_pages: int = 5) -> List[Dict]:
                 
                 for j in page_jobs:
                     title = j.get("title", "")
-                    if is_non_english_job(title):
+                    if not is_english_job(title):
                         continue
                     
                     job_id_raw = j.get("id_icims") or j.get("id", "")
