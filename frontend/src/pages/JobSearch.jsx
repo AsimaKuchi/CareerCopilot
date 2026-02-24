@@ -67,10 +67,19 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+const TOP_COMPANIES = [
+  "Google", "Microsoft", "Amazon", "Apple", "Meta",
+  "Netflix", "Tesla", "Spotify", "Uber", "Airbnb",
+  "Salesforce", "Adobe", "LinkedIn",
+];
+
 export default function JobSearch({ user }) {
-  const [query, setQuery] = useState("");
-  const [location, setLocation] = useState("");
-  const [employmentType, setEmploymentType] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("title") || "");
+  const [location, setLocation] = useState(searchParams.get("location") || "");
+  const [employmentType, setEmploymentType] = useState(searchParams.get("type") || "");
+  const [companyFilter, setCompanyFilter] = useState(searchParams.get("company") || "");
+  const [companyOpen, setCompanyOpen] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -83,13 +92,36 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
-  const [jobSource, setJobSource] = useState("all"); // "all", "quality" (Greenhouse/Lever/Ashby), "aggregator" (LinkedIn/Indeed/etc)
+  const [jobSource, setJobSource] = useState("all");
   const [showAnalyzeDialog, setShowAnalyzeDialog] = useState(false);
   const [jobToAnalyze, setJobToAnalyze] = useState(null);
   const [showInterviewPrep, setShowInterviewPrep] = useState(false);
   const [interviewPrepJob, setInterviewPrepJob] = useState(null);
   const [interviewPrepLoading, setInterviewPrepLoading] = useState(false);
   const [interviewPrepMaterials, setInterviewPrepMaterials] = useState("");
+
+  // Update URL params when filters change
+  const updateUrlParams = (q, loc, type, company) => {
+    const params = new URLSearchParams();
+    if (q) params.set("title", q);
+    if (loc) params.set("location", loc);
+    if (type) params.set("type", type);
+    if (company) params.set("company", company);
+    setSearchParams(params, { replace: true });
+  };
+
+  // Track company search analytics
+  const trackCompanySearch = async (company) => {
+    if (!company) return;
+    try {
+      await fetch(`${API}/analytics/company-search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ company }),
+      });
+    } catch (e) { /* silent */ }
+  };
 
   // Fetch profile and auto-search on page load
   useEffect(() => {
