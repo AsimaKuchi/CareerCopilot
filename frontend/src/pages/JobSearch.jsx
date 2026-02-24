@@ -753,6 +753,56 @@ export default function JobSearch({ user }) {
                   <SelectItem value="INTERN">Internship</SelectItem>
                 </SelectContent>
               </Select>
+              <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={companyOpen}
+                    className="md:w-48 bg-white/5 border-white/10 h-12 justify-between font-normal"
+                    data-testid="company-filter-btn"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Building className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className={companyFilter ? "text-foreground" : "text-muted-foreground"}>
+                        {companyFilter || "Company"}
+                      </span>
+                    </div>
+                    <ChevronDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search company..." data-testid="company-search-input" />
+                    <CommandList>
+                      <CommandEmpty>No company found. Type to search.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value=""
+                          onSelect={() => { setCompanyFilter(""); setCompanyOpen(false); }}
+                          data-testid="company-option-all"
+                        >
+                          All Companies
+                        </CommandItem>
+                      </CommandGroup>
+                      <CommandSeparator />
+                      <CommandGroup heading="Top Companies">
+                        {TOP_COMPANIES.map((c) => (
+                          <CommandItem
+                            key={c}
+                            value={c}
+                            onSelect={(val) => { setCompanyFilter(val); setCompanyOpen(false); }}
+                            data-testid={`company-option-${c.toLowerCase()}`}
+                          >
+                            {c}
+                            {companyFilter === c && <CheckCircle className="ml-auto h-4 w-4 text-indigo-500" />}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <Button
                 data-testid="search-btn"
                 onClick={searchJobs}
