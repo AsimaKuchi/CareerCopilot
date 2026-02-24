@@ -2472,7 +2472,7 @@ async def get_saved_jobs(request: Request):
         }
     
     # Define priority ATS sources (jobs from these appear first)
-    priority_sources = {"greenhouse", "lever", "ashby"}
+    priority_sources = {"greenhouse", "lever", "ashby", "amazon", "jsearch"}
     
     jobs = saved.get("jobs", [])
     
