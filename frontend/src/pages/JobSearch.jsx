@@ -273,7 +273,8 @@ export default function JobSearch({ user }) {
             body: JSON.stringify({
               query: searchQuery.trim(),
               location: searchLocation?.trim() || "",
-              linkedin_only: source === "linkedin", // Filter for LinkedIn jobs only
+              linkedin_only: source === "linkedin",
+              company: company || "",
             }),
           });
 
