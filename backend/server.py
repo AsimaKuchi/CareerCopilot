@@ -2949,6 +2949,11 @@ async def search_jobs(request: Request):
             # Filter out Bebee, Talent.com, and Indeed jobs (require separate login)
             jobs = [job for job in jobs if not any(domain in job.get("job_apply_link", "").lower() for domain in ["bebee.com", "talent.com", "indeed.com"])]
             
+            # Apply company filter if specified
+            if company_filter:
+                company_filter_lower = company_filter.lower()
+                jobs = [job for job in jobs if company_filter_lower in (job.get("employer_name", "") or "").lower()]
+            
             # Extract user's city and province for location filtering
             user_city = None
             user_province = None
