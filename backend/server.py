@@ -132,7 +132,12 @@ LEVER_COMPANIES = [
     # Canadian-focused & companies with Canadian presence - Added Feb 2026
     "wealthsimple", "plaid", "spotify", "pointclickcare",
     "clearco", "koho", "nuvei",
+    # Major companies - Added Feb 2026
+    "netflix",
 ]
+
+# Major companies with custom career APIs (not on standard ATS)
+CUSTOM_CAREER_COMPANIES = ["amazon", "microsoft", "apple"]
 
 # VERIFIED Ashby company boards - SKIP for now (requires Playwright)
 ASHBY_COMPANIES = []
