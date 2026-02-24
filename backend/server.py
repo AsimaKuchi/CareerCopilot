@@ -8344,32 +8344,6 @@ app.add_middleware(CustomCORSMiddleware)
 
 
 # ========================
-# COMPANY SEARCH ANALYTICS
-# ========================
-
-@api_router.post("/analytics/company-search")
-async def track_company_search(request: Request):
-    """Track which companies users search for (helps prioritize job sourcing)."""
-    user = await get_current_user(request)
-    body = await request.json()
-    company = body.get("company", "").strip()
-    
-    if not company:
-        return {"status": "skipped"}
-    
-    await db.company_search_analytics.update_one(
-        {"company": company.lower()},
-        {
-            "$inc": {"search_count": 1},
-            "$set": {"last_searched": datetime.now(timezone.utc).isoformat()},
-            "$addToSet": {"users": user.user_id},
-        },
-        upsert=True,
-    )
-    return {"status": "tracked"}
-
-
-# ========================
 # SCHEDULED JOB INGESTION
 # Automatically refresh jobs every 2 hours
 # ========================
