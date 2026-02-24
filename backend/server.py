@@ -2263,6 +2263,13 @@ async def search_greenhouse(request: Request):
                 skipped_non_english += 1
                 continue
             
+            # Apply company filter if specified
+            if company_filter:
+                job_company_name = (job.get("company") or "").lower()
+                company_filter_lower = company_filter.lower()
+                if company_filter_lower not in job_company_name and job_company_name not in company_filter_lower:
+                    continue
+            
             job_title = (job.get("title") or "").lower()
             job_company = (job.get("company") or "").lower()
             job_dept = (job.get("department") or "").lower()
