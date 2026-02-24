@@ -352,7 +352,8 @@ export default function JobSearch({ user }) {
             body: JSON.stringify({
               query: searchQuery.trim(),
               location: searchLocation?.trim() || "",
-              fallback_search: true  // Signal to backend to use broader matching
+              fallback_search: true,
+              company: companyFilter || "",
             }),
           });
 
