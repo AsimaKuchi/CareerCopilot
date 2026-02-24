@@ -1798,6 +1798,152 @@ async def fetch_ashby_company_jobs(company: str) -> List[Dict]:
     
     return jobs
 
+
+async def fetch_amazon_jobs(max_pages: int = 5) -> List[Dict]:
+    """Fetch job listings from Amazon's careers API."""
+    jobs = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            for page in range(max_pages):
+                offset = page * 25
+                api_url = "https://www.amazon.jobs/en/search.json"
+                params = {
+                    "base_query": "",
+                    "result_limit": 25,
+                    "sort": "recent",
+                    "offset": offset,
+                    "country": "USA",
+                }
+                response = await client.get(api_url, params=params, headers={"User-Agent": "Mozilla/5.0"})
+                
+                if response.status_code != 200:
+                    logger.debug(f"Amazon API returned {response.status_code}")
+                    break
+                
+                data = response.json()
+                page_jobs = data.get("jobs", [])
+                if not page_jobs:
+                    break
+                
+                for j in page_jobs:
+                    title = j.get("title", "")
+                    if is_non_english_job(title):
+                        continue
+                    
+                    job_id_raw = j.get("id_icims") or j.get("id", "")
+                    apply_link = j.get("url_next_step") or f"https://www.amazon.jobs/en/jobs/{job_id_raw}"
+                    
+                    jobs.append({
+                        "job_id": f"amz_{job_id_raw}",
+                        "title": title,
+                        "company": "Amazon",
+                        "company_slug": "amazon",
+                        "location": j.get("location", ""),
+                        "department": j.get("job_category", ""),
+                        "employment_type": j.get("job_schedule_type", "full-time").upper().replace("-", ""),
+                        "apply_link": apply_link,
+                        "posted_at": j.get("posted_date", ""),
+                        "description": j.get("description_short", ""),
+                        "source": "amazon",
+                    })
+                
+                if len(page_jobs) < 25:
+                    break
+        
+        logger.info(f"Fetched {len(jobs)} Amazon jobs")
+    except Exception as e:
+        logger.error(f"Error fetching Amazon jobs: {e}")
+    
+    return jobs
+
+
+async def fetch_company_jobs_via_jsearch(company_name: str, max_results: int = 50) -> List[Dict]:
+    """Fetch jobs for a specific company using JSearch API (for companies without public APIs)."""
+    if not RAPIDAPI_KEY:
+        logger.debug(f"No RapidAPI key, skipping JSearch fetch for {company_name}")
+        return []
+    
+    jobs = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            headers = {
+                "X-RapidAPI-Key": RAPIDAPI_KEY,
+                "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+            }
+            params = {
+                "query": f"{company_name} jobs",
+                "num_pages": 2,
+                "page": 1,
+                "employment_types": "FULLTIME",
+                "company_types": "Large",
+            }
+            response = await client.get(
+                "https://jsearch.p.rapidapi.com/search",
+                headers=headers,
+                params=params,
+            )
+            
+            if response.status_code != 200:
+                logger.debug(f"JSearch returned {response.status_code} for {company_name}")
+                return jobs
+            
+            data = response.json()
+            results = data.get("data", [])
+            
+            for j in results:
+                employer = j.get("employer_name", "")
+                if company_name.lower() not in employer.lower():
+                    continue
+                
+                apply_link = j.get("job_apply_link", "")
+                if any(d in apply_link.lower() for d in ["bebee.com", "talent.com", "indeed.com"]):
+                    continue
+                
+                title = j.get("job_title", "")
+                if is_non_english_job(title):
+                    continue
+                
+                job_id = j.get("job_id", "")
+                slug = company_name.lower().replace(" ", "")
+                
+                jobs.append({
+                    "job_id": f"js_{slug}_{job_id}",
+                    "title": title,
+                    "company": employer,
+                    "company_slug": slug,
+                    "location": f"{j.get('job_city', '')}, {j.get('job_state', '')}, {j.get('job_country', '')}".strip(", "),
+                    "department": "",
+                    "employment_type": j.get("job_employment_type", "FULLTIME"),
+                    "apply_link": apply_link,
+                    "posted_at": j.get("job_posted_at_datetime_utc", ""),
+                    "description": (j.get("job_description", "") or "")[:500],
+                    "source": "jsearch",
+                })
+        
+        logger.info(f"Fetched {len(jobs)} {company_name} jobs via JSearch")
+    except Exception as e:
+        logger.error(f"Error fetching {company_name} jobs via JSearch: {e}")
+    
+    return jobs
+
+
+async def cleanup_expired_jobs(days_old: int = 30):
+    """Remove expired/stale job listings older than the specified number of days."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days_old)
+    try:
+        result = await db.stored_jobs.delete_many({
+            "$or": [
+                {"last_updated": {"$lt": cutoff}},
+                {"ingested_at": {"$lt": cutoff}, "last_updated": {"$exists": False}},
+            ]
+        })
+        logger.info(f"Cleaned up {result.deleted_count} expired jobs (older than {days_old} days)")
+        return result.deleted_count
+    except Exception as e:
+        logger.error(f"Error cleaning up expired jobs: {e}")
+        return 0
+
+
 # ========================
 # PARALLEL BATCH FETCHING & CACHING
 # ========================
