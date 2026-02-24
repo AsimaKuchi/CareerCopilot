@@ -8155,8 +8155,9 @@ async def get_ats_stats(request: Request):
             "lever": len(LEVER_COMPANIES),
             "smartrecruiters": len(SMARTRECRUITERS_COMPANIES),
             "pinpoint": len(PINPOINT_COMPANIES),
+            "custom": len(CUSTOM_CAREER_COMPANIES),
         },
-        "total_companies": len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES) + len(SMARTRECRUITERS_COMPANIES) + len(PINPOINT_COMPANIES)
+        "total_companies": len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES) + len(SMARTRECRUITERS_COMPANIES) + len(PINPOINT_COMPANIES) + len(CUSTOM_CAREER_COMPANIES)
     }
 
 # ========================
