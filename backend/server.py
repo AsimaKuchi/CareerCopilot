@@ -2923,8 +2923,8 @@ async def search_jobs(request: Request):
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {
-                "query": f"{query} {location}".strip(),
-                "num_pages": "3" if country_code else ("2" if linkedin_only else "1"),  # Fetch more to compensate for country filtering
+                "query": f"{query} {company_filter} {location}".strip() if company_filter else f"{query} {location}".strip(),
+                "num_pages": "3" if country_code else ("2" if linkedin_only else "1"),
                 "page": "1"
             }
             
