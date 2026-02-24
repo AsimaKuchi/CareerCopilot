@@ -8355,11 +8355,21 @@ async def start_scheduler():
         scheduled_job_ingestion,
         trigger=IntervalTrigger(hours=2),
         id="job_ingestion",
-        name="Refresh jobs from Greenhouse/Lever",
+        name="Refresh jobs from all sources",
         replace_existing=True
     )
+    
+    # Cleanup expired jobs daily
+    scheduler.add_job(
+        cleanup_expired_jobs,
+        trigger=IntervalTrigger(hours=24),
+        id="job_cleanup",
+        name="Remove expired job listings",
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logger.info("📅 Job scheduler started - jobs will refresh every 2 hours")
+    logger.info("Job scheduler started - ingestion every 2h, cleanup every 24h")
     
     # Run initial ingestion if database is empty
     job_count = await db.stored_jobs.count_documents({})
