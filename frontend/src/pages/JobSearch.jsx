@@ -452,7 +452,7 @@ export default function JobSearch({ user }) {
       toast.error("Please enter a search query");
       return;
     }
-    await searchJobsWithParams(query, location, employmentType, jobSource);
+    await searchJobsWithParams(query, location, employmentType, jobSource, companyFilter);
   };
 
   const getMatchScoreClass = (score) => {
