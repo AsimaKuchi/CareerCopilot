@@ -137,16 +137,22 @@ export default function JobSearch({ user }) {
       const profileData = response.data;
       setProfile(profileData);
       
-      // Auto-search based on profile if user has job titles or skills
-      if (profileData.job_titles?.length > 0 || profileData.skills?.length > 0) {
+      // Use URL params if present, otherwise auto-fill from profile
+      const urlTitle = searchParams.get("title");
+      const urlLocation = searchParams.get("location");
+      const urlCompany = searchParams.get("company");
+      
+      if (urlTitle) {
+        // Search from URL params (shared/bookmarked link)
+        await searchJobsWithParams(urlTitle, urlLocation || "", "", "all", urlCompany || "");
+      } else if (profileData.job_titles?.length > 0 || profileData.skills?.length > 0) {
         const autoQuery = profileData.job_titles?.[0] || profileData.skills?.slice(0, 3).join(" ");
         const autoLocation = profileData.preferred_locations?.[0] || "";
         
         setQuery(autoQuery);
         setLocation(autoLocation);
         
-        // Auto search with profile data
-        await searchJobsWithParams(autoQuery, autoLocation, "", "all");
+        await searchJobsWithParams(autoQuery, autoLocation, "", "all", "");
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
