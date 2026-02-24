@@ -161,9 +161,17 @@ export default function JobSearch({ user }) {
     }
   };
 
-  const searchJobsWithParams = async (searchQuery, searchLocation, searchEmploymentType, source = jobSource) => {
+  const searchJobsWithParams = async (searchQuery, searchLocation, searchEmploymentType, source = jobSource, company = companyFilter) => {
     if (!searchQuery?.trim()) {
       return;
+    }
+
+    // Update URL params
+    updateUrlParams(searchQuery, searchLocation, searchEmploymentType, company);
+    
+    // Track company search if filter is active
+    if (company) {
+      trackCompanySearch(company);
     }
 
     setLoading(true);
@@ -181,6 +189,7 @@ export default function JobSearch({ user }) {
             body: JSON.stringify({
               query: searchQuery.trim(),
               location: searchLocation?.trim() || "",
+              company: company || "",
             }),
           });
           
