@@ -778,17 +778,18 @@ async def ingest_all_jobs():
     total_ingested = 0
     errors = []
     
+    # Cleanup expired jobs first
+    await cleanup_expired_jobs(days_old=30)
+    
     # Ingest from Greenhouse
     for company in GREENHOUSE_COMPANIES:
         try:
             jobs = await fetch_greenhouse_company_jobs(company)
             for job in jobs:
-                # Add metadata
                 job["ingested_at"] = datetime.now(timezone.utc)
                 job["last_updated"] = datetime.now(timezone.utc)
                 job["is_remote"] = "remote" in job.get("location", "").lower()
                 
-                # Upsert job
                 await db.stored_jobs.update_one(
                     {"job_id": job["job_id"]},
                     {"$set": job},
@@ -815,6 +816,41 @@ async def ingest_all_jobs():
                 total_ingested += 1
         except Exception as e:
             errors.append(f"Lever/{company}: {str(e)}")
+    
+    # Ingest from Amazon (custom API)
+    try:
+        amazon_jobs = await fetch_amazon_jobs(max_pages=5)
+        for job in amazon_jobs:
+            job["ingested_at"] = datetime.now(timezone.utc)
+            job["last_updated"] = datetime.now(timezone.utc)
+            job["is_remote"] = "remote" in job.get("location", "").lower()
+            
+            await db.stored_jobs.update_one(
+                {"job_id": job["job_id"]},
+                {"$set": job},
+                upsert=True
+            )
+            total_ingested += 1
+    except Exception as e:
+        errors.append(f"Amazon: {str(e)}")
+    
+    # Ingest from Microsoft & Apple via JSearch
+    for company in ["Microsoft", "Apple"]:
+        try:
+            company_jobs = await fetch_company_jobs_via_jsearch(company, max_results=50)
+            for job in company_jobs:
+                job["ingested_at"] = datetime.now(timezone.utc)
+                job["last_updated"] = datetime.now(timezone.utc)
+                job["is_remote"] = "remote" in job.get("location", "").lower()
+                
+                await db.stored_jobs.update_one(
+                    {"job_id": job["job_id"]},
+                    {"$set": job},
+                    upsert=True
+                )
+                total_ingested += 1
+        except Exception as e:
+            errors.append(f"JSearch/{company}: {str(e)}")
     
     logger.info(f"Job ingestion complete: {total_ingested} jobs")
     
