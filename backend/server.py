@@ -2877,6 +2877,7 @@ async def search_jobs(request: Request):
     query = body.get("query", "")
     location = body.get("location", "")
     linkedin_only = body.get("linkedin_only", False)
+    company_filter = body.get("company", "").strip()
     
     # Get user profile to determine country preference
     profile = await db.user_profiles.find_one(
