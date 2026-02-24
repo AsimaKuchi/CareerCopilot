@@ -834,7 +834,16 @@ export default function JobSearch({ user }) {
         {/* Results */}
         {!initialLoading && jobs.length > 0 && (
           <div className="space-y-4" data-testid="job-results">
-            <p className="text-muted-foreground">Found {jobs.length} jobs matched to your profile</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-muted-foreground">Found {jobs.length} jobs matched to your profile</p>
+              {companyFilter && (
+                <Badge variant="secondary" className="flex items-center gap-1 cursor-pointer" onClick={() => { setCompanyFilter(""); searchJobsWithParams(query, location, employmentType, jobSource, ""); }} data-testid="active-company-badge">
+                  <Building className="w-3 h-3" />
+                  {companyFilter}
+                  <XCircle className="w-3 h-3 ml-1" />
+                </Badge>
+              )}
+            </div>
             {jobs.map((job, i) => {
               const recBadge = getRecommendationBadge(job.match_recommendation, job.skip_reason);
               const RecIcon = recBadge.icon;
