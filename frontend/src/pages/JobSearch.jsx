@@ -444,7 +444,7 @@ export default function JobSearch({ user }) {
     setLocation(smartLocation);
     setEmploymentType(empType);
 
-    await searchJobsWithParams(smartQuery, smartLocation, empType, jobSource);
+    await searchJobsWithParams(smartQuery, smartLocation, empType, jobSource, companyFilter);
   };
 
   const searchJobs = async () => {
