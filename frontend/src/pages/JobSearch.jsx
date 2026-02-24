@@ -307,7 +307,9 @@ export default function JobSearch({ user }) {
       setJobs(allJobs);
       
       if (allJobs.length === 0) {
-        if (source === "linkedin") {
+        if (company) {
+          toast.info(`No ${searchQuery} roles at ${company} in ${searchLocation || "your area"} right now. Try removing the company filter.`);
+        } else if (source === "linkedin") {
           toast.info("No LinkedIn jobs found. Try different keywords or check other sources.");
         } else {
           toast.info("No jobs found. Try different keywords.");
