@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { API } from "@/App";
-import { Document, Packer, Paragraph, TextRun } from "docx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -164,148 +163,38 @@ export default function Applications({ user }) {
     }
     
     try {
-      console.log("Starting download...", { companyName, type, textLength: text.length });
-      
-      const lines = text.split('\n');
-      const paragraphs = [];
-      
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        
-        // Skip completely empty lines but add spacing
-        if (!trimmedLine) {
-          paragraphs.push(new Paragraph({ spacing: { after: 100 } }));
-          continue;
-        }
-        
-        // Detect headings (ALL CAPS lines or lines ending with :)
-        const isHeading = /^[A-Z\s&]+$/.test(trimmedLine) || 
-                          (trimmedLine.endsWith(':') && trimmedLine.length < 50) ||
-                          ['EXPERIENCE', 'EDUCATION', 'SKILLS', 'SUMMARY', 'OBJECTIVE', 'PROJECTS', 
-                           'CERTIFICATIONS', 'WORK HISTORY', 'PROFESSIONAL EXPERIENCE', 'CONTACT',
-                           'TECHNICAL SKILLS', 'ACHIEVEMENTS', 'AWARDS'].some(h => 
-                             trimmedLine.toUpperCase().includes(h));
-        
-        // Detect bullet points
-        const isBullet = /^[•\-\*\>]\s/.test(trimmedLine) || /^\d+[\.\)]\s/.test(trimmedLine);
-        
-        // Detect contact info line (contains email, phone, or multiple separators)
-        const isContactLine = trimmedLine.includes('@') || 
-                              /\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(trimmedLine) ||
-                              (trimmedLine.includes('|') && trimmedLine.split('|').length >= 2);
-        
-        if (isHeading) {
-          paragraphs.push(new Paragraph({
-            children: [new TextRun({ 
-              text: trimmedLine, 
-              bold: true, 
-              size: 24,  // 12pt
-              font: 'Calibri'
-            })],
-            spacing: { before: 200, after: 100 },
-          }));
-        } else if (isBullet) {
-          // Clean bullet character and format consistently
-          const bulletText = trimmedLine.replace(/^[•\-\*\>]\s*/, '').replace(/^\d+[\.\)]\s*/, '');
-          paragraphs.push(new Paragraph({
-            children: [new TextRun({ 
-              text: `• ${bulletText}`, 
-              size: 22,  // 11pt
-              font: 'Calibri'
-            })],
-            spacing: { after: 60 },
-            indent: { left: 360 },  // Indent bullets
-          }));
-        } else if (isContactLine) {
-          paragraphs.push(new Paragraph({
-            children: [new TextRun({ 
-              text: trimmedLine, 
-              size: 20,  // 10pt
-              font: 'Calibri'
-            })],
-            spacing: { after: 60 },
-          }));
-        } else {
-          paragraphs.push(new Paragraph({
-            children: [new TextRun({ 
-              text: trimmedLine, 
-              size: 22,  // 11pt
-              font: 'Calibri'
-            })],
-            spacing: { after: 80 },
-          }));
-        }
-      }
-      
-      console.log("Creating document with", paragraphs.length, "paragraphs");
-      
-      const doc = new Document({
-        sections: [{
-          properties: {
-            page: {
-              margin: {
-                top: 720,    // 0.5 inch
-                bottom: 720,
-                left: 720,
-                right: 720,
-              },
-            },
-          },
-          children: paragraphs,
-        }],
+      const response = await fetch(`${API}/ai/download-docx`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content: text,
+          doc_type: type === 'cover' ? 'cover_letter' : 'resume',
+          job_title: "",
+          company: companyName || "",
+        }),
       });
       
-      console.log("Generating blob...");
-      const blob = await Packer.toBlob(doc);
-      console.log("Blob created:", blob.size, "bytes");
+      if (!response.ok) throw new Error("Download failed");
       
-      const filename = type === 'resume' 
-        ? `Resume_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}.docx`
-        : `Cover_Letter_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
-      
-      // Method: Open in new window to bypass sandbox restrictions
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      console.log("Blob URL created:", url);
-      
-      // Try opening in new window first (bypasses sandbox)
-      const newWindow = window.open(url, '_blank');
-      
-      if (newWindow) {
-        // If new window opened, provide instructions
-        toast.success(`File opened in new tab. Right-click and "Save As" to download as ${filename}`);
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 60000); // Keep URL alive for 1 minute
-      } else {
-        // Fallback: try direct download link
-        const link = document.createElement('a');
-        link.style.display = 'none';
-        link.href = url;
-        link.download = filename;
-        link.setAttribute('download', filename);
-        link.target = '_blank';
-        
-        document.body.appendChild(link);
-        console.log("Clicking download link...");
-        link.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-          console.log("Cleanup complete");
-        }, 1000);
-        
-        toast.info(`If download didn't start, the preview environment may be blocking it. Try "Copy All Text" instead.`);
-      }
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = (companyName || "Document").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+      a.download = type === 'cover'
+        ? `Cover_Letter_${safeName}.docx`
+        : `Resume_${safeName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success(`${type === 'cover' ? 'Cover letter' : 'Resume'} downloaded!`);
     } catch (err) {
       console.error('Download error:', err);
       toast.error(`Download failed: ${err.message}`);
     }
   };
-
-  // Legacy functions for backwards compatibility
-  const downloadResume = (resumeText, companyName) => downloadDocument(resumeText, companyName, 'resume');
-  const downloadCoverLetter = (coverLetterText, companyName) => downloadDocument(coverLetterText, companyName, 'cover');
 
   const copyToClipboard = async (text, field) => {
     try {

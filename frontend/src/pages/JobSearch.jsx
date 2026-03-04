@@ -64,6 +64,7 @@ import {
   Zap,
   GraduationCap,
   Lightbulb,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -121,6 +122,41 @@ export default function JobSearch({ user }) {
         body: JSON.stringify({ company }),
       });
     } catch (e) { /* silent */ }
+  };
+
+  // Download .docx file
+  const downloadDocx = async (content, docType) => {
+    if (!content || !selectedJob) return;
+    try {
+      const response = await fetch(`${API}/ai/download-docx`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content,
+          doc_type: docType,
+          job_title: selectedJob.title || "",
+          company: selectedJob.company || "",
+        }),
+      });
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeCo = (selectedJob.company || "").replace(/\s+/g, "_").slice(0, 20);
+      const safeTitle = (selectedJob.title || "").replace(/\s+/g, "_").slice(0, 20);
+      a.download = docType === "resume"
+        ? `Resume_${safeCo}_${safeTitle}.docx`
+        : `Cover_Letter_${safeCo}_${safeTitle}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success(`${docType === "resume" ? "Resume" : "Cover letter"} downloaded!`);
+    } catch (e) {
+      toast.error("Failed to download document");
+    }
   };
 
   // Fetch profile and auto-search on page load
@@ -1326,9 +1362,21 @@ export default function JobSearch({ user }) {
                         <FileCheck className="w-4 h-4 text-emerald-600" />
                         <span className="font-medium text-emerald-700 text-sm">ATS-Optimized Resume</span>
                         {optimizedResume && (
-                          <span className="ml-auto text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">
-                            Optimized
-                          </span>
+                          <div className="ml-auto flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-200"
+                              onClick={() => downloadDocx(optimizedResume, "resume")}
+                              data-testid="download-resume-btn"
+                            >
+                              <Download className="w-3.5 h-3.5 mr-1" />
+                              .docx
+                            </Button>
+                            <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                              Optimized
+                            </span>
+                          </div>
                         )}
                       </div>
                       <div className={`p-4 rounded-b-lg border h-[300px] overflow-auto ${
@@ -1390,6 +1438,18 @@ export default function JobSearch({ user }) {
                 </div>
                 {coverLetter ? (
                   <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+                    <div className="flex justify-end mb-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-indigo-700 hover:text-indigo-800 hover:bg-indigo-200"
+                        onClick={() => downloadDocx(coverLetter, "cover_letter")}
+                        data-testid="download-cover-letter-btn"
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1" />
+                        Download .docx
+                      </Button>
+                    </div>
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
                       {coverLetter}
                     </pre>

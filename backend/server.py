@@ -3860,6 +3860,212 @@ Generate a professional, ATS-optimized cover letter following the strict rules a
         logger.error(f"Cover letter generation error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate cover letter")
 
+
+class DocxDownloadRequest(BaseModel):
+    content: str
+    doc_type: str  # "resume" or "cover_letter"
+    job_title: Optional[str] = ""
+    company: Optional[str] = ""
+
+@api_router.post("/ai/download-docx")
+async def download_docx(request: Request, req: DocxDownloadRequest):
+    """Convert AI-generated text to a formatted .docx file."""
+    await get_current_user(request)
+    
+    from docx import Document
+    from docx.shared import Pt, Inches, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    import io
+    
+    doc = Document()
+    
+    # Set default margins
+    for section in doc.sections:
+        section.top_margin = Inches(0.8)
+        section.bottom_margin = Inches(0.8)
+        section.left_margin = Inches(0.9)
+        section.right_margin = Inches(0.9)
+    
+    # Set default font
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Calibri'
+    font.size = Pt(11)
+    font.color.rgb = RGBColor(33, 33, 33)
+    
+    style.paragraph_format.space_after = Pt(2)
+    style.paragraph_format.space_before = Pt(0)
+    
+    lines = req.content.strip().split('\n')
+    
+    if req.doc_type == "resume":
+        _build_resume_docx(doc, lines)
+    else:
+        _build_cover_letter_docx(doc, lines, req.job_title, req.company)
+    
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    
+    safe_company = (req.company or "").replace(" ", "_")[:20]
+    safe_title = (req.job_title or "").replace(" ", "_")[:20]
+    
+    if req.doc_type == "resume":
+        filename = f"Resume_{safe_company}_{safe_title}.docx" if safe_company else "Optimized_Resume.docx"
+    else:
+        filename = f"Cover_Letter_{safe_company}_{safe_title}.docx" if safe_company else "Cover_Letter.docx"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+def _build_resume_docx(doc, lines):
+    """Build a formatted resume .docx preserving AI optimization structure."""
+    from docx.shared import Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    
+    # Section header patterns
+    section_headers = [
+        "summary", "objective", "experience", "work experience", "professional experience",
+        "education", "skills", "technical skills", "certifications", "projects",
+        "achievements", "awards", "publications", "volunteer", "interests",
+        "professional summary", "core competencies", "qualifications",
+    ]
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            # Add minimal spacing for blank lines
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(2)
+            p.paragraph_format.space_after = Pt(2)
+            continue
+        
+        lower = stripped.lower().rstrip(':').strip('─═-').strip()
+        
+        # Check if this is a name (first non-empty line, likely the candidate name)
+        if i <= 2 and not any(c in stripped for c in ['•', '-', '|', '@', '●']) and len(stripped.split()) <= 5 and stripped == stripped.upper() or (i == 0 and len(stripped) < 40):
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(stripped)
+            run.bold = True
+            run.font.size = Pt(16)
+            run.font.color.rgb = RGBColor(30, 41, 59)
+            p.paragraph_format.space_after = Pt(2)
+            continue
+        
+        # Contact info line (contains email, phone, or | separators)
+        if i <= 4 and ('|' in stripped or '@' in stripped or any(c.isdigit() for c in stripped[:3])):
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(stripped)
+            run.font.size = Pt(9)
+            run.font.color.rgb = RGBColor(100, 100, 100)
+            p.paragraph_format.space_after = Pt(4)
+            continue
+        
+        # Section headers
+        if lower in section_headers or (stripped.endswith(':') and len(stripped.split()) <= 4) or stripped == stripped.upper() and len(stripped.split()) <= 4 and len(stripped) > 3:
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(8)
+            p.paragraph_format.space_after = Pt(2)
+            run = p.add_run(stripped.rstrip(':').upper())
+            run.bold = True
+            run.font.size = Pt(11)
+            run.font.color.rgb = RGBColor(55, 65, 81)
+            # Add bottom border effect with a thin line
+            p_after = doc.add_paragraph()
+            p_after.paragraph_format.space_before = Pt(0)
+            p_after.paragraph_format.space_after = Pt(3)
+            run2 = p_after.add_run('─' * 70)
+            run2.font.size = Pt(4)
+            run2.font.color.rgb = RGBColor(200, 200, 200)
+            continue
+        
+        # Bullet points
+        if stripped.startswith(('•', '-', '●', '▪', '∙', '*')):
+            bullet_text = stripped.lstrip('•-●▪∙* ').strip()
+            p = doc.add_paragraph(style='List Bullet')
+            run = p.add_run(bullet_text)
+            run.font.size = Pt(10)
+            p.paragraph_format.space_before = Pt(1)
+            p.paragraph_format.space_after = Pt(1)
+            p.paragraph_format.left_indent = Pt(18)
+            continue
+        
+        # Job title / Company lines (bold text with dates)
+        if any(sep in stripped for sep in [' | ', ' – ', ' — ']) or (stripped.endswith(')') and '(' in stripped and any(month in stripped for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Present'])):
+            p = doc.add_paragraph()
+            run = p.add_run(stripped)
+            run.bold = True
+            run.font.size = Pt(10.5)
+            run.font.color.rgb = RGBColor(30, 41, 59)
+            p.paragraph_format.space_before = Pt(4)
+            p.paragraph_format.space_after = Pt(1)
+            continue
+        
+        # Regular text
+        p = doc.add_paragraph()
+        run = p.add_run(stripped)
+        run.font.size = Pt(10.5)
+        p.paragraph_format.space_before = Pt(1)
+        p.paragraph_format.space_after = Pt(1)
+
+
+def _build_cover_letter_docx(doc, lines, job_title="", company=""):
+    """Build a formatted cover letter .docx."""
+    from docx.shared import Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    
+    # Add date
+    from datetime import datetime
+    p = doc.add_paragraph()
+    run = p.add_run(datetime.now().strftime("%B %d, %Y"))
+    run.font.size = Pt(11)
+    p.paragraph_format.space_after = Pt(12)
+    
+    is_first_para = True
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        if not stripped:
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(4)
+            p.paragraph_format.space_after = Pt(4)
+            is_first_para = False
+            continue
+        
+        # Salutation (Dear ...)
+        if stripped.lower().startswith('dear '):
+            p = doc.add_paragraph()
+            run = p.add_run(stripped)
+            run.font.size = Pt(11)
+            p.paragraph_format.space_before = Pt(6)
+            p.paragraph_format.space_after = Pt(8)
+            is_first_para = False
+            continue
+        
+        # Closing (Sincerely, Best regards, etc.)
+        if any(stripped.lower().startswith(c) for c in ['sincerely', 'best regards', 'regards', 'warm regards', 'respectfully', 'thank you']):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(12)
+            run = p.add_run(stripped)
+            run.font.size = Pt(11)
+            p.paragraph_format.space_after = Pt(4)
+            continue
+        
+        # Regular paragraph
+        p = doc.add_paragraph()
+        run = p.add_run(stripped)
+        run.font.size = Pt(11)
+        p.paragraph_format.space_after = Pt(6)
+        p.paragraph_format.line_spacing = Pt(15)
+
+
 @api_router.post("/ai/interview-prep")
 async def get_interview_prep(request: Request, req: InterviewPrepRequest):
     """Generate interview preparation materials."""
