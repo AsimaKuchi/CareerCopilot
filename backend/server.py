@@ -712,12 +712,21 @@ async def get_jobs(
             if hasattr(posted_at, 'isoformat'):
                 posted_at = posted_at.isoformat()
         
+        # Ensure description is clean plain text
+        raw_desc = job.get("description", "")
+        if raw_desc and ("<p>" in raw_desc or "<div>" in raw_desc or "<strong>" in raw_desc):
+            from html import unescape
+            raw_desc = unescape(raw_desc)
+            soup = BeautifulSoup(raw_desc, 'html.parser')
+            raw_desc = soup.get_text(separator='\n', strip=True)
+        
         formatted_jobs.append({
             "id": job.get("job_id"),
             "title": job.get("title"),
             "company": job.get("company"),
             "location": job.get("location"),
-            "description_preview": (job.get("description", "")[:300] + "...") if job.get("description") else None,
+            "description": raw_desc,
+            "description_preview": (raw_desc[:300] + "...") if len(raw_desc) > 300 else raw_desc,
             "apply_url": job.get("apply_link"),
             "source": job.get("source"),
             "is_remote": job.get("is_remote", False),
@@ -1722,13 +1731,21 @@ async def fetch_greenhouse_company_jobs(company: str) -> List[Dict]:
     jobs = []
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            # Greenhouse has a public API for job listings
-            api_url = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs"
+            api_url = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs?content=true"
             response = await client.get(api_url)
             
             if response.status_code == 200:
                 data = response.json()
                 for job in data.get("jobs", []):
+                    # Parse HTML content to plain text
+                    content_html = job.get("content", "")
+                    description = ""
+                    if content_html:
+                        from html import unescape
+                        content_html = unescape(content_html)
+                        soup = BeautifulSoup(content_html, 'html.parser')
+                        description = soup.get_text(separator='\n', strip=True)
+                    
                     jobs.append({
                         "job_id": f"gh_{company}_{job.get('id')}",
                         "greenhouse_id": job.get("id"),
@@ -1740,6 +1757,7 @@ async def fetch_greenhouse_company_jobs(company: str) -> List[Dict]:
                         "employment_type": job.get("employment_type", "FULLTIME"),
                         "apply_link": job.get("absolute_url"),
                         "posted_at": job.get("updated_at"),
+                        "description": description,
                         "source": "greenhouse"
                     })
             else:
@@ -1785,13 +1803,30 @@ async def fetch_lever_company_jobs(company: str) -> List[Dict]:
     jobs = []
     try:
         async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            # Lever API endpoint
             api_url = f"https://api.lever.co/v0/postings/{company}"
             response = await client.get(api_url)
             
             if response.status_code == 200:
                 data = response.json()
                 for job in data:
+                    # Lever provides descriptionPlain for full text description
+                    description = job.get("descriptionPlain", "")
+                    if not description:
+                        # Fallback: parse HTML description
+                        desc_html = job.get("description", "")
+                        if desc_html:
+                            soup = BeautifulSoup(desc_html, 'html.parser')
+                            description = soup.get_text(separator='\n', strip=True)
+                    
+                    # Also get lists (requirements, responsibilities, etc.)
+                    for lst in job.get("lists", []):
+                        list_title = lst.get("text", "")
+                        list_content = lst.get("content", "")
+                        if list_content:
+                            soup = BeautifulSoup(list_content, 'html.parser')
+                            list_text = soup.get_text(separator='\n', strip=True)
+                            description += f"\n\n{list_title}\n{list_text}"
+                    
                     jobs.append({
                         "job_id": f"lv_{company}_{job.get('id')}",
                         "lever_id": job.get("id"),
@@ -1803,6 +1838,7 @@ async def fetch_lever_company_jobs(company: str) -> List[Dict]:
                         "employment_type": job.get("categories", {}).get("commitment", "Full-time"),
                         "apply_link": job.get("hostedUrl") or job.get("applyUrl"),
                         "posted_at": job.get("createdAt"),
+                        "description": description.strip(),
                         "source": "lever"
                     })
             else:
@@ -1913,7 +1949,7 @@ async def fetch_amazon_jobs(max_pages: int = 5) -> List[Dict]:
                         "employment_type": j.get("job_schedule_type", "full-time").upper().replace("-", ""),
                         "apply_link": apply_link,
                         "posted_at": j.get("posted_date", ""),
-                        "description": j.get("description_short", ""),
+                        "description": j.get("description", "") or j.get("description_short", ""),
                         "source": "amazon",
                     })
                 
@@ -1986,7 +2022,7 @@ async def fetch_company_jobs_via_jsearch(company_name: str, max_results: int = 5
                     "employment_type": j.get("job_employment_type", "FULLTIME"),
                     "apply_link": apply_link,
                     "posted_at": j.get("job_posted_at_datetime_utc", ""),
-                    "description": (j.get("job_description", "") or "")[:500],
+                    "description": j.get("job_description", "") or "",
                     "source": "jsearch",
                 })
         

@@ -24,6 +24,8 @@ import {
   DollarSign,
   Timer,
   Zap,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +34,7 @@ export default function Dashboard({ user }) {
   const [stats, setStats] = useState(null);
   const [savedJobs, setSavedJobs] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expandedJobId, setExpandedJobId] = useState(null);
 
   useEffect(() => {
     fetchStats();
@@ -425,12 +428,11 @@ export default function Dashboard({ user }) {
                   {savedJobs.jobs.slice(0, 6).map((job, i) => (
                     <div
                       key={job.job_id || i}
-                      className={`relative p-4 rounded-lg border transition-all hover:shadow-lg cursor-pointer ${
+                      className={`relative p-4 rounded-lg border transition-all hover:shadow-lg ${
                         job.is_new_for_user 
                           ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50' 
                           : 'bg-white/5 border-white/10 hover:border-white/20'
                       }`}
-                      onClick={() => job.apply_link && window.open(job.apply_link, '_blank')}
                     >
                       {/* New Job Star Badge */}
                       {job.is_new_for_user && (
@@ -441,7 +443,7 @@ export default function Dashboard({ user }) {
                       )}
                       
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-foreground text-sm line-clamp-2 pr-6">
+                        <h3 className="font-semibold text-foreground text-sm line-clamp-2 pr-6 cursor-pointer hover:text-indigo-500" onClick={() => job.apply_link && window.open(job.apply_link, '_blank')}>
                           {job.title}
                         </h3>
                         {job.match_score && (
@@ -477,6 +479,28 @@ export default function Dashboard({ user }) {
                           </span>
                         </div>
                       </div>
+
+                      {/* Description toggle */}
+                      {(job.description || job.description_preview) && (
+                        <div className="mt-2">
+                          <button
+                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                            onClick={(e) => { e.stopPropagation(); setExpandedJobId(expandedJobId === (job.job_id || i) ? null : (job.job_id || i)); }}
+                            data-testid={`expand-desc-btn-${i}`}
+                          >
+                            <FileText className="w-3 h-3" />
+                            {expandedJobId === (job.job_id || i) ? "Hide" : "View"} Description
+                            {expandedJobId === (job.job_id || i) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                          </button>
+                          {expandedJobId === (job.job_id || i) && (
+                            <div className="mt-2 p-3 rounded-md bg-black/20 border border-white/5 max-h-60 overflow-y-auto">
+                              <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                                {job.description || job.description_preview}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="mt-3 flex items-center justify-between">
                         <Badge 
@@ -489,7 +513,9 @@ export default function Dashboard({ user }) {
                         >
                           {job.source}
                         </Badge>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                        <button className="text-muted-foreground hover:text-indigo-400 transition-colors" onClick={() => job.apply_link && window.open(job.apply_link, '_blank')}>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
                   ))}
