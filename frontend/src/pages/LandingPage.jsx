@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +22,9 @@ import {
   Chrome,
   MousePointerClick,
   Download,
+  LayoutDashboard,
 } from "lucide-react";
+import { API } from "@/App";
 
 // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 const handleGoogleLogin = () => {
@@ -33,6 +35,13 @@ const handleGoogleLogin = () => {
 export default function LandingPage() {
   const navigate = useNavigate();
   const [hoveredFeature, setHoveredFeature] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API}/auth/me`, { credentials: "include" })
+      .then((res) => { if (res.ok) setIsLoggedIn(true); })
+      .catch(() => {});
+  }, []);
 
   const features = [
     {
@@ -122,10 +131,14 @@ export default function LandingPage() {
             </Button>
             <Button
               data-testid="header-signin-btn"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate(isLoggedIn ? '/dashboard' : '/auth')}
               className="bg-indigo-500 hover:bg-indigo-600 text-white"
             >
-              Sign In
+              {isLoggedIn ? (
+                <><LayoutDashboard className="w-4 h-4 mr-2" />Back to Dashboard</>
+              ) : (
+                "Sign In"
+              )}
             </Button>
           </div>
         </nav>
@@ -162,11 +175,11 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
               <Button
                 data-testid="get-started-btn"
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate(isLoggedIn ? '/dashboard' : '/auth')}
                 size="lg"
                 className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-14 px-8 text-base"
               >
-                Find jobs that actually fit me
+                {isLoggedIn ? "Go to Dashboard" : "Find jobs that actually fit me"}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
@@ -566,11 +579,11 @@ export default function LandingPage() {
               </p>
               <Button
                 data-testid="cta-get-started-btn"
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate(isLoggedIn ? '/dashboard' : '/auth')}
                 size="lg"
                 className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow h-14 px-10 text-base mt-4"
               >
-                Find jobs that actually fit me
+                {isLoggedIn ? "Go to Dashboard" : "Find jobs that actually fit me"}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
