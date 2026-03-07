@@ -20,7 +20,7 @@ import time
 # Get BASE_URL from environment - DO NOT add default
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://job-autofill-2.preview.emergentagent.com"
+    BASE_URL = "https://job-auto-fill-1.preview.emergentagent.com"
 
 # Test credentials from main agent
 TEST_SESSION_TOKEN = "test_session_ba_970e1447"

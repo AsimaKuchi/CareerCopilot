@@ -1,79 +1,77 @@
-<analysis>**original_problem_statement**: The user wants to create a browser extension that auto-fills job application forms on Greenhouse, Lever, and Ashby using a central user profile. The project has evolved to include a full-featured web application for career management named CareerCopilot AI.
+<analysis>**original_problem_statement**: The user wants to create a browser extension that auto-fills job application forms, which has evolved into a full-featured web application named MyCareerCopilot for career management.
 
 PRODUCT REQUIREMENTS:
-- **Browser Extension:**
-    - Autofill forms on Greenhouse, Lever, and Ashby.
-    - Automatically track application submissions.
+- **Universal Browser Extension:** Autofill forms on any job site and track submissions.
 - **Web Application:**
-    - **Dashboard:** Track applications and show statistics like Time Saved.
-    - **Profile Management:** Allow users to build a profile, including a multi-select component for skills and an AI-powered feature to pre-fill the profile from an uploaded resume.
-    - **Job Search:** Find jobs from various sources.
-    - **What to do next:** A checklist for applied jobs with AI-generated content.
-    - **AI Career Paths:** A new feature to analyze a user's profile and resume to suggest realistic career paths, provide learning resources for skill gaps, and find matching job listings.
+    - **Dashboard:** Track applications, show statistics, and display prioritized job listings. The latest requirements include sorting jobs by date (newest first) and showing full job descriptions.
+    - **Profile Management:** Build a user profile, including resume upload and AI-powered pre-filling.
+    - **Job Search:** Find jobs from various sources. Recent requests include adding jobs from Microsoft, Amazon, Netflix, and Apple, while filtering out Indeed and Talent.com. A searchable company filter has also been added.
+    - **Authentication:** Support Google OAuth and email/password with a welcome email on signup.
+    - **AI Features:** Suggest career paths, and generate AI-optimized resumes/cover letters that can be downloaded as  files.
+- **Branding & UX:**
+    - A custom MyCareerCoPilot logo.
+    - Consistent branding across the entire application.
+    - UI/UX improvements like a Back to Dashboard button on the homepage for logged-in users and simplified, jargon-free text.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application with a React frontend, a monolithic FastAPI backend (), and a MongoDB database. The app, named CareerCopilot AI, includes:
-- A browser extension for **Greenhouse** that autofills forms and tracks submissions. A public download link is available.
-- A web app with a dashboard, application tracker, and a comprehensive profile page featuring a multi-select skills combobox and resume-to-profile pre-filling.
-- A new Career Paths page that uses a suite of AI-powered backend endpoints to provide users with career analysis, learning resources, and tailored job matches.
-- A fixed and enhanced job search feature.
-- A Time Saved metric on the user dashboard.
+A full-stack application MyCareerCoPilot with a React frontend, a monolithic FastAPI backend (), and a MongoDB database.
+- **Authentication**: Complete system for Google OAuth and email/password with welcome emails via Resend.
+- **Universal Chrome Extension**: Works on any job application site.
+- **Web App Features**:
+    - **Job Ingestion**: Pulls jobs from Greenhouse, Lever, Ashby, a direct Amazon API, and JSearch for Microsoft/Apple. Netflix is included via Lever.
+    - **Dashboard & Job Search**: Features a dashboard with jobs sorted correctly by date (newest first). The job search page includes a searchable dropdown to filter by company.
+    - **Document Downloads**: Users can download AI-optimized resumes and cover letters as formatted  files.
+- **Branding**: A consistent MyCareerCoPilot brand with a custom SVG logo is implemented across the Navbar, Landing Page, and How It Works page.
+- **UX**: The homepage shows a Back to Dashboard button for authenticated users. All copy has been updated and simplified based on user feedback.
 
 **Last working item**:
-- **Last item agent was working**: The user reported a Failed to fetch error when connecting the Chrome extension to the API. The agent investigated and determined the root cause: the extension requires an active session cookie from the main web application, meaning the user must be logged into the website *before* the extension can connect. The generic error message is confusing for users.
-- **Status**: IN PROGRESS
+- **Last item agent was working**: Implementing a feature to display full job descriptions on the dashboard. The agent modified all job ingestion sources to fetch and store the full description, handled data cleaning (stripping HTML), updated the API to return the full description, and modified the frontend dashboard to show the description in an expandable section on each job card.
+- **Status**: TESTING PENDING
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: Manual testing. The agent needs to update the extension's error handling to provide a clearer message, re-zip the extension, and then test the connection flow both with and without being logged into the main web app.
+- **Which testing method agent to use?**: The agent has already invoked the . The next step is to analyze the test report from the subagent and address any issues found.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: Chrome extension shows a generic Failed to fetch error, confusing users. (Priority: P0)
-
-**Issues Detail**:
-- **Issue 1**:
-    - **Attempted fixes**: The agent investigated , , and backend CORS settings, correctly identifying the dependency on the web app's session cookie.
-    - **Next debug checklist**:
-        1.  Edit .
-        2.  In the  block for the connection  call, check for a network error.
-        3.  If a network error occurs, update the UI to display a more helpful message, such as: Connection failed. Please log into the CareerCopilot AI website in another tab, then try again.
-        4.  Re-zip the extension folder for the user to download.
-    - **Why fix this issue and what will be achieved with the fix?**: This will resolve a critical user experience flaw in the extension's setup process, reducing user frustration and support requests.
-    - **Status**: IN PROGRESS
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Frontend (Browser Extension)
-    - **Blocked on other issue**: None
+There are no outstanding bugs. The only pending item is the completion of the  task.
 
 **In progress Task List**:
-- There are no tasks currently in progress.
+- **Task 1**: Complete and Test the Full Job Description Feature (Priority: P0)
+
+**Task Detail**:
+- **Task 1**: Complete and Test the Full Job Description Feature
+    - **Where to resume**: The agent has just invoked the . The next step is to receive the test report, analyze the results, and fix any bugs identified by the testing agent.
+    - **What will be achieved with this?**: Users will be able to view full, clean job descriptions directly on the dashboard, significantly improving the usability of the job boards.
+    - **Status**: TESTING PENDING
+    - **Should Test frontend/backend/both after fix?**: Both (Testing in progress via subagent).
+    - **Blocked on something**: Waiting for the response from .
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks**:
-- **P0: Fix Extension Error Message**: Implement the fix detailed in Issues Detail to improve the extension's initial setup experience.
+- **P0: Refactor Monolithic Backend**:  is now over 8,000 lines long and is becoming unmanageable. It is critical to break it down into a structured FastAPI application (e.g., using APIRouters for routes, models, services, etc.) to ensure future scalability and maintainability.
+- **P1: Expand Job Fetching to Include Canada**: The user noted a lack of Canadian jobs for Microsoft, Amazon, Netflix, and Apple. The agent needs to update the fetchers to include Canada as a target region (e.g.,  for the Amazon API) and add Canadian-specific queries for JSearch.
 
 **Future Tasks**:
-- **P1: Add Support for Lever and Ashby**: Refactor  to detect the current Applicant Tracking System (ATS) and apply platform-specific logic. This is a core requirement from the original request.
-- **P2: Refactor Monolithic Backend**: Break down the massive  file into a structured application with separate files for routes, models, and services to improve maintainability.
-- **P3: Enhance Dropdown Answer Matching**: Improve the  logic to handle more complex dropdown scenarios, such as mapping numeric ranges (e.g., 3-5 years) and using synonym lists.
+- **P2: Enhance Dropdown Answer Matching in Extension**: Improve the universal extension's logic to handle more complex dropdown scenarios.
+- **P3: Fine-tune Universal Extension for Key ATS**: Add specific logic for major platforms like Lever and Ashby to improve reliability.
+- **P4: Follow Company Feature**: A potential future feature mentioned by the user.
+- **P5: Persist Company Filter**: Store the user's last-used company filter in their preferences.
 
 **Completed work in this session**
-- **Job Search Overhaul**: Fixed the job search feature by expanding the list of scraped companies, adding query synonym expansion, and resolving several critical bugs in the search and filtering logic.
-- **App Renaming**: Renamed the application to CareerCopilot AI across the entire codebase.
-- **Skills Combobox**: Replaced the profile's skill input with a multi-select combobox that supports a predefined list and custom entries.
-- **AI-Powered Career Suite (Backend)**:
-    - : New endpoint to analyze a user's profile and suggest career paths.
-    - : New endpoint to provide curated learning resources for skill gaps.
-    - : New endpoint to find real jobs for a suggested path and calculate a user-specific match score.
-- **Career Paths Page (Frontend)**: Created a new page () to visually display the AI career analysis, skill gaps, and links to jobs and learning resources.
-- **Time Saved Dashboard Metric**: Added a new statistic to the backend and a corresponding UI card on the dashboard to show users how much time they've saved.
-- **Resume-to-Profile Autofill**: Implemented a feature where after a resume is uploaded, the app uses AI to extract key information and offers to pre-fill empty profile fields.
-- **Extension Download Link**: Created a public API endpoint () to allow users to easily download the browser extension.
-- **UI/UX Updates**: Added a Leave a Review option to the support page and updated a testimonial on the landing page.
-- **Domain Research**: Confirmed that  is taken and  is likely available.
+- **Full Job Description Feature**: Backend and frontend implementation is complete, pending testing.
+- **Job Sorting by Date**: Fixed inconsistent date formats across all job sources by creating a normalized  field, migrating existing data, and updating the backend to sort by it.
+- **Back to Dashboard Button**: Implemented logic on the landing page to show a Back to Dashboard button for logged-in users instead of logging them out.
+- **Logo Carousel Fix**: Fixed broken and poorly rendered Apple and Spotify logos by replacing them with clean, inline SVGs.
+- **.docx Document Downloads**: Added a feature to download AI-optimized resumes and cover letters as formatted  files.
+- **Company Search Filter**: Implemented a searchable company filter on the job search page, including backend logic, frontend UI, URL persistence, and analytics.
+- **New Job Source Integration**: Added jobs from Microsoft, Amazon, Netflix, and Apple.
+- **Job Source Filtering**: Excluded jobs from Talent.com and Indeed.
+- **Full Rebranding**: Renamed the app to MyCareerCoPilot across the entire codebase and integrated a new SVG logo.
+- **Welcome Email Feature**: Successfully implemented and tested.
 
 **Earlier issues found/mentioned but not fixed**
-- Support for Lever and Ashby and advanced dropdown matching are captured as **Future Tasks**.
+- None.
 
 **Known issue recurrence from previous fork**
 - None.
@@ -82,81 +80,85 @@ A full-stack application with a React frontend, a monolithic FastAPI backend (),
 
 
 **Key Technical Concepts**
-- **Backend**: Python (FastAPI), MongoDB.
-- **Frontend**: React, Tailwind CSS,  for the combobox.
-- **Browser Extension**: Standard JavaScript with  APIs.
-- **AI**:  library for GPT-4o and GPT-4o-mini to power career analysis, data extraction, and other AI features.
-- **Authentication**: Cookie-based sessions for the web app, which the browser extension relies upon.
+- **Backend**: FastAPI, MongoDB.
+- **Frontend**: React, Tailwind CSS, Shadcn/UI (including Popover and Command for searchable dropdowns).
+- **Data Handling**:
+    -  for server-side  generation.
+    -  and  for cleaning HTML from job descriptions.
+    -  for parsing inconsistent date formats.
+    - Ad-hoc database migration scripts run via  to normalize data.
+- **Asynchronous Tasks**: Using  to run long-running data ingestion jobs in the background.
 
 **key DB schema**
-- ****: Stores user data, including skills, resume text, and other profile fields.
-- **/**: Caches job listings from scrapers and APIs.
-- ****: New collection to cache AI-generated career path analysis results.
+- ****: Now contains  (full plain text) and  (a standardized datetime object used for sorting). An index has been created on .
+- ****: A new collection to track usage of the company search filter.
 
 **changes in tech stack**
-- No changes to the core stack.
+-  was added to .
 
 **All files of reference**
-- : The monolithic backend, which was heavily modified with new AI endpoints.
-- : The file that needs modification to fix the current pending issue.
-- : A new, complex page displaying AI analysis.
-- : Updated to use the new skills combobox and resume pre-fill logic.
-- : The new, reusable component for skills input.
+- : The monolithic backend, extensively modified for all recent features. This is the primary file for almost all backend logic.
+- : Contains the new logic for displaying expandable job descriptions.
+- : Contains the implementation for the searchable company filter dropdown and associated logic.
+- : Contains the logic for the conditional Back to Dashboard button.
+-  & : Contain the logic for  downloads.
 
 **Areas that need refactoring**:
-- ****: The addition of several complex AI endpoints has increased its size and complexity, making a structural refactor into smaller, focused modules (e.g., routes, services, models) a high priority.
-- ****: Still hardcoded for Greenhouse and needs to be abstracted to support Lever and Ashby.
+- ****: This is a CRITICAL and urgent refactoring task. The file's size makes development slow, error-prone, and difficult to maintain. It must be broken down into a modern FastAPI structure with routers, models, and services.
 
 **key api endpoints**
-- : Generates AI career path suggestions.
-- : Fetches curated learning resources.
-- : Finds jobs for a specific career path with match scores.
-- : Extracts data from an uploaded resume to pre-fill the profile.
-- : Serves the browser extension zip file.
+- **Modified**:
+    - : Now sorts by the new  field and includes the full .
+    - : Now accepts an optional  filter parameter.
+    - : Now accepts an optional  filter parameter.
+- **New**:
+    - : Generates and returns a formatted  file from text content.
+    - : Logs company filter usage.
 
 **Critical Info for New Agent**
-- Your immediate priority is to fix the misleading Failed to fetch error in the Chrome extension. The fix is to provide a clear error message in  instructing the user to log into the main web application first.
-- The app's name is CareerCopilot AI.
-- Authentication for the extension depends on the user being logged into the main web app via Google OAuth.
-- Once the extension error is fixed, you should align with the user on prioritizing the major pending features: adding support for Lever and Ashby, and refactoring the backend monolith.
+- Your immediate priority is to analyze the test report from the  for the **Full Job Description** feature and fix any reported issues to complete the task.
+- The single most important piece of technical debt is the monolithic  file. After completing the current task, you must prioritize and plan its refactoring.
+- The user has requested jobs from Canada, which have not yet been implemented. This should be proposed as the next feature task after the refactoring.
 
 **documents and test reports created in this job**
-- : Updated to reflect all newly completed features and future tasks.
-- : The installable browser extension. It needs to be re-zipped after the error message fix.
-- : A successful test report for the job search fixes.
+- : Updated multiple times to reflect new features.
+- Various test reports under . The next one to check will be the latest .
+- Generated logo images stored in .
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: I downloaded and it said Failed to fetch when I pasted my API URL (PENDING - This is the current issue to be resolved)
-2.  **User**: send me the link please I cant click it (COMPLETED - Agent created a download endpoint)
-3.  **User**: Can you send me the link for the chrome extension and the API URL (COMPLETED)
-4.  **User**: Asked to implement resume-to-profile pre-filling. (COMPLETED)
-5.  **User**: Asked to change a testimonial. (COMPLETED)
-6.  **User**: Asked to add a Leave a Review option to the support page. (COMPLETED)
-7.  **User**: Asked to check availability of . (COMPLETED)
-8.  **User**: Asked to check availability of . (COMPLETED)
-9.  **User**: Asked to add Time Saved statistics to the dashboard. (COMPLETED)
-10. **User**: Asked to create the frontend page for the career path analysis. (COMPLETED)
+1.  **User**: Add full job descriptions to all job postings on the dashboard. (IN PROGRESS)
+2.  **User**: Sort jobs on the dashboard by posting date (newest first). (COMPLETED)
+3.  **User**: Don't log users out when they click Home; show a Back to Dashboard button instead. (COMPLETED)
+4.  **User**: Reported a visual error with the Apple logo in the carousel. (COMPLETED)
+5.  **User**: Reported that the Apple and Spotify logos had a border. (COMPLETED)
+6.  **User**: Reported that Apple and Spotify logos were not showing on the homepage. (COMPLETED)
+7.  **User**: Add  download functionality for AI-optimized documents. (COMPLETED)
+8.  **User**: Provided a detailed prompt to implement an optional Company filter on the job search page. (COMPLETED)
+9.  **User**: Asked about job availability in Toronto, revealing a lack of Canadian job data. (PENDING - noted in Upcoming Tasks)
+10. **User**: Confirmed the new job ingestion feature was complete. (COMPLETED)
 
 **Project Health Check:**
-- **Broken**: The browser extension setup flow has a significant UX issue due to a poor error message.
-- **Mocked**: N/A
-- **Refactoring Needed**: The monolithic  is a major architectural debt that needs to be addressed to ensure future scalability and maintainability.
+- **Broken**: No features are currently broken.
+- **Mocked**: N/A.
+- **Refactoring Needed**: The  file is a massive monolith and is the top priority for refactoring to improve maintainability and scalability.
 
 **3rd Party Integrations**
-- **OpenAI (GPT-4o, GPT-4o-mini)**: Used via the Emergent LLM Key for all AI-driven features.
-- **JSearch API (RapidAPI)**: Augments job search results.
-- **Greenhouse**: The extension currently supports autofilling on their job application forms.
-- **Lever**: Planned integration.
-- **Ashby**: Planned integration.
+- **OpenAI (GPT-4o, GPT-4o-mini)**: Uses Emergent LLM Key.
+- **JSearch API (RapidAPI)**: Requires User API Key.
+- **Resend**: For transactional emails.
+- **Google OAuth**: For authentication.
+- **python-docx**: For document generation.
+- **BeautifulSoup4**: For HTML parsing.
+- **python-dateutil**: For date parsing.
 
 **Testing status**
-- **Testing agent used after significant changes**: YES, for the job search feature fix.
+- **Testing agent used after significant changes**: YES, used for several major features. Most recently called for the Full Job Description feature.
 - **Troubleshoot agent used after agent stuck in loop**: NO
 - **Test files created**: None.
 - **Known regressions**: None.
 
 **Credentials to test flow:**
-- Authentication is handled via Google OAuth. To test the full flow, sign in to the web application. This will set the necessary session cookie for the browser extension to work.
+- Authentication can be tested via Google OAuth or by creating a new account. Resend is in test mode and will only deliver emails to the account owner's registered email address.
 
 **What agent forgot to execute**
-- The agent correctly diagnosed the Failed to fetch extension error but did not proceed to implement the user-facing fix (improving the error message in the extension's UI). This remains the immediate next action.</analysis>
+- The agent discussed expanding job source fetching to include Canada (specifically for Microsoft, Amazon, Apple) in response to a user query but did not implement the changes. This remains an open and important upcoming task.</analysis>

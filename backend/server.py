@@ -94,7 +94,7 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
         return False, "Password must contain at least one special character (!@#$%^&*...)"
     return True, ""
 
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://job-autofill-2.preview.emergentagent.com')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://job-auto-fill-1.preview.emergentagent.com')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']

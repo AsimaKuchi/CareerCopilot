@@ -6,7 +6,7 @@ import json
 def test_backend_job_search_debug():
     """Debug the backend job search endpoint"""
     
-    base_url = "https://job-autofill-2.preview.emergentagent.com"
+    base_url = "https://job-auto-fill-1.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/search"
