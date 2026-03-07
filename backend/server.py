@@ -176,6 +176,33 @@ def is_english_job(title: str) -> bool:
     return True
 
 
+def normalize_posted_date(posted_at, fallback=None):
+    """Normalize various posted_at formats to a proper UTC datetime."""
+    from dateutil import parser as dateparser
+    
+    if posted_at is None:
+        return fallback or datetime.now(timezone.utc)
+    if isinstance(posted_at, datetime):
+        if posted_at.tzinfo is None:
+            return posted_at.replace(tzinfo=timezone.utc)
+        return posted_at
+    if isinstance(posted_at, (int, float)):
+        try:
+            return datetime.fromtimestamp(posted_at / 1000, tz=timezone.utc)
+        except Exception:
+            return fallback or datetime.now(timezone.utc)
+    if isinstance(posted_at, str):
+        try:
+            dt = dateparser.parse(posted_at)
+            if dt and dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except Exception:
+            return fallback or datetime.now(timezone.utc)
+    return fallback or datetime.now(timezone.utc)
+
+
+
 # ========================
 # QUERY SYNONYM EXPANSION
 # ========================
@@ -620,7 +647,7 @@ async def get_jobs(
     source: Optional[str] = None,  # greenhouse, lever, jsearch
     remote_only: bool = False,
     posted_after: Optional[str] = None,  # ISO date string
-    sort_by: str = "posted_at",  # posted_at, company, title
+    sort_by: str = "posted_at_dt",  # posted_at_dt, company, title
     sort_order: str = "desc"  # asc, desc
 ):
     """
@@ -663,7 +690,7 @@ async def get_jobs(
     
     # Sort
     sort_direction = -1 if sort_order == "desc" else 1
-    sort_field = sort_by if sort_by in ["posted_at", "company", "title"] else "posted_at"
+    sort_field = sort_by if sort_by in ["posted_at_dt", "posted_at", "company", "title"] else "posted_at_dt"
     
     # Get total count
     total = await db.stored_jobs.count_documents(filter_query)
@@ -675,12 +702,15 @@ async def get_jobs(
     # Format for UI
     formatted_jobs = []
     for job in jobs:
-        # Handle posted_at which might be string or datetime
+        # Handle posted_at - prefer normalized datetime
+        posted_at_dt = job.get("posted_at_dt")
         posted_at = job.get("posted_at")
-        if posted_at:
+        if posted_at_dt:
+            if hasattr(posted_at_dt, 'isoformat'):
+                posted_at = posted_at_dt.isoformat()
+        elif posted_at:
             if hasattr(posted_at, 'isoformat'):
                 posted_at = posted_at.isoformat()
-            # else it's already a string
         
         formatted_jobs.append({
             "id": job.get("job_id"),
@@ -789,6 +819,7 @@ async def ingest_all_jobs():
                 job["ingested_at"] = datetime.now(timezone.utc)
                 job["last_updated"] = datetime.now(timezone.utc)
                 job["is_remote"] = "remote" in job.get("location", "").lower()
+                job["posted_at_dt"] = normalize_posted_date(job.get("posted_at"))
                 
                 await db.stored_jobs.update_one(
                     {"job_id": job["job_id"]},
@@ -807,6 +838,7 @@ async def ingest_all_jobs():
                 job["ingested_at"] = datetime.now(timezone.utc)
                 job["last_updated"] = datetime.now(timezone.utc)
                 job["is_remote"] = "remote" in job.get("location", "").lower()
+                job["posted_at_dt"] = normalize_posted_date(job.get("posted_at"))
                 
                 await db.stored_jobs.update_one(
                     {"job_id": job["job_id"]},
@@ -824,6 +856,7 @@ async def ingest_all_jobs():
             job["ingested_at"] = datetime.now(timezone.utc)
             job["last_updated"] = datetime.now(timezone.utc)
             job["is_remote"] = "remote" in job.get("location", "").lower()
+            job["posted_at_dt"] = normalize_posted_date(job.get("posted_at"))
             
             await db.stored_jobs.update_one(
                 {"job_id": job["job_id"]},
@@ -842,6 +875,7 @@ async def ingest_all_jobs():
                 job["ingested_at"] = datetime.now(timezone.utc)
                 job["last_updated"] = datetime.now(timezone.utc)
                 job["is_remote"] = "remote" in job.get("location", "").lower()
+                job["posted_at_dt"] = normalize_posted_date(job.get("posted_at"))
                 
                 await db.stored_jobs.update_one(
                     {"job_id": job["job_id"]},
@@ -2484,16 +2518,8 @@ async def get_saved_jobs(request: Request):
     
     jobs = saved.get("jobs", [])
     
-    # Sort jobs:
-    # 1. Priority ATS sources first (Greenhouse, Lever, Ashby)
-    # 2. New jobs before seen jobs  
-    # 3. Most recent posted_at first
-    # Using stable sort: first by date desc, then by priority (maintains date order within groups)
-    jobs.sort(key=lambda x: x.get("posted_at", "") or "1970-01-01", reverse=True)
-    jobs.sort(key=lambda x: (
-        0 if x.get("source", "").lower() in priority_sources else 1,
-        0 if x.get("is_new_for_user", False) else 1
-    ))
+    # Sort by most recent first
+    jobs.sort(key=lambda x: x.get("posted_at") or "1970-01-01", reverse=True)
     
     return {
         "jobs": jobs,
