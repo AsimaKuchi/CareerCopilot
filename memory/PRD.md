@@ -71,34 +71,20 @@ Build a browser extension that auto-fills job application forms using a central 
 ### Implementation:
 - **Backend**: Enhanced `evaluate_job_match()` function in server.py
 - **New Fields**:
-  - `grounded_strengths[]`: Array with {requirement, evidence, match_reason}
+  - `grounded_strengths[]`: Array with {strength_title, evidence, relevance}
   - `matched_skills[]`: List of specific skills that match job requirements
-  - `evidence`: Actual snippets from user's resume (10-word context around matched keywords)
+  - `evidence`: Actual achievement bullets from resume with metrics
 
-### Example Output:
-```json
-{
-  "grounded_strengths": [
-    {
-      "requirement": "Requires SQL",
-      "evidence": "Developed SQL queries and Python scripts to automate monthly reporting, saving 40 hours per month",
-      "match_reason": "Your resume demonstrates hands-on experience with SQL"
-    },
-    {
-      "requirement": "Job requires Python",
-      "evidence": "Created 15+ Tableau dashboards and Python automation scripts for executive leadership",
-      "match_reason": "Your Python experience matches job requirements"
-    }
-  ],
-  "matched_skills": ["SQL", "Python", "Tableau", "Data Analysis", "Project Management"],
-  "score": 76
-}
-```
+### Bugs Fixed (Session Mar 8, 2026):
+1. **Frontend field mismatch**: Was rendering `s.requirement`/`s.match_reason`, now uses `s.strength_title`/`s.relevance` matching backend output
+2. **Streaming endpoint missing description**: `/api/jobs/greenhouse/search` was only passing job title+department to `evaluate_job_match`, now passes full description for proper skill matching
+3. **Work experience parsing**: `extract_work_experience()` was incorrectly parsing `Title | Company | Date` format, setting company to the job title. Rewritten with proper part classification
+4. **Duplicate strength titles**: Achievement-based strengths all got same category (e.g., "Technical Delivery"). Now uses diverse categories (Leadership, Cost Optimization, Business Impact, Technical Building, System Implementation, Quality & DevOps)
 
-### Test Results (iteration_21.json):
-- Backend: 100% (9/9 tests passed)
-- Frontend: 100% - Analyze Match dialog displays personalized insights
-- Bug fixed: grounded_strengths was computed but not passed through to job responses (fixed in 4 locations)
+### Test Results (iteration_22.json):
+- Backend: 100% (7/7 tests passed)
+- Frontend: 100% - All grounded strengths displayed correctly
+- All 4 bugs verified fixed
 
 ## Key API Endpoints
 - Auth: signup, login, verify-email, password-reset, session
@@ -147,8 +133,9 @@ Build a browser extension that auto-fills job application forms using a central 
 - **python-dateutil**: Date parsing
 
 ## Files Modified (Mar 8, 2026)
-- `/app/backend/server.py` - evaluate_job_match() enhanced with grounded_strengths, find_resume_evidence() helper
-- `/app/frontend/src/pages/JobSearch.jsx` - Added data-testid to Analyze Match button
+- `/app/backend/server.py` - Fixed streaming endpoint job_description, rewrote extract_work_experience(), improved grounded strength categorization, frontend field alignment
+- `/app/frontend/src/pages/JobSearch.jsx` - Fixed grounded_strengths rendering to use strength_title/relevance instead of requirement/match_reason
 - `/app/frontend/src/pages/InterviewPrep.jsx` - Q&A formatting
 - `/app/frontend/src/utils/extractSalary.js` - Salary extraction utility
 - `/app/frontend/src/utils/formatJobDescription.js` - Description formatting utility
+- `/app/backend/tests/test_grounded_strengths.py` - Unit tests for grounded strengths feature
