@@ -18,25 +18,16 @@ Build a browser extension that auto-fills job application forms using a central 
 - **AI Documents**: Optimized resume + cover letter with .docx download
 - **Welcome Email**: Sends onboarding email via Resend on signup
 - **Formatted Job Descriptions**: Scannable, well-structured job descriptions with headers and bullets
-- **Salary Extraction**: Automatically extracts salary from job descriptions when not in structured fields (COMPLETE - Mar 8, 2026)
+- **Salary Extraction**: Automatically extracts salary from job descriptions when not in structured fields
+- **Interview Prep**: AI-generated interview prep with consistent Q&A formatting (UPDATED - Mar 8, 2026)
 
 ## Tech Stack
 - **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4
 - **Frontend**: React, Tailwind CSS, Shadcn/UI
 - **Browser Extension**: Manifest V3, universal field detection
-- **AI**: OpenAI (GPT-4o, GPT-4o-mini) via Emergent LLM Key
+- **AI**: OpenAI (GPT-5.2, GPT-4o, GPT-4o-mini) via Emergent LLM Key
 - **Jobs API**: JSearch (RapidAPI), Amazon Jobs API, Greenhouse API, Lever API
 - **Auth**: Google OAuth + JWT for email/password
-
-## Job Sources (~12,989 jobs)
-| Source | Method | Count |
-|--------|--------|-------|
-| Greenhouse | Direct API | ~11,957 |
-| Lever | Direct API | ~463 |
-| Amazon | amazon.jobs JSON API | ~120 |
-| Microsoft | JSearch API | ~16 |
-| Apple | JSearch API | ~21 |
-| Netflix | Lever | 0 (currently) |
 
 ## What's Been Implemented
 - Full authentication system (Google OAuth + email/password)
@@ -55,39 +46,36 @@ Build a browser extension that auto-fills job application forms using a central 
 - Word document (.docx) download for AI-optimized resumes and cover letters
 - Full Job Descriptions Feature (expandable on Dashboard and Job Search)
 - Formatted Job Descriptions (section headers, bullets, spacing)
-- **Salary Extraction from Descriptions** (Mar 8, 2026) - COMPLETE
+- Salary Extraction from Descriptions
+- **Interview Prep Q&A Formatting** (Mar 8, 2026) - COMPLETE
 
-## Salary Extraction Feature (Mar 8, 2026) - COMPLETE
+## Interview Prep Q&A Formatting (Mar 8, 2026) - COMPLETE
 
-### Implementation Details:
-- **Utility**: `/app/frontend/src/utils/extractSalary.js`
-  - `extractSalaryFromDescription()` - Parses salary from text
-  - `getDisplaySalary()` - Priority: structured fields > text field > description extraction
-  
-### Supported Salary Patterns:
-- Currency with symbol: `$95,000 CAD`, `$90,000 USD`, `€80,000`
-- Salary ranges: `$90,000 - $120,000`, `$90,000—$120,000` (em-dash supported)
-- K notation: `$80K - $100K`, `$95K`
-- Hourly rates: `$40/hr`, `$40 per hour`
-- Prefix patterns: `Base pay: $90,000`, `Salary: $100K+`
+### Issue Fixed:
+- OLD: Inconsistent formatting with cream/amber tip boxes, lightbulb icons, numbered headers
+- NEW: Clean, professional Q&A format matching the desired design
 
-### Currency Support:
-- USD ($), CAD (CA$), EUR (€), GBP (£), AUD (A$)
+### New Format:
+- **Questions**: Light slate background (`bg-slate-50`) with indigo "Q" badge (`bg-indigo-500`)
+- **Answers**: White background with green "A" badge (`bg-emerald-500`)
+- **Suggested approach**: Highlighted in answers with medium font weight
+- **Section headers**: Numbered badges in indigo circles with uppercase titles
 
-### UI Display:
-- Extracted salaries display in **emerald green** (`text-emerald-400`)
-- Falls back to "Salary not listed" when no salary found
-- Sanity checks: annual $10K-$10M, hourly <$500
+### Code Changes:
+- Rewrote parsing logic in InterviewPrep.jsx (lines 206-330)
+- Removed amber/cream tip boxes and lightbulb icons from generated content
+- Added detection for "Suggested approach:" lines
+- Grouped Q&A items by section
 
-### Test Results (iteration_18.json):
-- Backend: 100% (5/5 tests passed)
-- Bug fixed: Em-dash (—) character not recognized in range patterns
+### Test Results (iteration_19.json):
+- Frontend: 100% (6/6 formatting requirements verified)
+- 11-12 Q&A items rendered consistently per generation
 
 ## Key API Endpoints
 - Auth: signup, login, verify-email, password-reset, session
-- Jobs: /api/public/jobs (returns jobs with description), /api/public/sources
-- Search: /api/jobs/greenhouse/search (fixed to preserve descriptions)
-- AI: /api/ai/optimize-resume, /api/ai/cover-letter, /api/ai/download-docx
+- Jobs: /api/public/jobs, /api/public/sources
+- Search: /api/jobs/greenhouse/search
+- AI: /api/ai/optimize-resume, /api/ai/cover-letter, /api/ai/download-docx, /api/ai/interview-prep
 - Analytics: /api/analytics/company-search
 
 ## Database Schema
@@ -122,7 +110,7 @@ Build a browser extension that auto-fills job application forms using a central 
 - Persist last-used company filter
 
 ## 3rd Party Integrations
-- **OpenAI (GPT-4o, GPT-4o-mini)**: Uses Emergent LLM Key
+- **OpenAI (GPT-5.2, GPT-4o, GPT-4o-mini)**: Uses Emergent LLM Key
 - **JSearch API (RapidAPI)**: Requires User API Key
 - **Resend**: Transactional emails
 - **Google OAuth**: Authentication
@@ -130,8 +118,8 @@ Build a browser extension that auto-fills job application forms using a central 
 - **BeautifulSoup4**: HTML parsing
 - **python-dateutil**: Date parsing
 
-## Files Added (Mar 8, 2026)
+## Files Modified (Mar 8, 2026)
+- `/app/frontend/src/pages/InterviewPrep.jsx` - Complete rewrite of Q&A parsing and rendering
+- `/app/frontend/src/utils/extractSalary.js` - Salary extraction utility (new)
 - `/app/frontend/src/utils/formatJobDescription.js` - Description formatting utility
 - `/app/frontend/src/components/FormattedJobDescription.jsx` - Formatted description component
-- `/app/frontend/src/utils/extractSalary.js` - Salary extraction utility
-- `/app/backend/tests/test_salary_extraction.py` - Salary extraction tests
