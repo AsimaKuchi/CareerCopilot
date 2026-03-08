@@ -10,14 +10,14 @@ Build a browser extension that auto-fills job application forms using a central 
 - Automatically track application submissions
 
 ### Web Application
-- **Dashboard**: Track applications, show stats, display saved jobs with expandable descriptions
+- **Dashboard**: Track applications, show stats, display saved jobs with formatted descriptions
 - **Profile Management**: Multi-select skills, AI resume-to-profile pre-fill
-- **Job Search**: Find jobs from multiple sources with company filter and expandable descriptions
+- **Job Search**: Find jobs from multiple sources with company filter and formatted descriptions
 - **Authentication**: Google OAuth + email/password with verification/reset
 - **AI Career Paths**: Analyze profile/resume, suggest career paths, find matching jobs
 - **AI Documents**: Optimized resume + cover letter with .docx download
 - **Welcome Email**: Sends onboarding email via Resend on signup
-- **Full Job Descriptions**: Expandable job descriptions on Dashboard and Job Search pages (COMPLETE - Mar 8, 2026)
+- **Formatted Job Descriptions**: Scannable, well-structured job descriptions with headers and bullets (COMPLETE - Mar 8, 2026)
 
 ## Tech Stack
 - **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4
@@ -52,24 +52,34 @@ Build a browser extension that auto-fills job application forms using a central 
 - Expired job cleanup + auto refresh scheduler
 - Company filter with analytics tracking
 - Word document (.docx) download for AI-optimized resumes and cover letters
-- **Full Job Descriptions Feature** (Mar 8, 2026) - COMPLETE
+- Full Job Descriptions Feature (expandable on Dashboard and Job Search)
+- **Formatted Job Descriptions** (Mar 8, 2026) - COMPLETE
 
-## Full Job Description Feature (Mar 8, 2026) - COMPLETE
+## Formatted Job Descriptions Feature (Mar 8, 2026) - COMPLETE
+
 ### Implementation Details:
-- **Dashboard (`Dashboard.jsx`)**: Expandable "Show/Hide Job Description" toggle on each job card
-- **Job Search (`JobSearch.jsx`)**: Expandable "Show/Hide Job Description" toggle on search results
-- **Backend (`server.py`)**: Jobs return `description` (full text) and `description_preview` (300 char truncated)
-- **Bug Fixed**: Streaming search was overwriting descriptions with summaries - now preserves original descriptions
+- **Utility**: `/app/frontend/src/utils/formatJobDescription.js`
+  - Detects 50+ section header patterns (Requirements, Responsibilities, About, Benefits, etc.)
+  - Detects action verbs for bullet point formatting (design, develop, build, etc.)
+  - Pre-processes descriptions to add structure to inline headers
+  
+- **Component**: `/app/frontend/src/components/FormattedJobDescription.jsx`
+  - Section headers styled: `text-indigo-300 font-semibold border-b border-indigo-500/20`
+  - Bullet points styled: `text-indigo-400` with grouped `<ul><li>` rendering
+  - Proper spacing: `space-y-3` container, `space-y-1.5` bullet groups
+  
+- **Pages Updated**: Dashboard.jsx and JobSearch.jsx both use FormattedJobDescription
 
 ### UI Features:
-- Collapsed state: Shows "Show Job Description" button with FileText icon and ChevronDown
-- Expanded state: Shows "Hide Job Description" button with ChevronUp, scrollable container with full description
-- Missing descriptions: Shows "Full description not available. View Original →" link
+- Section headers (Requirements, About, Responsibilities, etc.) rendered bold in indigo
+- Bullet points with indigo dots for list items
+- Consecutive bullets grouped together
+- Scrollable container (max-h-72/max-h-96) for long descriptions
+- Expand/collapse toggle preserved
 
-### Test Results (iteration_16.json):
-- Backend: 100% (15/15 tests passed)
-- Frontend: 100% - All expandable description tests passed
-- Bug found and fixed: Description overwrite issue in streaming search
+### Test Results (iteration_17.json):
+- Backend: 100% (12/12 tests passed)
+- Frontend: Code review passed - all formatting elements verified
 
 ## Key API Endpoints
 - Auth: signup, login, verify-email, password-reset, session
@@ -86,7 +96,7 @@ Build a browser extension that auto-fills job application forms using a central 
 ## Prioritized Backlog
 
 ### P0: Refactor Monolithic Backend (URGENT)
-- `backend/server.py` is 8736+ lines and becoming unmanageable
+- `backend/server.py` is 8738+ lines and becoming unmanageable
 - Must break into structured FastAPI application:
   - routes/ (API routers by domain)
   - models/ (Pydantic models)
@@ -117,3 +127,8 @@ Build a browser extension that auto-fills job application forms using a central 
 - **python-docx**: Document generation
 - **BeautifulSoup4**: HTML parsing
 - **python-dateutil**: Date parsing
+
+## Files Added (Mar 8, 2026)
+- `/app/frontend/src/utils/formatJobDescription.js` - Description formatting utility
+- `/app/frontend/src/components/FormattedJobDescription.jsx` - Formatted description component
+- `/app/backend/tests/test_job_description_formatting.py` - Test file for formatting
