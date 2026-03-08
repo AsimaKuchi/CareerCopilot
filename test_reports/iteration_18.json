@@ -1,0 +1,52 @@
+{
+  "summary": "Tested salary extraction feature. Fixed a regex bug where em-dash (—) character was not included in salary range patterns, causing only max values to be extracted instead of full ranges. All 5 backend tests pass. Frontend extraction utility now correctly parses $X CAD, $X-$Y ranges, $XK notation, and displays 'Salary not listed' when appropriate.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_salary_extraction.py",
+    "/app/test_reports/pytest/salary_extraction_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "extractSalary.js correctly handles CAD/USD/EUR/GBP currencies with appropriate symbols (CA$, €, £, A$)",
+    "Salary ranges now properly extracted with em-dash (—), en-dash (–), and hyphen (-) separators",
+    "getDisplaySalary() correctly prioritizes: 1) structured salary_min/max fields, 2) salary text field, 3) description extraction",
+    "Dashboard.jsx and JobSearch.jsx both apply text-emerald-400 class for extracted salaries",
+    "Sanity checks prevent false positives: hourly < $500, annual >= $10K and < $10M"
+  ],
+  "updated_files": [
+    "/app/frontend/src/utils/extractSalary.js"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 tests passed)",
+    "frontend": "Code review passed - extraction utility verified via Node.js tests"
+  },
+  "test_credentials": {
+    "test_user": "test@demo.com / Test123!"
+  },
+  "seed_data_creation": "None - used existing saved jobs data",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Salary extraction feature is implemented and tested. The extractSalary.js utility at /app/frontend/src/utils/extractSalary.js handles various salary patterns. Bug was fixed where em-dash (—) character in job descriptions (common in Airbnb jobs) was not being recognized as a range separator. Dashboard saved jobs section displays extracted salaries in emerald green. Auth uses Emergent Google Auth with session cookies.",
+  "features_tested": {
+    "$X CAD pattern extraction": "PASS - 'CA$71K - CA$83K' from '$71,000—$83,000 CAD'",
+    "$X - $Y range extraction": "PASS - '$204K - $255K' from '$204,000—$255,000 USD'",
+    "$XK notation": "PASS - '$80K - $100K'",
+    "Structured salary precedence": "PASS - Uses salary_min/max fields when available",
+    "Salary not listed fallback": "PASS - Shows when no salary found",
+    "Emerald green styling": "PASS - text-emerald-400 applied in Dashboard.jsx and JobSearch.jsx"
+  },
+  "bug_fixes_applied": {
+    "issue": "Em-dash (—) not recognized in salary range patterns",
+    "root_cause": "Regex pattern (?:-|to|–) only included hyphen, 'to', and en-dash but not em-dash",
+    "fix_location": "/app/frontend/src/utils/extractSalary.js lines 123-125, 143-145",
+    "fix_applied": "Updated regex to use (?:[-–—]|to) to include all dash characters"
+  }
+}

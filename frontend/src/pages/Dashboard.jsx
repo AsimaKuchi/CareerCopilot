@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import FormattedJobDescription from "@/components/FormattedJobDescription";
+import { getDisplaySalary } from "@/utils/extractSalary";
 import {
   Briefcase,
   FileText,
@@ -473,11 +474,15 @@ export default function Dashboard({ user }) {
                         )}
                         <div className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" />
-                          <span className={`truncate ${(job.job_min_salary || job.job_max_salary || job.salary_min || job.salary_max) ? "text-emerald-400" : ""}`}>
-                            {job.job_min_salary || job.salary_min
-                              ? `$${(job.job_min_salary || job.salary_min).toLocaleString()}${(job.job_max_salary || job.salary_max) ? ` - $${(job.job_max_salary || job.salary_max).toLocaleString()}` : '+'}`
-                              : "Salary not listed"}
-                          </span>
+                          {(() => {
+                            const displaySalary = getDisplaySalary(job);
+                            const hasSalary = displaySalary !== 'Salary not listed';
+                            return (
+                              <span className={`truncate ${hasSalary ? "text-emerald-400" : ""}`}>
+                                {displaySalary}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
 
