@@ -7,7 +7,7 @@ import time
 def test_business_analyst_search():
     """Debug the business analyst search specifically"""
     
-    base_url = "https://job-auto-fill-1.preview.emergentagent.com"
+    base_url = "https://job-match-ai-62.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     url = f"{base_url}/api/jobs/greenhouse/search"

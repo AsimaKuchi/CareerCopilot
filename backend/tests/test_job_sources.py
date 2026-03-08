@@ -9,7 +9,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://job-auto-fill-1.preview.emergentagent.com"
+    BASE_URL = "https://job-match-ai-62.preview.emergentagent.com"
 
 
 @pytest.fixture

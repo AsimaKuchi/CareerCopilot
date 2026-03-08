@@ -36,7 +36,7 @@ Edit `.env`:
 
 ```env
 # API Configuration
-API_BASE_URL=https://job-auto-fill-1.preview.emergentagent.com
+API_BASE_URL=https://job-match-ai-62.preview.emergentagent.com
 
 # Session token from browser (required!)
 # Get this from your browser cookies after logging in

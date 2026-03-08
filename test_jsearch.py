@@ -5,7 +5,7 @@ import json
 
 def test_jsearch_api():
     """Test JSearch API endpoint specifically"""
-    base_url = "https://job-auto-fill-1.preview.emergentagent.com"
+    base_url = "https://job-match-ai-62.preview.emergentagent.com"
     session_token = "test_session_1768797070346"
     
     print("🔍 TESTING JSEARCH API ENDPOINT")

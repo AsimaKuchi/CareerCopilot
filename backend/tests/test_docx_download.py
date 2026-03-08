@@ -17,7 +17,7 @@ from datetime import datetime
 # Use environment variable for backend URL (do NOT add default)
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL')
 if not BASE_URL:
-    BASE_URL = "https://job-auto-fill-1.preview.emergentagent.com"
+    BASE_URL = "https://job-match-ai-62.preview.emergentagent.com"
 
 # Test session credentials (from main agent context)
 TEST_SESSION_TOKEN = "docx_test_token_123"

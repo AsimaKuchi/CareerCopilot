@@ -1058,11 +1058,11 @@ export default function JobSearch({ user }) {
                               <ul className="space-y-3">
                                 {job.grounded_strengths.map((s, idx) => (
                                   <li key={idx} className="text-sm bg-emerald-500/5 p-2 rounded border-l-2 border-emerald-500/50">
-                                    <div className="text-emerald-300 font-medium">{s.requirement}</div>
+                                    <div className="text-emerald-300 font-medium">{s.strength_title}</div>
                                     <div className="text-muted-foreground mt-1">
                                       <span className="text-gray-400">Evidence:</span> {s.evidence}
                                     </div>
-                                    <div className="text-emerald-400/80 text-xs mt-1 italic">{s.match_reason}</div>
+                                    <div className="text-emerald-400/80 text-xs mt-1 italic">{s.relevance}</div>
                                   </li>
                                 ))}
                               </ul>

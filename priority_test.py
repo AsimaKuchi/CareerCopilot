@@ -6,7 +6,7 @@ import time
 
 class PriorityTester:
     def __init__(self):
-        self.base_url = "https://job-auto-fill-1.preview.emergentagent.com"
+        self.base_url = "https://job-match-ai-62.preview.emergentagent.com"
         self.session_token = "test_session_1768797070346"
         
     def test_interview_prep(self):

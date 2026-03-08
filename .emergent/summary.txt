@@ -3,54 +3,69 @@
 PRODUCT REQUIREMENTS:
 - **Universal Browser Extension:** Autofill forms on any job site and track submissions.
 - **Web Application:**
-    - **Dashboard:** Track applications, show statistics, and display prioritized job listings. The latest requirements include sorting jobs by date (newest first) and showing full job descriptions.
+    - **Dashboard:** Track applications, show statistics, and display prioritized job listings. The latest requirements include sorting jobs by date (newest first), showing full job descriptions with clean formatting, and extracting salary information from the description text.
     - **Profile Management:** Build a user profile, including resume upload and AI-powered pre-filling.
-    - **Job Search:** Find jobs from various sources. Recent requests include adding jobs from Microsoft, Amazon, Netflix, and Apple, while filtering out Indeed and Talent.com. A searchable company filter has also been added.
+    - **Job Search:** Find jobs from various sources. Recent requests include adding jobs from Microsoft, Amazon, Netflix, and Apple (including Canada), while filtering out Indeed and Talent.com. A searchable company filter has also been added.
     - **Authentication:** Support Google OAuth and email/password with a welcome email on signup.
-    - **AI Features:** Suggest career paths, and generate AI-optimized resumes/cover letters that can be downloaded as  files.
+    - **AI Features:** Generate AI-optimized resumes/cover letters (downloadable as ), provide personalized job match analysis based on the user's resume, and offer consistently formatted interview preparation materials.
 - **Branding & UX:**
     - A custom MyCareerCoPilot logo.
-    - Consistent branding across the entire application.
-    - UI/UX improvements like a Back to Dashboard button on the homepage for logged-in users and simplified, jargon-free text.
+    - Consistent branding and simplified, jargon-free text.
+    - UI/UX improvements like a Back to Dashboard button for logged-in users.
 
 **User's preferred language**: English
 
 **what currently exists?**
 A full-stack application MyCareerCoPilot with a React frontend, a monolithic FastAPI backend (), and a MongoDB database.
-- **Authentication**: Complete system for Google OAuth and email/password with welcome emails via Resend.
-- **Universal Chrome Extension**: Works on any job application site.
+- **Authentication**: Complete system for Google OAuth and email/password.
+- **Job Ingestion**: Pulls jobs from Greenhouse, Lever, Ashby, and direct APIs for Amazon, Microsoft, and Apple, now including Canadian listings.
 - **Web App Features**:
-    - **Job Ingestion**: Pulls jobs from Greenhouse, Lever, Ashby, a direct Amazon API, and JSearch for Microsoft/Apple. Netflix is included via Lever.
-    - **Dashboard & Job Search**: Features a dashboard with jobs sorted correctly by date (newest first). The job search page includes a searchable dropdown to filter by company.
-    - **Document Downloads**: Users can download AI-optimized resumes and cover letters as formatted  files.
-- **Branding**: A consistent MyCareerCoPilot brand with a custom SVG logo is implemented across the Navbar, Landing Page, and How It Works page.
-- **UX**: The homepage shows a Back to Dashboard button for authenticated users. All copy has been updated and simplified based on user feedback.
+    - **Dashboard & Job Search**: A dashboard with saved jobs and a job search page. Both feature expandable, well-formatted job descriptions and display salary information extracted from the description text.
+    - **AI-Powered Analysis**: An interview prep page with a standardized Q&A format. The job match analysis logic was recently modified but is not fully tested.
+    - **Document Downloads**: Users can download AI-optimized resumes and cover letters as  files.
+- **Branding**: A consistent MyCareerCoPilot brand with a custom SVG logo is implemented.
 
 **Last working item**:
-- **Last item agent was working**: Implementing a feature to display full job descriptions on the dashboard. The agent modified all job ingestion sources to fetch and store the full description, handled data cleaning (stripping HTML), updated the API to return the full description, and modified the frontend dashboard to show the description in an expandable section on each job card.
-- **Status**: TESTING PENDING
+- **Last item agent was working**: Fixing the Resume-Grounded Strengths section of the job match analysis. The user reported it was showing useless, raw text like contact information instead of meaningful insights. The agent rewrote the evidence-finding logic in  and updated the frontend in  to render a more structured output (, , ).
+- **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: The agent has already invoked the . The next step is to analyze the test report from the subagent and address any issues found.
+- **Which testing method agent to use?**: both. The backend logic in  needs to be validated to ensure it produces structured, meaningful strengths. The frontend in  needs a visual check via screenshot to confirm the new format is displayed correctly after a search.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-There are no outstanding bugs. The only pending item is the completion of the  task.
+- **Issue 1**: Resume-Grounded Strengths section provides low-quality, unhelpful information. (P0)
+
+**Issues Detail**:
+- **Issue 1**:
+    - **Description**: The job match analysis currently displays raw, unhelpful text snippets from the user's resume (like contact info) instead of specific, actionable strengths that align with the job description.
+    - **Attempted fixes**: The agent rewrote the  helper function and related logic within  in  to be more intelligent about extracting evidence. The frontend component  was also modified to display the new, structured format.
+    - **Next debug checklist**:
+        1.  Create a test user with a detailed resume.
+        2.  Perform a job search on the frontend.
+        3.  Click Analyze Match on a job card.
+        4.  Inspect the Resume-Grounded Strengths section in the UI to verify it shows specific skills, projects, or achievements, and that contact info and generic statements are gone.
+        5.  If the UI is incorrect, inspect the API response from the job search endpoint to check the  data structure being returned from the backend.
+    - **Why fix this issue and what will be achieved with the fix?**: To make the job match analysis a core value proposition of the app by providing users with truly personalized and actionable feedback on their fit for a role.
+    - **Status**: IN PROGRESS
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Blocked on other issue**: None.
 
 **In progress Task List**:
-- **Task 1**: Complete and Test the Full Job Description Feature (Priority: P0)
+- **Task 1**: Finalize and Test the Resume-Grounded Strengths fix. (Priority: P0)
 
 **Task Detail**:
-- **Task 1**: Complete and Test the Full Job Description Feature
-    - **Where to resume**: The agent has just invoked the . The next step is to receive the test report, analyze the results, and fix any bugs identified by the testing agent.
-    - **What will be achieved with this?**: Users will be able to view full, clean job descriptions directly on the dashboard, significantly improving the usability of the job boards.
-    - **Status**: TESTING PENDING
-    - **Should Test frontend/backend/both after fix?**: Both (Testing in progress via subagent).
-    - **Blocked on something**: Waiting for the response from .
+- **Task 1**:
+    - **Where to resume**: The code changes in  and  are complete. The next step is to start the application, log in as a test user with a resume, and perform a job search to verify the fix.
+    - **What will be achieved with this?**: The job match analysis feature will be complete and valuable to the user.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Both
+    - **Blocked on something**: None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks**:
-- **P0: Refactor Monolithic Backend**:  is now over 8,000 lines long and is becoming unmanageable. It is critical to break it down into a structured FastAPI application (e.g., using APIRouters for routes, models, services, etc.) to ensure future scalability and maintainability.
-- **P1: Expand Job Fetching to Include Canada**: The user noted a lack of Canadian jobs for Microsoft, Amazon, Netflix, and Apple. The agent needs to update the fetchers to include Canada as a target region (e.g.,  for the Amazon API) and add Canadian-specific queries for JSearch.
+- **P0: Refactor Monolithic Backend**:  is now over 8,000 lines long. It is critical to break it down into a structured FastAPI application (e.g., using APIRouters for routes, models, services) to ensure future scalability and maintainability.
+- **P1: Fix Greenhouse Job Ingestion Bug**: Address the  found in the logs during Greenhouse job fetching to prevent silent failures in the data pipeline.
 
 **Future Tasks**:
 - **P2: Enhance Dropdown Answer Matching in Extension**: Improve the universal extension's logic to handle more complex dropdown scenarios.
@@ -59,19 +74,21 @@ There are no outstanding bugs. The only pending item is the completion of the  t
 - **P5: Persist Company Filter**: Store the user's last-used company filter in their preferences.
 
 **Completed work in this session**
-- **Full Job Description Feature**: Backend and frontend implementation is complete, pending testing.
-- **Job Sorting by Date**: Fixed inconsistent date formats across all job sources by creating a normalized  field, migrating existing data, and updating the backend to sort by it.
-- **Back to Dashboard Button**: Implemented logic on the landing page to show a Back to Dashboard button for logged-in users instead of logging them out.
-- **Logo Carousel Fix**: Fixed broken and poorly rendered Apple and Spotify logos by replacing them with clean, inline SVGs.
-- **.docx Document Downloads**: Added a feature to download AI-optimized resumes and cover letters as formatted  files.
-- **Company Search Filter**: Implemented a searchable company filter on the job search page, including backend logic, frontend UI, URL persistence, and analytics.
-- **New Job Source Integration**: Added jobs from Microsoft, Amazon, Netflix, and Apple.
-- **Job Source Filtering**: Excluded jobs from Talent.com and Indeed.
-- **Full Rebranding**: Renamed the app to MyCareerCoPilot across the entire codebase and integrated a new SVG logo.
-- **Welcome Email Feature**: Successfully implemented and tested.
+- **Full Job Description Feature**: Implemented and tested an expandable section on job cards (Dashboard & Job Search) to show the full job description.
+- **Job Description Formatting**: Created a  component that automatically styles descriptions with headers and bullet points to improve readability.
+- **Salary Extraction from Description**: Implemented a utility to parse salary information (e.g., 0K - 20K) from the job description text and display it in the job card header if not available in structured fields.
+- **Interview Prep UI Standardization**: Refactored the Interview Prep page to use a single, clean, and professional Q&A format, removing the old inconsistent styling.
+- **Expanded Canadian Job Coverage**: Updated the Amazon and JSearch (for Microsoft/Apple) job fetchers to include jobs from Canada.
 
 **Earlier issues found/mentioned but not fixed**
-- None.
+- **Issue 1**: A  was observed in the backend logs during Greenhouse job ingestion. This likely stems from an  clause, which is invalid in newer Python versions. The agent noted this bug but did not fix it, choosing to work around it. This can cause the Greenhouse job fetch to fail silently.
+    - **Debug checklist**:
+        1.  Examine  around line 2209, where  is called for .
+        2.  Search the codebase for  or  clauses that might be passed an empty tuple dynamically.
+        3.  Fix the empty  clause to catch a specific exception (e.g., ) or remove it if it's a logic error.
+        4.  Trigger a job ingestion run and monitor logs to confirm the  is resolved.
+    - **Why to solve this issue and what will be achieved with this?**: This will ensure the job ingestion pipeline for Greenhouse is robust and does not fail silently, leading to more reliable job data.
+    - **Should Test frontend/backend/both after fix?**: Backend.
 
 **Known issue recurrence from previous fork**
 - None.
@@ -81,70 +98,62 @@ There are no outstanding bugs. The only pending item is the completion of the  t
 
 **Key Technical Concepts**
 - **Backend**: FastAPI, MongoDB.
-- **Frontend**: React, Tailwind CSS, Shadcn/UI (including Popover and Command for searchable dropdowns).
+- **Frontend**: React, Tailwind CSS, Shadcn/UI.
 - **Data Handling**:
-    -  for server-side  generation.
-    -  and  for cleaning HTML from job descriptions.
-    -  for parsing inconsistent date formats.
-    - Ad-hoc database migration scripts run via  to normalize data.
-- **Asynchronous Tasks**: Using  to run long-running data ingestion jobs in the background.
+    -  for  generation.
+    -  for HTML cleaning.
+    - Regex and string parsing in both Python (backend) and JavaScript (frontend) for data extraction (e.g., salary).
+- **Asynchronous Tasks**:  for long-running data ingestion.  for parallel fetching.
 
 **key DB schema**
-- ****: Now contains  (full plain text) and  (a standardized datetime object used for sorting). An index has been created on .
-- ****: A new collection to track usage of the company search filter.
+- No changes to the DB schema in this session.
 
 **changes in tech stack**
--  was added to .
+- No changes to the tech stack.
 
 **All files of reference**
-- : The monolithic backend, extensively modified for all recent features. This is the primary file for almost all backend logic.
-- : Contains the new logic for displaying expandable job descriptions.
-- : Contains the implementation for the searchable company filter dropdown and associated logic.
-- : Contains the logic for the conditional Back to Dashboard button.
--  & : Contain the logic for  downloads.
+- : Extensively modified for salary extraction, Canadian job fetching, and the (in-progress) resume-grounded strengths fix.
+- : Updated to use  and the new salary display logic.
+- : Updated for the same features as Dashboard, and also contains the frontend part of the in-progress grounded strengths fix.
+- : Refactored to standardize the UI for Q&A content.
+- : A new, reusable component for rendering nicely formatted job descriptions.
+- : A new utility file containing the  function for frontend salary extraction.
 
 **Areas that need refactoring**:
-- ****: This is a CRITICAL and urgent refactoring task. The file's size makes development slow, error-prone, and difficult to maintain. It must be broken down into a modern FastAPI structure with routers, models, and services.
+- ****: This remains the most critical piece of technical debt. The file is extremely large and complex, making development and debugging difficult and slow. It must be broken down into a modern FastAPI structure.
 
 **key api endpoints**
-- **Modified**:
-    - : Now sorts by the new  field and includes the full .
-    - : Now accepts an optional  filter parameter.
-    - : Now accepts an optional  filter parameter.
-- **New**:
-    - : Generates and returns a formatted  file from text content.
-    - : Logs company filter usage.
+- No new endpoints. Existing job search endpoints were modified on the backend to incorporate enhanced analysis logic.
 
 **Critical Info for New Agent**
-- Your immediate priority is to analyze the test report from the  for the **Full Job Description** feature and fix any reported issues to complete the task.
-- The single most important piece of technical debt is the monolithic  file. After completing the current task, you must prioritize and plan its refactoring.
-- The user has requested jobs from Canada, which have not yet been implemented. This should be proposed as the next feature task after the refactoring.
+- Your immediate priority is to complete the Resume-Grounded Strengths feature. Test the changes made by the previous agent and ensure the output is high-quality and meets the user's requirements.
+- After that, the next most important tasks are fixing the Greenhouse job ingestion bug () and then planning the critical refactor of the  monolith. Propose this refactoring plan to the user as the next major work item.
+- The test user  with password  exists and has a populated profile and saved jobs, making it useful for testing frontend features.
 
 **documents and test reports created in this job**
-- : Updated multiple times to reflect new features.
-- Various test reports under . The next one to check will be the latest .
-- Generated logo images stored in .
+- : Updated to reflect completed features like formatted descriptions and salary extraction.
+- Multiple test reports under  were generated for various features, with the latest being .
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Add full job descriptions to all job postings on the dashboard. (IN PROGRESS)
-2.  **User**: Sort jobs on the dashboard by posting date (newest first). (COMPLETED)
-3.  **User**: Don't log users out when they click Home; show a Back to Dashboard button instead. (COMPLETED)
-4.  **User**: Reported a visual error with the Apple logo in the carousel. (COMPLETED)
-5.  **User**: Reported that the Apple and Spotify logos had a border. (COMPLETED)
-6.  **User**: Reported that Apple and Spotify logos were not showing on the homepage. (COMPLETED)
-7.  **User**: Add  download functionality for AI-optimized documents. (COMPLETED)
-8.  **User**: Provided a detailed prompt to implement an optional Company filter on the job search page. (COMPLETED)
-9.  **User**: Asked about job availability in Toronto, revealing a lack of Canadian job data. (PENDING - noted in Upcoming Tasks)
-10. **User**: Confirmed the new job ingestion feature was complete. (COMPLETED)
+1.  **User**: Fix the Resume-Grounded Strengths section to show meaningful insights, not raw text. (IN PROGRESS)
+2.  **User**: Acknowledged their Emergent LLM key was topped up. (COMPLETED)
+3.  **User**: Provided requirements for the personalized resume-grounded match analysis. (IN PROGRESS)
+4.  **User**: Requested to expand job coverage to include Canada for major tech companies. (COMPLETED)
+5.  **User**: Provided feedback and images to fix the inconsistent UI on the Interview Prep page. (COMPLETED)
+6.  **User**: Requested to extract and display salary information from job descriptions. (COMPLETED)
+7.  **User**: Provided feedback to improve the formatting and readability of job descriptions. (COMPLETED)
+8.  **User**: Requested to add the full job description to job cards on the dashboard. (COMPLETED)
+9.  **User**: Confirmed the plan proposed by the agent. (COMPLETED)
+10. **User**: Provided initial problem statement. (COMPLETED)
 
 **Project Health Check:**
-- **Broken**: No features are currently broken.
+- **Broken**: The Greenhouse job ingestion process is likely broken due to an unhandled  in the backend, which may cause it to fail silently.
 - **Mocked**: N/A.
 - **Refactoring Needed**: The  file is a massive monolith and is the top priority for refactoring to improve maintainability and scalability.
 
 **3rd Party Integrations**
-- **OpenAI (GPT-4o, GPT-4o-mini)**: Uses Emergent LLM Key.
-- **JSearch API (RapidAPI)**: Requires User API Key.
+- **OpenAI (GPT-4o, GPT-4o-mini)**: Uses Emergent LLM Key for AI features.
+- **JSearch API (RapidAPI)**: Requires User API Key for fetching jobs from some sources.
 - **Resend**: For transactional emails.
 - **Google OAuth**: For authentication.
 - **python-docx**: For document generation.
@@ -152,13 +161,15 @@ There are no outstanding bugs. The only pending item is the completion of the  t
 - **python-dateutil**: For date parsing.
 
 **Testing status**
-- **Testing agent used after significant changes**: YES, used for several major features. Most recently called for the Full Job Description feature.
+- **Testing agent used after significant changes**: YES, used multiple times to validate features like description formatting, salary extraction, and Canadian job fetching.
 - **Troubleshoot agent used after agent stuck in loop**: NO
 - **Test files created**: None.
 - **Known regressions**: None.
 
 **Credentials to test flow:**
-- Authentication can be tested via Google OAuth or by creating a new account. Resend is in test mode and will only deliver emails to the account owner's registered email address.
+- **Email**: 
+- **Password**: 
+- This user has a profile, resume, and saved jobs, making it ideal for testing most features.
 
 **What agent forgot to execute**
-- The agent discussed expanding job source fetching to include Canada (specifically for Microsoft, Amazon, Apple) in response to a user query but did not implement the changes. This remains an open and important upcoming task.</analysis>
+- The agent identified a critical  in the backend logs related to the Greenhouse job ingestion process but did not fix it. This bug can cause the job data pipeline to fail silently for one of its sources. This needs to be prioritized.</analysis>

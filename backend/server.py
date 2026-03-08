@@ -94,7 +94,7 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
         return False, "Password must contain at least one special character (!@#$%^&*...)"
     return True, ""
 
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://job-auto-fill-1.preview.emergentagent.com')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://job-match-ai-62.preview.emergentagent.com')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -2472,7 +2472,7 @@ async def search_greenhouse(request: Request):
                 job_for_match = {
                     "job_title": job.get("title"),
                     "employer_name": job.get("company"),
-                    "job_description": (job.get("title") or "") + " " + (job.get("department") or ""),
+                    "job_description": job.get("description") or ((job.get("title") or "") + " " + (job.get("department") or "")),
                     "job_city": job.get("location", "").split(",")[0].strip() if job.get("location") else "",
                     "job_state": job.get("location", "").split(",")[-1].strip() if "," in job.get("location", "") else "",
                     "job_is_remote": "remote" in job.get("location", "").lower(),
@@ -3267,38 +3267,158 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     auto_apply_reason = None
     
     # ============================================================================
-    # HELPER: Extract resume evidence for a specific skill/keyword
+    # HELPER: Extract meaningful resume evidence (not raw text dumps)
     # ============================================================================
-    def find_resume_evidence(keyword: str, context_words: int = 10) -> str:
-        """Find a relevant snippet from resume containing the keyword."""
-        if not has_resume:
-            return ""
+    
+    # Patterns to filter out (contact info, headers, etc.)
+    import re
+    FILTER_PATTERNS = [
+        r'\b[\w.-]+@[\w.-]+\.\w+\b',  # Email addresses
+        r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b',  # Phone numbers
+        r'https?://[^\s]+',  # URLs
+        r'linkedin\.com[^\s]*',  # LinkedIn
+        r'github\.com[^\s]*',  # GitHub
+        r'\b(resume|cv|curriculum vitae)\b',  # Resume headers
+    ]
+    
+    def is_meaningful_line(line: str) -> bool:
+        """Check if a line contains meaningful content (not contact info/headers)."""
+        line_lower = line.lower().strip()
         
-        keyword_lower = keyword.lower()
-        resume_lower = resume_text
+        # Skip empty or very short lines
+        if len(line_lower) < 15:
+            return False
         
-        idx = resume_lower.find(keyword_lower)
-        if idx == -1:
-            return ""
+        # Skip lines that are mostly contact info
+        for pattern in FILTER_PATTERNS:
+            if re.search(pattern, line_lower, re.IGNORECASE):
+                return False
         
-        # Get surrounding context
-        words = resume_text_raw.split()
-        current_pos = 0
+        # Skip lines that look like headers/names (all caps, short)
+        if line.isupper() and len(line) < 50:
+            return False
         
-        for i, word in enumerate(words):
-            if current_pos <= idx < current_pos + len(word) + 1:
-                # Found the word containing keyword
-                start = max(0, i - context_words)
-                end = min(len(words), i + context_words + 1)
-                snippet = " ".join(words[start:end])
-                # Clean up snippet
-                snippet = snippet.strip()
-                if len(snippet) > 150:
-                    snippet = snippet[:147] + "..."
-                return snippet
-            current_pos += len(word) + 1
+        # Skip lines with just location/date info
+        if re.match(r'^[\w\s,]+\s*\|\s*[\d/\-\s]+$', line_lower):
+            return False
+        
+        return True
+    
+    def extract_achievement_bullets(resume: str) -> List[str]:
+        """Extract meaningful bullet points and achievements from resume."""
+        achievements = []
+        lines = resume.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            # Look for bullet points or lines starting with action verbs
+            if line.startswith(('-', '•', '●', '○', '*')) or \
+               (len(line) > 20 and any(line.lower().startswith(v) for v in [
+                   'led', 'managed', 'developed', 'created', 'built', 'designed',
+                   'implemented', 'improved', 'increased', 'decreased', 'reduced',
+                   'achieved', 'delivered', 'launched', 'coordinated', 'analyzed',
+                   'collaborated', 'established', 'generated', 'optimized', 'spearheaded',
+                   'streamlined', 'transformed', 'automated', 'conducted', 'drove'
+               ])):
+                # Clean the bullet point
+                cleaned = re.sub(r'^[-•●○*]\s*', '', line).strip()
+                if is_meaningful_line(cleaned) and len(cleaned) > 25:
+                    achievements.append(cleaned)
+        
+        return achievements[:20]  # Limit to top 20
+    
+    def extract_work_experience(resume: str) -> List[Dict]:
+        """Extract work experience entries from resume."""
+        experiences = []
+        lines = resume.split('\n')
+        
+        # Title keywords for identifying job titles vs company names
+        title_keywords = [
+            'engineer', 'developer', 'analyst', 'manager', 'director', 'lead',
+            'architect', 'designer', 'specialist', 'coordinator', 'consultant',
+            'associate', 'intern', 'officer', 'administrator', 'scientist'
+        ]
+        # Company indicators
+        company_indicators = ['inc', 'corp', 'llc', 'ltd', 'co.', 'technologies',
+                            'solutions', 'group', 'labs', 'studio', 'systems']
+        
+        for line in lines:
+            line = line.strip()
+            if not line or len(line) < 10:
+                continue
+            
+            line_lower = line.lower()
+            
+            # Look for lines with pipe/dash separators containing dates (common resume format)
+            # e.g., "Senior Software Engineer | TechCorp Inc. | Jan 2022 - Present"
+            has_date = bool(re.search(r'\b(20\d{2}|19\d{2})\b', line_lower))
+            if not has_date:
+                continue
+            
+            parts = re.split(r'\s*[|]\s*', line)
+            if len(parts) < 2:
+                parts = re.split(r'\s*[-–]\s*(?=[A-Z])', line, maxsplit=1)
+            
+            if len(parts) >= 2:
+                title_part = None
+                company_part = None
+                
+                for part in parts:
+                    part_lower = part.strip().lower()
+                    # Skip date-only parts
+                    if re.match(r'^[\w\s,]*(20\d{2}|19\d{2})[\s\-–]*(present|20\d{2}|19\d{2})?[\s]*$', part_lower):
+                        continue
+                    # Check if this part looks like a title or a company
+                    is_title = any(kw in part_lower for kw in title_keywords)
+                    is_company = any(kw in part_lower for kw in company_indicators)
+                    
+                    if is_title and not title_part:
+                        title_part = part.strip()
+                    elif is_company and not company_part:
+                        company_part = part.strip()
+                    elif not title_part and not is_company:
+                        title_part = part.strip()
+                    elif not company_part:
+                        company_part = part.strip()
+                
+                if title_part and company_part:
+                    experiences.append({"company": company_part, "title": title_part})
+                elif title_part:
+                    experiences.append({"company": None, "title": title_part})
+        
+        return experiences[:5]
+    
+    def find_skill_evidence(skill: str, resume: str, achievements: List[str]) -> str:
+        """Find meaningful evidence for a skill from resume achievements."""
+        skill_lower = skill.lower()
+        
+        # Search through achievements for skill mentions with context
+        for achievement in achievements:
+            if skill_lower in achievement.lower():
+                # Found an achievement mentioning this skill
+                return achievement[:200] + "..." if len(achievement) > 200 else achievement
+        
+        # Search for skill in resume with surrounding achievement context
+        resume_lower = resume.lower()
+        idx = resume_lower.find(skill_lower)
+        if idx != -1:
+            # Get the line containing this skill
+            start = resume_lower.rfind('\n', 0, idx)
+            end = resume_lower.find('\n', idx)
+            if start == -1:
+                start = 0
+            if end == -1:
+                end = len(resume)
+            
+            line = resume[start:end].strip()
+            if is_meaningful_line(line) and len(line) > 30:
+                return line[:200] + "..." if len(line) > 200 else line
         
         return ""
+    
+    # Pre-extract achievements from resume for later use
+    resume_achievements = extract_achievement_bullets(resume_text_raw) if has_resume else []
+    work_experiences = extract_work_experience(resume_text_raw) if has_resume else []
     
     # ============================================================================
     # CATEGORY 1: CORE FIT (60 points) - Should I apply?
@@ -3330,16 +3450,19 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             role_matched = True
             matched_role = target_role.title()
             
-            # Find resume evidence for role
-            evidence = find_resume_evidence(target_role.split()[0] if target_role.split() else target_role)
-            if evidence:
+            # Find work experience evidence for the role
+            relevant_exp = None
+            for exp in work_experiences:
+                if exp.get("title") and target_role.split()[0].lower() in exp["title"].lower():
+                    relevant_exp = exp
+                    break
+            
+            if relevant_exp and relevant_exp.get("company"):
                 grounded_strengths.append({
-                    "requirement": f"Looking for {job_title_display}",
-                    "evidence": evidence,
-                    "match_reason": f"Your background as {matched_role} directly matches this position"
+                    "strength_title": f"{matched_role} Experience",
+                    "evidence": f"Previously worked as {relevant_exp.get('title', matched_role)} at {relevant_exp['company']}",
+                    "relevance": f"Direct role alignment with {job_title_display} position"
                 })
-            else:
-                strengths.append(f"Your target role '{matched_role}' directly matches this position")
             break
         
         # Synonym match
@@ -3349,7 +3472,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
                     role_score = 18
                     role_matched = True
                     matched_role = target_role.title()
-                    strengths.append(f"Related role match: {job_title_display} aligns with your {matched_role} career path")
+                    strengths.append(f"Related role: {job_title_display} aligns with your {matched_role} career path")
                     break
         
         if role_matched:
@@ -3361,7 +3484,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     
     score += role_score
     
-    # 1.2 SKILL OVERLAP (20 points) - With specific evidence
+    # 1.2 SKILL OVERLAP (20 points) - With specific evidence from achievements
     skill_score = 0
     resume_skills = []
     
@@ -3377,35 +3500,35 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         "c++", "rust", "golang", "typescript", "html", "css"
     ]
     
-    # Check profile skills
+    # Check profile skills and find meaningful evidence
     for skill in profile_skills:
         skill_lower = skill.lower()
         if skill_lower in job_desc or skill_lower in job_title:
             matched_skills.append(skill)
             
-            # Find resume evidence
-            evidence = find_resume_evidence(skill)
-            if evidence and len(grounded_strengths) < 5:  # Limit to 5 grounded strengths
+            # Find meaningful evidence from achievements (not raw text)
+            evidence = find_skill_evidence(skill, resume_text_raw, resume_achievements)
+            if evidence and len(grounded_strengths) < 5:
                 grounded_strengths.append({
-                    "requirement": f"Requires {skill}",
+                    "strength_title": f"{skill} Proficiency",
                     "evidence": evidence,
-                    "match_reason": f"Your {skill} experience matches job requirements"
+                    "relevance": f"Job requires {skill} - your experience directly addresses this"
                 })
     
-    # Check resume for additional skills
+    # Check resume for additional skills from skill library
     if has_resume:
         for skill in skill_library:
             if skill in job_desc and skill in resume_text:
                 if skill not in [s.lower() for s in matched_skills]:
                     resume_skills.append(skill.title())
                     
-                    # Add grounded strength with evidence
-                    evidence = find_resume_evidence(skill)
+                    # Add grounded strength with meaningful evidence
+                    evidence = find_skill_evidence(skill, resume_text_raw, resume_achievements)
                     if evidence and len(grounded_strengths) < 5:
                         grounded_strengths.append({
-                            "requirement": f"Needs {skill.title()} experience",
+                            "strength_title": f"{skill.title()} Experience",
                             "evidence": evidence,
-                            "match_reason": f"Your resume demonstrates {skill.title()} proficiency"
+                            "relevance": f"Resume demonstrates hands-on {skill.title()} usage relevant to this role"
                         })
     
     all_skills = matched_skills + resume_skills
@@ -3420,7 +3543,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     else:
         skill_score = 3
         if profile_skills or has_resume:
-            gaps.append(f"Limited skill overlap - consider highlighting transferable skills from your background")
+            gaps.append(f"Limited skill overlap - consider highlighting transferable skills")
     
     score += skill_score
     
@@ -3690,50 +3813,72 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     else:
         match_reasoning = f"{match_label}: {', '.join(risks[:2]) if risks else 'Significant gaps detected'}. {decision_summary}"
     
-    # Enhance grounded strengths with additional resume evidence if not already populated
+    # Enhance grounded strengths with meaningful achievements if not already populated
     if has_resume and len(grounded_strengths) < 5:
-        # Find specific metrics and achievements from resume
-        resume_lines = resume_text_raw.split('\n')
-        resume_bullets = [line.strip() for line in resume_lines if line.strip() and (line.strip().startswith('-') or line.strip().startswith('•') or any(char.isdigit() for char in line))]
+        # Track used categories to avoid duplicates
+        used_categories = set(gs.get("strength_title", "") for gs in grounded_strengths)
         
-        # Add skill-based grounded strengths for any remaining skills not yet covered
-        covered_skills = {gs.get("requirement", "").lower() for gs in grounded_strengths}
-        for skill in all_skills[:5]:
-            if f"requires {skill.lower()}" in covered_skills or f"needs {skill.lower()}" in covered_skills:
-                continue
+        # Add achievement-based strengths that contain numbers or metrics
+        for achievement in resume_achievements:
             if len(grounded_strengths) >= 5:
                 break
-                
-            # Find resume evidence for this skill
-            skill_evidence = None
-            for bullet in resume_bullets:
-                if skill.lower() in bullet.lower():
-                    skill_evidence = bullet[:150] + "..." if len(bullet) > 150 else bullet
-                    break
             
-            if skill_evidence:
+            # Skip if already covered by skill-based strengths
+            already_covered = any(
+                achievement.lower() in gs.get("evidence", "").lower() 
+                for gs in grounded_strengths
+            )
+            if already_covered:
+                continue
+            
+            # Look for achievements with metrics (numbers, percentages, dollar amounts)
+            if re.search(r'\d+%|\$[\d,]+|\d+\+?\s*(years?|months?|hours?|projects?|clients?|users?|teams?)', achievement, re.IGNORECASE):
+                # Determine what kind of achievement this is - with unique titles
+                ach_lower = achievement.lower()
+                if any(kw in ach_lower for kw in ["led", "managed", "team", "cross-functional", "coordinated"]):
+                    achievement_type = "Leadership & Collaboration"
+                    relevance = "Demonstrates ability to lead teams and coordinate efforts"
+                elif any(kw in ach_lower for kw in ["saved", "reduced", "cost", "budget"]):
+                    achievement_type = "Cost Optimization"
+                    relevance = "Track record of reducing costs and improving efficiency"
+                elif any(kw in ach_lower for kw in ["improved", "increased", "grew", "generated", "revenue"]):
+                    achievement_type = "Business Impact"
+                    relevance = "History of driving measurable business improvements"
+                elif any(kw in ach_lower for kw in ["built", "developed", "created", "designed"]):
+                    achievement_type = "Technical Building"
+                    relevance = "Hands-on experience building and shipping products"
+                elif any(kw in ach_lower for kw in ["implemented", "deployed", "launched", "automated"]):
+                    achievement_type = "System Implementation"
+                    relevance = "Proven ability to implement and deploy systems"
+                elif any(kw in ach_lower for kw in ["testing", "coverage", "quality", "ci/cd", "pipeline"]):
+                    achievement_type = "Quality & DevOps"
+                    relevance = "Experience with quality assurance and delivery pipelines"
+                else:
+                    achievement_type = "Measurable Achievement"
+                    relevance = "Demonstrates ability to deliver quantifiable results"
+                
+                # Avoid duplicate category titles
+                if achievement_type in used_categories:
+                    # Add a suffix to differentiate
+                    count = sum(1 for c in used_categories if achievement_type in c)
+                    achievement_type = f"{achievement_type} ({count + 1})"
+                
+                used_categories.add(achievement_type)
                 grounded_strengths.append({
-                    "requirement": f"Job requires {skill}",
-                    "evidence": skill_evidence,
-                    "match_reason": f"Your resume demonstrates hands-on experience with {skill}"
+                    "strength_title": achievement_type,
+                    "evidence": achievement,
+                    "relevance": relevance
                 })
         
-        # Experience/seniority grounded strength
-        if exp_score >= 15 and len(grounded_strengths) < 5:
-            years_text = f"{user_years}+ years" if user_years else "relevant experience"
-            grounded_strengths.append({
-                "requirement": f"Position targets {job_seniority_name}-level candidates",
-                "evidence": f"Your profile indicates {years_text} of experience",
-                "match_reason": f"Your seniority level ({user_seniority or 'mid'}) aligns with this {job_seniority_name} role"
-            })
-        
-        # Role alignment grounded strength
-        if role_matched and target_roles and len(grounded_strengths) < 5:
-            grounded_strengths.append({
-                "requirement": f"Hiring for {job_title_display}",
-                "evidence": f"Your target role: {target_roles[0].title()}",
-                "match_reason": "Direct alignment between your career goals and this position"
-            })
+        # Add experience summary if we still have room
+        if work_experiences and len(grounded_strengths) < 5:
+            exp = work_experiences[0]
+            if exp.get("company") and exp.get("title"):
+                grounded_strengths.append({
+                    "strength_title": "Relevant Work Experience",
+                    "evidence": f"{exp['title']} at {exp['company']}",
+                    "relevance": f"Background in similar role supports transition to {job_title_display}"
+                })
     
     return {
         "score": score,
