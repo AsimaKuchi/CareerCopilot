@@ -1171,6 +1171,7 @@ export default function JobSearch({ user }) {
                             setShowAnalyzeDialog(true);
                           }}
                           className="bg-purple-500 hover:bg-purple-600"
+                          data-testid={`analyze-match-btn-${i}`}
                         >
                           <Target className="w-4 h-4 mr-2" />
                           Analyze Match

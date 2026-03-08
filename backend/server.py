@@ -2274,7 +2274,9 @@ async def enrich_greenhouse_job(job: Dict, profile: Optional[Dict]) -> Dict:
             "match_strengths": match_eval["strengths"],
             "match_gaps": match_eval["gaps"],
             "match_reasoning": match_eval["match_reasoning"],
-            "skip_reason": match_eval["skip_reason"]
+            "skip_reason": match_eval["skip_reason"],
+            "grounded_strengths": match_eval.get("grounded_strengths", []),
+            "matched_skills": match_eval.get("matched_skills", [])
         })
     else:
         job.update({
@@ -2283,7 +2285,9 @@ async def enrich_greenhouse_job(job: Dict, profile: Optional[Dict]) -> Dict:
             "match_strengths": [],
             "match_gaps": ["Complete your profile for better matching"],
             "match_reasoning": "Profile incomplete",
-            "skip_reason": None
+            "skip_reason": None,
+            "grounded_strengths": [],
+            "matched_skills": []
         })
     
     return job
@@ -2482,7 +2486,9 @@ async def search_greenhouse(request: Request):
                     "match_strengths": match_eval["strengths"],
                     "match_gaps": match_eval["gaps"],
                     "match_reasoning": match_eval["match_reasoning"],
-                    "skip_reason": match_eval["skip_reason"]
+                    "skip_reason": match_eval["skip_reason"],
+                    "grounded_strengths": match_eval.get("grounded_strengths", []),
+                    "matched_skills": match_eval.get("matched_skills", [])
                 })
             else:
                 job.update({
@@ -2491,7 +2497,9 @@ async def search_greenhouse(request: Request):
                     "match_strengths": [],
                     "match_gaps": ["Complete your profile for better matching"],
                     "match_reasoning": "Profile incomplete",
-                    "skip_reason": None
+                    "skip_reason": None,
+                    "grounded_strengths": [],
+                    "matched_skills": []
                 })
             
             # Preserve original description or create fallback summary
@@ -3145,7 +3153,9 @@ async def search_jobs(request: Request):
                         "match_strengths": match_eval["strengths"],
                         "match_gaps": match_eval["gaps"],
                         "match_reasoning": match_eval["match_reasoning"],
-                        "skip_reason": match_eval["skip_reason"]
+                        "skip_reason": match_eval["skip_reason"],
+                        "grounded_strengths": match_eval.get("grounded_strengths", []),
+                        "matched_skills": match_eval.get("matched_skills", [])
                     })
                 else:
                     job.update({
@@ -3154,7 +3164,9 @@ async def search_jobs(request: Request):
                         "match_strengths": [],
                         "match_gaps": ["Complete your profile for better matching"],
                         "match_reasoning": "Profile incomplete",
-                        "skip_reason": None
+                        "skip_reason": None,
+                        "grounded_strengths": [],
+                        "matched_skills": []
                     })
                 
                 # Transform to match our format
@@ -3206,6 +3218,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     Evaluate job match to help user decide whether to apply.
     Returns match score, decision summary, strengths, risks, confidence, and recommendation.
     Focus: Guide decision-making with honesty and clarity, not hype.
+    Enhanced to provide grounded strengths with actual resume evidence.
     """
     if not profile:
         return {
@@ -3215,6 +3228,8 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             "risk": "high",
             "decision_summary": "Complete your profile for personalized match analysis",
             "strengths": [],
+            "grounded_strengths": [],
+            "matched_skills": [],
             "gaps": ["Complete your profile and upload resume for accurate matching"],
             "match_reasoning": "Profile incomplete - unable to provide detailed analysis",
             "skip_reason": None,
@@ -3233,20 +3248,57 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     is_remote = job.get("job_is_remote", False)
     
     # Extract profile details
-    resume_text = (profile.get("resume_text") or "").lower()
+    resume_text_raw = profile.get("resume_text") or ""
+    resume_text = resume_text_raw.lower()
     has_resume = len(resume_text) > 100
     target_roles = [r.lower() for r in profile.get("job_titles", [])]
-    profile_skills = get_skill_names(profile.get("skills", []))  # Use helper for backwards compatibility
+    profile_skills = get_skill_names(profile.get("skills", []))
     user_years = profile.get("experience_years", 0)
     user_seniority = profile.get("seniority_level", "").lower()
     
     # Initialize scoring
     score = 0
     strengths = []
+    grounded_strengths = []
     risks = []
     gaps = []
+    matched_skills = []
     auto_apply_blocked = False
     auto_apply_reason = None
+    
+    # ============================================================================
+    # HELPER: Extract resume evidence for a specific skill/keyword
+    # ============================================================================
+    def find_resume_evidence(keyword: str, context_words: int = 10) -> str:
+        """Find a relevant snippet from resume containing the keyword."""
+        if not has_resume:
+            return ""
+        
+        keyword_lower = keyword.lower()
+        resume_lower = resume_text
+        
+        idx = resume_lower.find(keyword_lower)
+        if idx == -1:
+            return ""
+        
+        # Get surrounding context
+        words = resume_text_raw.split()
+        current_pos = 0
+        
+        for i, word in enumerate(words):
+            if current_pos <= idx < current_pos + len(word) + 1:
+                # Found the word containing keyword
+                start = max(0, i - context_words)
+                end = min(len(words), i + context_words + 1)
+                snippet = " ".join(words[start:end])
+                # Clean up snippet
+                snippet = snippet.strip()
+                if len(snippet) > 150:
+                    snippet = snippet[:147] + "..."
+                return snippet
+            current_pos += len(word) + 1
+        
+        return ""
     
     # ============================================================================
     # CATEGORY 1: CORE FIT (60 points) - Should I apply?
@@ -3270,12 +3322,24 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     }
     
     # Check target roles against job title
+    matched_role = None
     for target_role in target_roles:
         # Direct match
         if target_role in job_title or any(word in job_title for word in target_role.split()):
             role_score = 20
             role_matched = True
-            strengths.append(f"Strong role alignment: Your target role '{target_role.title()}' directly matches this position")
+            matched_role = target_role.title()
+            
+            # Find resume evidence for role
+            evidence = find_resume_evidence(target_role.split()[0] if target_role.split() else target_role)
+            if evidence:
+                grounded_strengths.append({
+                    "requirement": f"Looking for {job_title_display}",
+                    "evidence": evidence,
+                    "match_reason": f"Your background as {matched_role} directly matches this position"
+                })
+            else:
+                strengths.append(f"Your target role '{matched_role}' directly matches this position")
             break
         
         # Synonym match
@@ -3284,25 +3348,21 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
                 if any(syn in job_title for syn in synonyms):
                     role_score = 18
                     role_matched = True
-                    strengths.append(f"Related role match: This position aligns with your '{target_role.title()}' career path")
+                    matched_role = target_role.title()
+                    strengths.append(f"Related role match: {job_title_display} aligns with your {matched_role} career path")
                     break
         
         if role_matched:
             break
     
     if not role_matched and target_roles:
-        role_score = 5  # Minimal points for no match
-        risks.append("Role title doesn't align with your target positions - may require explanation in cover letter")
+        role_score = 5
+        risks.append(f"Role title doesn't align with your target positions ({', '.join(t.title() for t in target_roles[:2])})")
     
     score += role_score
     
-    # 2. Skills Match (max +20 points) - Enhanced with resume analysis
-    skills = profile.get("skills", [])
-    matched_skills = []
-    
-    # 1.2 SKILL OVERLAP (20 points) - Required vs Preferred skills
+    # 1.2 SKILL OVERLAP (20 points) - With specific evidence
     skill_score = 0
-    matched_skills = []
     resume_skills = []
     
     # Common technical and business skills to check
@@ -3312,36 +3372,55 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         "machine learning", "data analysis", "project management", "agile",
         "salesforce", "sap", "oracle", "mongodb", "postgresql", "git",
         "financial modeling", "budgeting", "forecasting", "reporting",
-        "leadership", "stakeholder management", "workday", "peoplesoft"
+        "leadership", "stakeholder management", "workday", "peoplesoft",
+        "communication", "teamwork", "problem solving", "analytical",
+        "c++", "rust", "golang", "typescript", "html", "css"
     ]
     
     # Check profile skills
     for skill in profile_skills:
-        if skill in job_desc or skill in job_title:
+        skill_lower = skill.lower()
+        if skill_lower in job_desc or skill_lower in job_title:
             matched_skills.append(skill)
+            
+            # Find resume evidence
+            evidence = find_resume_evidence(skill)
+            if evidence and len(grounded_strengths) < 5:  # Limit to 5 grounded strengths
+                grounded_strengths.append({
+                    "requirement": f"Requires {skill}",
+                    "evidence": evidence,
+                    "match_reason": f"Your {skill} experience matches job requirements"
+                })
     
     # Check resume for additional skills
     if has_resume:
         for skill in skill_library:
             if skill in job_desc and skill in resume_text:
-                if skill not in matched_skills:
-                    resume_skills.append(skill)
+                if skill not in [s.lower() for s in matched_skills]:
+                    resume_skills.append(skill.title())
+                    
+                    # Add grounded strength with evidence
+                    evidence = find_resume_evidence(skill)
+                    if evidence and len(grounded_strengths) < 5:
+                        grounded_strengths.append({
+                            "requirement": f"Needs {skill.title()} experience",
+                            "evidence": evidence,
+                            "match_reason": f"Your resume demonstrates {skill.title()} proficiency"
+                        })
     
     all_skills = matched_skills + resume_skills
     
     if all_skills:
         # Weight: more skills = higher score, cap at 20
-        skill_ratio = min(len(all_skills) / 5, 1.0)  # 5+ skills = full points
+        skill_ratio = min(len(all_skills) / 5, 1.0)
         skill_score = int(skill_ratio * 20)
         
         if len(all_skills) >= 3:
-            strengths.append(f"Strong skill match: {', '.join(all_skills[:4])} align with job requirements")
-        elif len(all_skills) >= 1:
-            strengths.append(f"Key skills match: {', '.join(all_skills[:2])} mentioned in requirements")
+            strengths.append(f"Strong skill match: {', '.join(all_skills[:4])}")
     else:
-        skill_score = 3  # Minimal points
+        skill_score = 3
         if profile_skills or has_resume:
-            risks.append("Limited skill overlap detected - may need to highlight transferable skills")
+            gaps.append(f"Limited skill overlap - consider highlighting transferable skills from your background")
     
     score += skill_score
     
@@ -3611,17 +3690,20 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
     else:
         match_reasoning = f"{match_label}: {', '.join(risks[:2]) if risks else 'Significant gaps detected'}. {decision_summary}"
     
-    # Build resume-grounded strengths for detailed analysis
-    grounded_strengths = []
-    
-    # Extract specific resume evidence for each strength
-    if has_resume:
+    # Enhance grounded strengths with additional resume evidence if not already populated
+    if has_resume and len(grounded_strengths) < 5:
         # Find specific metrics and achievements from resume
-        resume_lines = profile.get("resume_text", "").split('\n')
+        resume_lines = resume_text_raw.split('\n')
         resume_bullets = [line.strip() for line in resume_lines if line.strip() and (line.strip().startswith('-') or line.strip().startswith('•') or any(char.isdigit() for char in line))]
         
-        # Skill-based grounded strengths
-        for skill in all_skills[:3]:
+        # Add skill-based grounded strengths for any remaining skills not yet covered
+        covered_skills = {gs.get("requirement", "").lower() for gs in grounded_strengths}
+        for skill in all_skills[:5]:
+            if f"requires {skill.lower()}" in covered_skills or f"needs {skill.lower()}" in covered_skills:
+                continue
+            if len(grounded_strengths) >= 5:
+                break
+                
             # Find resume evidence for this skill
             skill_evidence = None
             for bullet in resume_bullets:
@@ -3635,15 +3717,9 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
                     "evidence": skill_evidence,
                     "match_reason": f"Your resume demonstrates hands-on experience with {skill}"
                 })
-            else:
-                grounded_strengths.append({
-                    "requirement": f"Job requires {skill}",
-                    "evidence": f"{skill.title()} listed in your skills profile",
-                    "match_reason": f"Direct skill alignment with position requirements"
-                })
         
         # Experience/seniority grounded strength
-        if exp_score >= 15:
+        if exp_score >= 15 and len(grounded_strengths) < 5:
             years_text = f"{user_years}+ years" if user_years else "relevant experience"
             grounded_strengths.append({
                 "requirement": f"Position targets {job_seniority_name}-level candidates",
@@ -3652,7 +3728,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
             })
         
         # Role alignment grounded strength
-        if role_matched and target_roles:
+        if role_matched and target_roles and len(grounded_strengths) < 5:
             grounded_strengths.append({
                 "requirement": f"Hiring for {job_title_display}",
                 "evidence": f"Your target role: {target_roles[0].title()}",
@@ -3667,7 +3743,7 @@ def evaluate_job_match(job: Dict, profile: Optional[Dict]) -> Dict:
         "risk": risk,
         "decision_summary": decision_summary,
         "strengths": strengths[:3],  # Max 3 (legacy format)
-        "grounded_strengths": grounded_strengths[:5],  # New: resume-grounded strengths
+        "grounded_strengths": grounded_strengths[:5],  # Resume-grounded strengths with evidence
         "gaps": (risks + gaps)[:2],  # Max 2, prioritize risks
         "match_reasoning": match_reasoning,
         "value_add": value_add,
@@ -4781,6 +4857,8 @@ async def get_jobs_for_career_path(
                     "match_recommendation": match_eval["recommendation"],
                     "strengths": match_eval["strengths"],
                     "gaps": match_eval["gaps"],
+                    "grounded_strengths": match_eval.get("grounded_strengths", []),
+                    "matched_skills": match_eval.get("matched_skills", []),
                     "ready_to_apply": match_eval["score"] >= 75,
                 })
 
