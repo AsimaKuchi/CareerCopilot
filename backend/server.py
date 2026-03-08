@@ -1905,69 +1905,84 @@ async def fetch_ashby_company_jobs(company: str) -> List[Dict]:
     return jobs
 
 
-async def fetch_amazon_jobs(max_pages: int = 5) -> List[Dict]:
-    """Fetch job listings from Amazon's careers API."""
+async def fetch_amazon_jobs(max_pages: int = 5, countries: List[str] = None) -> List[Dict]:
+    """Fetch job listings from Amazon's careers API for multiple countries."""
+    if countries is None:
+        countries = ["USA", "CAN"]  # Include USA and Canada by default
+    
     jobs = []
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            for page in range(max_pages):
-                offset = page * 25
-                api_url = "https://www.amazon.jobs/en/search.json"
-                params = {
-                    "base_query": "",
-                    "result_limit": 25,
-                    "sort": "recent",
-                    "offset": offset,
-                    "country": "USA",
-                }
-                response = await client.get(api_url, params=params, headers={"User-Agent": "Mozilla/5.0"})
-                
-                if response.status_code != 200:
-                    logger.debug(f"Amazon API returned {response.status_code}")
-                    break
-                
-                data = response.json()
-                page_jobs = data.get("jobs", [])
-                if not page_jobs:
-                    break
-                
-                for j in page_jobs:
-                    title = j.get("title", "")
-                    if not is_english_job(title):
-                        continue
+            for country in countries:
+                for page in range(max_pages):
+                    offset = page * 25
+                    api_url = "https://www.amazon.jobs/en/search.json"
+                    params = {
+                        "base_query": "",
+                        "result_limit": 25,
+                        "sort": "recent",
+                        "offset": offset,
+                        "country": country,
+                    }
+                    response = await client.get(api_url, params=params, headers={"User-Agent": "Mozilla/5.0"})
                     
-                    job_id_raw = j.get("id_icims") or j.get("id", "")
-                    apply_link = j.get("url_next_step") or f"https://www.amazon.jobs/en/jobs/{job_id_raw}"
+                    if response.status_code != 200:
+                        logger.debug(f"Amazon API returned {response.status_code} for {country}")
+                        break
                     
-                    jobs.append({
-                        "job_id": f"amz_{job_id_raw}",
-                        "title": title,
-                        "company": "Amazon",
-                        "company_slug": "amazon",
-                        "location": j.get("location", ""),
-                        "department": j.get("job_category", ""),
-                        "employment_type": j.get("job_schedule_type", "full-time").upper().replace("-", ""),
-                        "apply_link": apply_link,
-                        "posted_at": j.get("posted_date", ""),
-                        "description": j.get("description", "") or j.get("description_short", ""),
-                        "source": "amazon",
-                    })
+                    data = response.json()
+                    page_jobs = data.get("jobs", [])
+                    if not page_jobs:
+                        break
+                    
+                    for j in page_jobs:
+                        title = j.get("title", "")
+                        if not is_english_job(title):
+                            continue
+                        
+                        job_id_raw = j.get("id_icims") or j.get("id", "")
+                        apply_link = j.get("url_next_step") or f"https://www.amazon.jobs/en/jobs/{job_id_raw}"
+                        
+                        jobs.append({
+                            "job_id": f"amz_{job_id_raw}",
+                            "title": title,
+                            "company": "Amazon",
+                            "company_slug": "amazon",
+                            "location": j.get("location", ""),
+                            "department": j.get("job_category", ""),
+                            "employment_type": j.get("job_schedule_type", "full-time").upper().replace("-", ""),
+                            "apply_link": apply_link,
+                            "posted_at": j.get("posted_date", ""),
+                            "description": j.get("description", "") or j.get("description_short", ""),
+                            "source": "amazon",
+                        })
+                    
+                    if len(page_jobs) < 25:
+                        break
                 
-                if len(page_jobs) < 25:
-                    break
+                logger.info(f"Fetched {len([j for j in jobs if country.lower() in j.get('location', '').lower() or (country == 'CAN' and 'canada' in j.get('location', '').lower())])} Amazon jobs from {country}")
         
-        logger.info(f"Fetched {len(jobs)} Amazon jobs")
+        logger.info(f"Fetched {len(jobs)} total Amazon jobs (USA + Canada)")
     except Exception as e:
         logger.error(f"Error fetching Amazon jobs: {e}")
     
     return jobs
 
 
-async def fetch_company_jobs_via_jsearch(company_name: str, max_results: int = 50) -> List[Dict]:
-    """Fetch jobs for a specific company using JSearch API (for companies without public APIs)."""
+async def fetch_company_jobs_via_jsearch(company_name: str, max_results: int = 50, countries: List[str] = None) -> List[Dict]:
+    """Fetch jobs for a specific company using JSearch API (for companies without public APIs).
+    
+    Args:
+        company_name: Name of the company to search for
+        max_results: Maximum number of results per country
+        countries: List of country codes (e.g., ["US", "CA"]). Default is US and Canada.
+    """
     if not RAPIDAPI_KEY:
         logger.debug(f"No RapidAPI key, skipping JSearch fetch for {company_name}")
         return []
+    
+    if countries is None:
+        countries = ["US", "CA"]  # Include USA and Canada by default
     
     jobs = []
     try:
@@ -1976,57 +1991,82 @@ async def fetch_company_jobs_via_jsearch(company_name: str, max_results: int = 5
                 "X-RapidAPI-Key": RAPIDAPI_KEY,
                 "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
             }
-            params = {
-                "query": f"{company_name} jobs",
-                "num_pages": 2,
-                "page": 1,
-                "employment_types": "FULLTIME",
-                "company_types": "Large",
-            }
-            response = await client.get(
-                "https://jsearch.p.rapidapi.com/search",
-                headers=headers,
-                params=params,
-            )
             
-            if response.status_code != 200:
-                logger.debug(f"JSearch returned {response.status_code} for {company_name}")
-                return jobs
-            
-            data = response.json()
-            results = data.get("data", [])
-            
-            for j in results:
-                employer = j.get("employer_name", "")
-                if company_name.lower() not in employer.lower():
+            for country in countries:
+                # Use country-specific queries for better results
+                if country == "CA":
+                    query = f"{company_name} jobs Canada"
+                else:
+                    query = f"{company_name} jobs"
+                
+                params = {
+                    "query": query,
+                    "num_pages": 2,
+                    "page": 1,
+                    "employment_types": "FULLTIME",
+                    "company_types": "Large",
+                }
+                
+                # Add country filter if supported
+                if country:
+                    params["country"] = country
+                
+                response = await client.get(
+                    "https://jsearch.p.rapidapi.com/search",
+                    headers=headers,
+                    params=params,
+                )
+                
+                if response.status_code != 200:
+                    logger.debug(f"JSearch returned {response.status_code} for {company_name} in {country}")
                     continue
                 
-                apply_link = j.get("job_apply_link", "")
-                if any(d in apply_link.lower() for d in ["bebee.com", "talent.com", "indeed.com"]):
-                    continue
+                data = response.json()
+                results = data.get("data", [])
                 
-                title = j.get("job_title", "")
-                if not is_english_job(title):
-                    continue
+                country_jobs_count = 0
+                for j in results:
+                    employer = j.get("employer_name", "")
+                    if company_name.lower() not in employer.lower():
+                        continue
+                    
+                    apply_link = j.get("job_apply_link", "")
+                    if any(d in apply_link.lower() for d in ["bebee.com", "talent.com", "indeed.com"]):
+                        continue
+                    
+                    title = j.get("job_title", "")
+                    if not is_english_job(title):
+                        continue
+                    
+                    job_id = j.get("job_id", "")
+                    slug = company_name.lower().replace(" ", "")
+                    
+                    # Build location string
+                    location_parts = [
+                        j.get('job_city', ''),
+                        j.get('job_state', ''),
+                        j.get('job_country', '')
+                    ]
+                    location = ", ".join([p for p in location_parts if p]).strip(", ")
+                    
+                    jobs.append({
+                        "job_id": f"js_{slug}_{job_id}",
+                        "title": title,
+                        "company": employer,
+                        "company_slug": slug,
+                        "location": location,
+                        "department": "",
+                        "employment_type": j.get("job_employment_type", "FULLTIME"),
+                        "apply_link": apply_link,
+                        "posted_at": j.get("job_posted_at_datetime_utc", ""),
+                        "description": j.get("job_description", "") or "",
+                        "source": "jsearch",
+                    })
+                    country_jobs_count += 1
                 
-                job_id = j.get("job_id", "")
-                slug = company_name.lower().replace(" ", "")
-                
-                jobs.append({
-                    "job_id": f"js_{slug}_{job_id}",
-                    "title": title,
-                    "company": employer,
-                    "company_slug": slug,
-                    "location": f"{j.get('job_city', '')}, {j.get('job_state', '')}, {j.get('job_country', '')}".strip(", "),
-                    "department": "",
-                    "employment_type": j.get("job_employment_type", "FULLTIME"),
-                    "apply_link": apply_link,
-                    "posted_at": j.get("job_posted_at_datetime_utc", ""),
-                    "description": j.get("job_description", "") or "",
-                    "source": "jsearch",
-                })
+                logger.info(f"Fetched {country_jobs_count} {company_name} jobs from {country} via JSearch")
         
-        logger.info(f"Fetched {len(jobs)} {company_name} jobs via JSearch")
+        logger.info(f"Fetched {len(jobs)} total {company_name} jobs via JSearch (all countries)")
     except Exception as e:
         logger.error(f"Error fetching {company_name} jobs via JSearch: {e}")
     
