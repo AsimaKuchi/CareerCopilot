@@ -10,14 +10,15 @@ Build a browser extension that auto-fills job application forms using a central 
 - Automatically track application submissions
 
 ### Web Application
-- **Dashboard**: Track applications, show stats, display saved jobs with formatted descriptions
+- **Dashboard**: Track applications, show stats, display saved jobs with formatted descriptions and extracted salaries
 - **Profile Management**: Multi-select skills, AI resume-to-profile pre-fill
 - **Job Search**: Find jobs from multiple sources with company filter and formatted descriptions
 - **Authentication**: Google OAuth + email/password with verification/reset
 - **AI Career Paths**: Analyze profile/resume, suggest career paths, find matching jobs
 - **AI Documents**: Optimized resume + cover letter with .docx download
 - **Welcome Email**: Sends onboarding email via Resend on signup
-- **Formatted Job Descriptions**: Scannable, well-structured job descriptions with headers and bullets (COMPLETE - Mar 8, 2026)
+- **Formatted Job Descriptions**: Scannable, well-structured job descriptions with headers and bullets
+- **Salary Extraction**: Automatically extracts salary from job descriptions when not in structured fields (COMPLETE - Mar 8, 2026)
 
 ## Tech Stack
 - **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4
@@ -53,33 +54,34 @@ Build a browser extension that auto-fills job application forms using a central 
 - Company filter with analytics tracking
 - Word document (.docx) download for AI-optimized resumes and cover letters
 - Full Job Descriptions Feature (expandable on Dashboard and Job Search)
-- **Formatted Job Descriptions** (Mar 8, 2026) - COMPLETE
+- Formatted Job Descriptions (section headers, bullets, spacing)
+- **Salary Extraction from Descriptions** (Mar 8, 2026) - COMPLETE
 
-## Formatted Job Descriptions Feature (Mar 8, 2026) - COMPLETE
+## Salary Extraction Feature (Mar 8, 2026) - COMPLETE
 
 ### Implementation Details:
-- **Utility**: `/app/frontend/src/utils/formatJobDescription.js`
-  - Detects 50+ section header patterns (Requirements, Responsibilities, About, Benefits, etc.)
-  - Detects action verbs for bullet point formatting (design, develop, build, etc.)
-  - Pre-processes descriptions to add structure to inline headers
+- **Utility**: `/app/frontend/src/utils/extractSalary.js`
+  - `extractSalaryFromDescription()` - Parses salary from text
+  - `getDisplaySalary()` - Priority: structured fields > text field > description extraction
   
-- **Component**: `/app/frontend/src/components/FormattedJobDescription.jsx`
-  - Section headers styled: `text-indigo-300 font-semibold border-b border-indigo-500/20`
-  - Bullet points styled: `text-indigo-400` with grouped `<ul><li>` rendering
-  - Proper spacing: `space-y-3` container, `space-y-1.5` bullet groups
-  
-- **Pages Updated**: Dashboard.jsx and JobSearch.jsx both use FormattedJobDescription
+### Supported Salary Patterns:
+- Currency with symbol: `$95,000 CAD`, `$90,000 USD`, `€80,000`
+- Salary ranges: `$90,000 - $120,000`, `$90,000—$120,000` (em-dash supported)
+- K notation: `$80K - $100K`, `$95K`
+- Hourly rates: `$40/hr`, `$40 per hour`
+- Prefix patterns: `Base pay: $90,000`, `Salary: $100K+`
 
-### UI Features:
-- Section headers (Requirements, About, Responsibilities, etc.) rendered bold in indigo
-- Bullet points with indigo dots for list items
-- Consecutive bullets grouped together
-- Scrollable container (max-h-72/max-h-96) for long descriptions
-- Expand/collapse toggle preserved
+### Currency Support:
+- USD ($), CAD (CA$), EUR (€), GBP (£), AUD (A$)
 
-### Test Results (iteration_17.json):
-- Backend: 100% (12/12 tests passed)
-- Frontend: Code review passed - all formatting elements verified
+### UI Display:
+- Extracted salaries display in **emerald green** (`text-emerald-400`)
+- Falls back to "Salary not listed" when no salary found
+- Sanity checks: annual $10K-$10M, hourly <$500
+
+### Test Results (iteration_18.json):
+- Backend: 100% (5/5 tests passed)
+- Bug fixed: Em-dash (—) character not recognized in range patterns
 
 ## Key API Endpoints
 - Auth: signup, login, verify-email, password-reset, session
@@ -131,4 +133,5 @@ Build a browser extension that auto-fills job application forms using a central 
 ## Files Added (Mar 8, 2026)
 - `/app/frontend/src/utils/formatJobDescription.js` - Description formatting utility
 - `/app/frontend/src/components/FormattedJobDescription.jsx` - Formatted description component
-- `/app/backend/tests/test_job_description_formatting.py` - Test file for formatting
+- `/app/frontend/src/utils/extractSalary.js` - Salary extraction utility
+- `/app/backend/tests/test_salary_extraction.py` - Salary extraction tests
