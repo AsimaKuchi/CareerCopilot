@@ -208,7 +208,7 @@ export default function InterviewPrep({ user }) {
                   <ScrollArea className="h-[600px] pr-4">
                     <div className="space-y-6">
                       {(() => {
-                        // Parse the prep materials into sections
+                        // Parse the prep materials into Q&A format
                         const cleanText = prepMaterials
                           .replace(/\*\*/g, '')  // Remove **bold**
                           .replace(/\*/g, '')    // Remove *italic*
@@ -216,38 +216,45 @@ export default function InterviewPrep({ user }) {
                           .replace(/---/g, '')   // Remove horizontal rules
                           .replace(/___/g, '');
                         
-                        // Split into Q&A pairs
                         const lines = cleanText.split('\n').filter(line => line.trim());
-                        const sections = [];
-                        let currentSection = null;
+                        const qaItems = [];
                         let currentQA = null;
+                        let currentSection = null;
                         
-                        for (const line of lines) {
-                          const trimmed = line.trim();
+                        for (let i = 0; i < lines.length; i++) {
+                          const trimmed = lines[i].trim();
                           
-                          // Section headers (numbered like "1. COMMON QUESTIONS" or all caps)
+                          // Section headers (numbered or all caps)
                           if (trimmed.match(/^\d+\.\s+[A-Z\s]+$/) || 
-                              (trimmed === trimmed.toUpperCase() && trimmed.length > 10 && !trimmed.includes('?'))) {
-                            if (currentSection) sections.push(currentSection);
-                            currentSection = {
-                              title: trimmed.replace(/^\d+\.\s*/, ''),
-                              items: []
-                            };
-                            currentQA = null;
+                              (trimmed === trimmed.toUpperCase() && trimmed.length > 10 && trimmed.length < 60 && !trimmed.includes('?'))) {
+                            currentSection = trimmed.replace(/^\d+\.\s*/, '');
+                            continue;
                           }
-                          // Questions (end with ?)
-                          else if (trimmed.endsWith('?')) {
-                            if (currentQA && currentSection) {
-                              currentSection.items.push(currentQA);
+                          
+                          // Questions end with ?
+                          if (trimmed.endsWith('?')) {
+                            // Save previous Q&A
+                            if (currentQA) {
+                              qaItems.push(currentQA);
                             }
                             currentQA = {
+                              section: currentSection,
                               question: trimmed,
+                              approach: null,
                               answer: []
                             };
                           }
+                          // Suggested approach line
+                          else if (trimmed.toLowerCase().startsWith('suggested approach:') || 
+                                   trimmed.toLowerCase().startsWith('approach:') ||
+                                   trimmed.toLowerCase().includes('star framework') ||
+                                   trimmed.toLowerCase().includes('framework guidance')) {
+                            if (currentQA) {
+                              currentQA.approach = trimmed;
+                            }
+                          }
                           // Answer content
-                          else if (currentQA && trimmed) {
-                            // Clean up bullet points
+                          else if (currentQA && trimmed && !trimmed.match(/^\d+\.\s*$/)) {
                             const cleanLine = trimmed
                               .replace(/^[-•*]\s*/, '')
                               .replace(/^>\s*/, '')
@@ -256,99 +263,90 @@ export default function InterviewPrep({ user }) {
                               currentQA.answer.push(cleanLine);
                             }
                           }
-                          // If no current Q&A but has content, might be intro or tips
-                          else if (!currentQA && currentSection && trimmed) {
-                            const cleanLine = trimmed.replace(/^[-•*]\s*/, '').replace(/^>\s*/, '');
-                            if (cleanLine && !cleanLine.match(/^\d+\.\s*$/)) {
-                              currentSection.items.push({ tip: cleanLine });
-                            }
-                          }
                         }
                         
-                        // Push last items
-                        if (currentQA && currentSection) {
-                          currentSection.items.push(currentQA);
+                        // Push last Q&A
+                        if (currentQA) {
+                          qaItems.push(currentQA);
                         }
-                        if (currentSection) sections.push(currentSection);
                         
-                        // If no sections parsed, show as simple text
-                        if (sections.length === 0) {
+                        // If no Q&As parsed, show as simple text
+                        if (qaItems.length === 0) {
                           return (
-                            <div className="bg-white rounded-xl p-6 border border-gray-200">
-                              <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
+                            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                              <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">
                                 {cleanText}
                               </p>
                             </div>
                           );
                         }
                         
-                        return sections.map((section, sIdx) => (
-                          <div key={sIdx} className="space-y-4">
-                            {/* Section Title */}
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">{sIdx + 1}</span>
-                              </div>
-                              <h2 className="text-xl font-bold text-indigo-600 uppercase tracking-wide">
-                                {section.title}
-                              </h2>
-                            </div>
+                        // Group by section
+                        let lastSection = null;
+                        
+                        return qaItems.map((item, idx) => (
+                          <div key={idx} className="space-y-3">
+                            {/* Section header if changed */}
+                            {item.section && item.section !== lastSection && (() => {
+                              lastSection = item.section;
+                              return (
+                                <div className="flex items-center gap-3 mt-6 mb-4 first:mt-0">
+                                  <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+                                    <span className="text-white font-bold text-sm">
+                                      {qaItems.filter((q, i) => i <= idx && q.section).map(q => q.section).filter((v, i, a) => a.indexOf(v) === i).length}
+                                    </span>
+                                  </div>
+                                  <h2 className="text-lg font-bold text-indigo-600 uppercase tracking-wide">
+                                    {item.section}
+                                  </h2>
+                                </div>
+                              );
+                            })()}
                             
-                            {/* Q&A Items */}
-                            <div className="space-y-4 ml-2">
-                              {section.items.map((item, qIdx) => (
-                                item.question ? (
-                                  // Q&A Box
-                                  <div 
-                                    key={qIdx} 
-                                    className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
-                                  >
-                                    {/* Question */}
-                                    <div className="bg-indigo-50 px-5 py-4 border-b border-gray-200">
-                                      <div className="flex items-start gap-3">
-                                        <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
-                                          Q
-                                        </span>
-                                        <p className="text-gray-900 font-semibold text-base leading-relaxed">
-                                          {item.question}
-                                        </p>
-                                      </div>
-                                    </div>
+                            {/* Question Box */}
+                            <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                              {/* Question with Q badge */}
+                              <div className="bg-slate-50 px-5 py-4">
+                                <div className="flex items-start gap-3">
+                                  <span className="bg-indigo-500 text-white text-xs font-bold px-2.5 py-1 rounded flex-shrink-0">
+                                    Q
+                                  </span>
+                                  <p className="text-slate-900 font-semibold leading-relaxed">
+                                    {item.question}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* Answer with A badge */}
+                              <div className="bg-white px-5 py-4 border-t border-slate-100">
+                                <div className="flex items-start gap-3">
+                                  <span className="bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded flex-shrink-0">
+                                    A
+                                  </span>
+                                  <div className="space-y-3 flex-1">
+                                    {/* Suggested approach */}
+                                    {item.approach && (
+                                      <p className="text-slate-700 font-medium">
+                                        {item.approach}
+                                      </p>
+                                    )}
                                     
-                                    {/* Answer */}
-                                    <div className="px-5 py-4 bg-white">
-                                      <div className="flex items-start gap-3">
-                                        <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5">
-                                          A
-                                        </span>
-                                        <div className="space-y-2 flex-1">
-                                          {item.answer.map((line, lIdx) => (
-                                            <p key={lIdx} className="text-gray-800 leading-relaxed">
-                                              {line}
-                                            </p>
-                                          ))}
-                                          {item.answer.length === 0 && (
-                                            <p className="text-gray-500 italic">
-                                              Prepare your own answer based on your experience.
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
+                                    {/* Answer paragraphs */}
+                                    {item.answer.map((line, lIdx) => (
+                                      <p key={lIdx} className="text-slate-700 leading-relaxed">
+                                        {line}
+                                      </p>
+                                    ))}
+                                    
+                                    {/* Empty answer placeholder */}
+                                    {item.answer.length === 0 && !item.approach && (
+                                      <p className="text-slate-500 italic">
+                                        Prepare your own answer based on your experience.
+                                      </p>
+                                    )}
                                   </div>
-                                ) : item.tip ? (
-                                  // Tip Box
-                                  <div 
-                                    key={qIdx}
-                                    className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                                      <p className="text-gray-800 leading-relaxed">{item.tip}</p>
-                                    </div>
-                                  </div>
-                                ) : null
-                              ))}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ));
