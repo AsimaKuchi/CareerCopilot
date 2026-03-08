@@ -2454,9 +2454,11 @@ async def search_greenhouse(request: Request):
                     "skip_reason": None
                 })
             
-            # Add description
-            job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
-            job["full_description"] = ""
+            # Preserve original description or create fallback summary
+            if not job.get("description"):
+                job["description"] = f"{job.get('title', '')} position at {job.get('company', '')} in {job.get('location', 'Unknown location')}"
+            # full_description for backwards compatibility with frontend
+            job["full_description"] = job.get("description", "")
             
             # Mark as new if posted in last 24 hours
             job_posted_date = job.get("posted_at")

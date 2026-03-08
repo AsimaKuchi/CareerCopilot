@@ -93,6 +93,7 @@ export default function JobSearch({ user }) {
   const [optimizedResume, setOptimizedResume] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [expandedJobId, setExpandedJobId] = useState(null);
+  const [expandedDescJobId, setExpandedDescJobId] = useState(null);
   const [jobSource, setJobSource] = useState("all");
   const [showAnalyzeDialog, setShowAnalyzeDialog] = useState(false);
   const [jobToAnalyze, setJobToAnalyze] = useState(null);
@@ -523,6 +524,10 @@ export default function JobSearch({ user }) {
     setExpandedJobId(expandedJobId === jobId ? null : jobId);
   };
 
+  const toggleDescExpand = (jobId) => {
+    setExpandedDescJobId(expandedDescJobId === jobId ? null : jobId);
+  };
+
   const handleApplyClick = (job) => {
     setSelectedJob(job);
     setOptimizedResume("");
@@ -884,7 +889,9 @@ export default function JobSearch({ user }) {
               const recBadge = getRecommendationBadge(job.match_recommendation, job.skip_reason);
               const RecIcon = recBadge.icon;
               const isExpanded = expandedJobId === job.job_id;
+              const isDescExpanded = expandedDescJobId === job.job_id;
               const isNotRecommended = job.match_recommendation === "skip" || job.match_recommendation === "not_recommended";
+              const hasDescription = job.description || job.full_description || job.description_preview;
               
               return (
               <Card
@@ -1110,9 +1117,46 @@ export default function JobSearch({ user }) {
                         </div>
                       )}
 
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                        {job.description}
-                      </p>
+                      {/* Job Description Section */}
+                      {hasDescription ? (
+                        <div className="mb-4">
+                          <button 
+                            onClick={() => toggleDescExpand(job.job_id)}
+                            className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 mb-2 transition-colors"
+                            data-testid={`expand-desc-btn-${i}`}
+                          >
+                            <FileText className="w-4 h-4" />
+                            {isDescExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {isDescExpanded ? "Hide" : "Show"} Job Description
+                          </button>
+                          
+                          {isDescExpanded ? (
+                            <div className="p-4 rounded-lg bg-white/5 border border-white/10 max-h-96 overflow-y-auto">
+                              <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                                {job.full_description || job.description || job.description_preview}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {job.description || job.description_preview}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mb-4 italic">
+                          Full description not available.{" "}
+                          {job.apply_link && (
+                            <a 
+                              href={job.apply_link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-indigo-400 hover:text-indigo-300"
+                            >
+                              View Original →
+                            </a>
+                          )}
+                        </p>
+                      )}
 
                       <div className="flex flex-wrap gap-3">
                         <Button

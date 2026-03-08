@@ -481,7 +481,7 @@ export default function Dashboard({ user }) {
                       </div>
 
                       {/* Description toggle */}
-                      {(job.description || job.description_preview) && (
+                      {(job.description || job.description_preview) ? (
                         <div className="mt-2">
                           <button
                             className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
@@ -489,7 +489,7 @@ export default function Dashboard({ user }) {
                             data-testid={`expand-desc-btn-${i}`}
                           >
                             <FileText className="w-3 h-3" />
-                            {expandedJobId === (job.job_id || i) ? "Hide" : "View"} Description
+                            {expandedJobId === (job.job_id || i) ? "Hide" : "Show"} Job Description
                             {expandedJobId === (job.job_id || i) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </button>
                           {expandedJobId === (job.job_id || i) && (
@@ -500,7 +500,20 @@ export default function Dashboard({ user }) {
                             </div>
                           )}
                         </div>
-                      )}
+                      ) : job.apply_link ? (
+                        <div className="mt-2 text-xs text-muted-foreground italic">
+                          Full description not available.{" "}
+                          <a 
+                            href={job.apply_link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-indigo-400 hover:text-indigo-300"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View Original →
+                          </a>
+                        </div>
+                      ) : null}
                       
                       <div className="mt-3 flex items-center justify-between">
                         <Badge 
