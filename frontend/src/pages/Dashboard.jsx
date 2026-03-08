@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
+import FormattedJobDescription from "@/components/FormattedJobDescription";
 import {
   Briefcase,
   FileText,
@@ -493,10 +494,11 @@ export default function Dashboard({ user }) {
                             {expandedJobId === (job.job_id || i) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </button>
                           {expandedJobId === (job.job_id || i) && (
-                            <div className="mt-2 p-3 rounded-md bg-black/20 border border-white/5 max-h-60 overflow-y-auto">
-                              <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
-                                {job.description || job.description_preview}
-                              </p>
+                            <div className="mt-2 p-3 rounded-md bg-black/20 border border-white/5 max-h-72 overflow-y-auto">
+                              <FormattedJobDescription 
+                                description={job.description || job.description_preview} 
+                                className="text-xs"
+                              />
                             </div>
                           )}
                         </div>

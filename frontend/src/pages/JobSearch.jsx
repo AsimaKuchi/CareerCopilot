@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/command";
 import Navbar from "@/components/Navbar";
 import AnalyzeMatchDialog from "@/components/AnalyzeMatchDialog";
+import FormattedJobDescription from "@/components/FormattedJobDescription";
 import {
   Search,
   MapPin,
@@ -1132,9 +1133,9 @@ export default function JobSearch({ user }) {
                           
                           {isDescExpanded ? (
                             <div className="p-4 rounded-lg bg-white/5 border border-white/10 max-h-96 overflow-y-auto">
-                              <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                                {job.full_description || job.description || job.description_preview}
-                              </p>
+                              <FormattedJobDescription 
+                                description={job.full_description || job.description || job.description_preview}
+                              />
                             </div>
                           ) : (
                             <p className="text-sm text-muted-foreground line-clamp-2">
