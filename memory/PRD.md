@@ -10,14 +10,14 @@ Build a browser extension that auto-fills job application forms using a central 
 - Automatically track application submissions
 
 ### Web Application
-- **Dashboard**: Track applications, show stats like "Time Saved"
+- **Dashboard**: Track applications, show stats, display saved jobs with expandable descriptions
 - **Profile Management**: Multi-select skills, AI resume-to-profile pre-fill
-- **Job Search**: Find jobs from multiple sources with company filter
+- **Job Search**: Find jobs from multiple sources with company filter and expandable descriptions
 - **Authentication**: Google OAuth + email/password with verification/reset
 - **AI Career Paths**: Analyze profile/resume, suggest career paths, find matching jobs
 - **AI Documents**: Optimized resume + cover letter with .docx download
 - **Welcome Email**: Sends onboarding email via Resend on signup
-- **Full Job Descriptions**: Expandable job descriptions on dashboard (NEW - Mar 7, 2026)
+- **Full Job Descriptions**: Expandable job descriptions on Dashboard and Job Search pages (COMPLETE - Mar 8, 2026)
 
 ## Tech Stack
 - **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4
@@ -52,27 +52,35 @@ Build a browser extension that auto-fills job application forms using a central 
 - Expired job cleanup + auto refresh scheduler
 - Company filter with analytics tracking
 - Word document (.docx) download for AI-optimized resumes and cover letters
-- **Full Job Descriptions on Dashboard** (Mar 7, 2026) - COMPLETE
+- **Full Job Descriptions Feature** (Mar 8, 2026) - COMPLETE
 
-## Full Job Description Feature (Mar 7, 2026) - COMPLETE
-- Backend: GET /api/public/jobs returns clean, plain-text job descriptions
-- All 4 sources (Greenhouse, Lever, Amazon, JSearch) fetch full descriptions
-- HTML tags properly stripped using BeautifulSoup
-- Jobs sorted by posted_at_dt descending (newest first)
-- description_preview field truncated to 300 chars with "..." suffix
-- Frontend: Expandable "View Description" button on each job card
-- Test Results: 100% pass rate (15/15 tests) - all tests passing
+## Full Job Description Feature (Mar 8, 2026) - COMPLETE
+### Implementation Details:
+- **Dashboard (`Dashboard.jsx`)**: Expandable "Show/Hide Job Description" toggle on each job card
+- **Job Search (`JobSearch.jsx`)**: Expandable "Show/Hide Job Description" toggle on search results
+- **Backend (`server.py`)**: Jobs return `description` (full text) and `description_preview` (300 char truncated)
+- **Bug Fixed**: Streaming search was overwriting descriptions with summaries - now preserves original descriptions
+
+### UI Features:
+- Collapsed state: Shows "Show Job Description" button with FileText icon and ChevronDown
+- Expanded state: Shows "Hide Job Description" button with ChevronUp, scrollable container with full description
+- Missing descriptions: Shows "Full description not available. View Original →" link
+
+### Test Results (iteration_16.json):
+- Backend: 100% (15/15 tests passed)
+- Frontend: 100% - All expandable description tests passed
+- Bug found and fixed: Description overwrite issue in streaming search
 
 ## Key API Endpoints
 - Auth: signup, login, verify-email, password-reset, session
-- Jobs: /api/public/jobs, /api/public/sources, /api/public/jobs/ingest
-- Search: /api/jobs/greenhouse/search, /api/jobs/search (both with company filter)
-- AI: /api/ai/optimize-resume, /api/ai/cover-letter, /api/ai/download-docx, /api/ai/interview-prep
+- Jobs: /api/public/jobs (returns jobs with description), /api/public/sources
+- Search: /api/jobs/greenhouse/search (fixed to preserve descriptions)
+- AI: /api/ai/optimize-resume, /api/ai/cover-letter, /api/ai/download-docx
 - Analytics: /api/analytics/company-search
 
 ## Database Schema
-- **stored_jobs**: Contains `description` (full plain text) and `posted_at_dt` (standardized datetime for sorting)
-- **user_saved_jobs**: User's saved job results from searches
+- **stored_jobs**: Contains `description` (full plain text) and `posted_at_dt` (standardized datetime)
+- **user_saved_jobs**: User's saved job results with descriptions
 - **search_analytics**: Tracks company filter usage
 
 ## Prioritized Backlog
