@@ -423,11 +423,11 @@ export default function Auth() {
   const [view, setView] = useState("main"); // main | forgot
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="p-4">
+      <header className="p-4 border-b border-gray-100 bg-white">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">C</span>
           </div>
           <span className="font-semibold text-gray-900">MyCareerCoPilot</span>
@@ -436,7 +436,7 @@ export default function Auth() {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0" data-testid="auth-card">
+        <Card className="w-full max-w-md shadow-lg border border-gray-200 bg-white" data-testid="auth-card">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl">Welcome</CardTitle>
             <CardDescription>

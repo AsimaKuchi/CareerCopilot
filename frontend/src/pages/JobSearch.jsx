@@ -506,19 +506,19 @@ export default function JobSearch({ user }) {
   const getRecommendationBadge = (recommendation, skipReason) => {
     switch (recommendation) {
       case "strong_match":
-        return { color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30", label: "Strong Match", icon: CheckCircle };
+        return { color: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Strong Match", icon: CheckCircle };
       case "good_match":
-        return { color: "bg-blue-500/20 text-blue-400 border-blue-500/30", label: "Good Match", icon: CheckCircle };
+        return { color: "bg-blue-50 text-blue-700 border-blue-200", label: "Good Match", icon: CheckCircle };
       case "review":
-        return { color: "bg-amber-500/20 text-amber-400 border-amber-500/30", label: "Worth Reviewing", icon: AlertCircle };
+        return { color: "bg-amber-50 text-amber-700 border-amber-200", label: "Worth Reviewing", icon: AlertCircle };
       case "not_recommended":
-        return { color: "bg-red-500/20 text-red-400 border-red-500/30", label: "Not Recommended", icon: XCircle };
+        return { color: "bg-red-50 text-red-700 border-red-200", label: "Not Recommended", icon: XCircle };
       case "weak_match":
-        return { color: "bg-gray-500/20 text-gray-400 border-gray-500/30", label: "Weak Match", icon: AlertCircle };
+        return { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Weak Match", icon: AlertCircle };
       case "skip":
-        return { color: "bg-red-500/20 text-red-400 border-red-500/30", label: skipReason || "Not Recommended", icon: XCircle };
+        return { color: "bg-red-50 text-red-700 border-red-200", label: skipReason || "Not Recommended", icon: XCircle };
       default:
-        return { color: "bg-gray-500/20 text-gray-400 border-gray-500/30", label: "Unknown", icon: AlertCircle };
+        return { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Unknown", icon: AlertCircle };
     }
   };
 
@@ -690,21 +690,21 @@ export default function JobSearch({ user }) {
             </div>
 
             <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-sm text-muted-foreground">or search manually</span>
-              <div className="flex-1 h-px bg-white/10" />
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-sm text-gray-500">or search manually</span>
+              <div className="flex-1 h-px bg-gray-200" />
             </div>
 
             {/* Source Selector */}
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Job Sources</h2>
-              <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white/5 border border-white/10">
+              <h2 className="text-xl font-semibold text-gray-900">Job Sources</h2>
+              <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-gray-100 border border-gray-200">
                 <button
                   onClick={() => setJobSource("all")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                     jobSource === "all" 
-                      ? "bg-purple-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-indigo-500 text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-900 hover:bg-white"
                   }`}
                 >
                   All Sources
@@ -713,8 +713,8 @@ export default function JobSearch({ user }) {
                   onClick={() => setJobSource("quality")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                     jobSource === "quality" 
-                      ? "bg-emerald-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-emerald-500 text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-900 hover:bg-white"
                   }`}
                 >
                   Quality Boards
@@ -723,8 +723,8 @@ export default function JobSearch({ user }) {
                   onClick={() => setJobSource("linkedin")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                     jobSource === "linkedin" 
-                      ? "bg-blue-600 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-blue-600 text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-900 hover:bg-white"
                   }`}
                 >
                   LinkedIn
@@ -733,8 +733,8 @@ export default function JobSearch({ user }) {
                   onClick={() => setJobSource("aggregator")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                     jobSource === "aggregator" 
-                      ? "bg-indigo-500 text-white" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-indigo-500 text-white shadow-sm" 
+                      : "text-gray-500 hover:text-gray-900 hover:bg-white"
                   }`}
                 >
                   Indeed & More
@@ -772,7 +772,7 @@ export default function JobSearch({ user }) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && searchJobs()}
-                  className="pl-10 bg-white/5 border-white/10 h-12"
+                  className="pl-10 bg-white border-gray-200 h-12"
                 />
               </div>
               <div className="relative md:w-48">
@@ -782,11 +782,11 @@ export default function JobSearch({ user }) {
                   placeholder="Location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 h-12"
+                  className="pl-10 bg-white border-gray-200 h-12"
                 />
               </div>
               <Select value={employmentType} onValueChange={setEmploymentType}>
-                <SelectTrigger className="md:w-40 bg-white/5 border-white/10 h-12" data-testid="employment-type-select">
+                <SelectTrigger className="md:w-40 bg-white border-gray-200 h-12" data-testid="employment-type-select">
                   <SelectValue placeholder="Job Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -803,7 +803,7 @@ export default function JobSearch({ user }) {
                     variant="outline"
                     role="combobox"
                     aria-expanded={companyOpen}
-                    className="md:w-48 bg-white/5 border-white/10 h-12 justify-between font-normal"
+                    className="md:w-48 bg-white border-gray-200 h-12 justify-between font-normal"
                     data-testid="company-filter-btn"
                   >
                     <div className="flex items-center gap-2 truncate">
@@ -904,7 +904,7 @@ export default function JobSearch({ user }) {
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                     {/* Company Logo */}
-                    <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-16 h-16 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {job.company_logo ? (
                         <img
                           src={job.company_logo}
@@ -929,7 +929,7 @@ export default function JobSearch({ user }) {
                           <div className="flex items-center gap-2">
                             <h3 className="text-lg font-semibold text-foreground">{job.title}</h3>
                             {job.is_new && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-medium">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-medium">
                                 ⭐ NEW
                               </span>
                             )}
@@ -938,27 +938,27 @@ export default function JobSearch({ user }) {
                             <Building className="w-4 h-4" />
                             <span>{job.company}</span>
                             {job.source === "greenhouse" && (
-                              <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0 text-[10px]">
+                              <Badge className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0 text-[10px]">
                                 Greenhouse
                               </Badge>
                             )}
                             {job.source === "lever" && (
-                              <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0 text-[10px]">
+                              <Badge className="bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0 text-[10px]">
                                 Lever
                               </Badge>
                             )}
                             {job.source === "ashby" && (
-                              <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-0 text-[10px]">
+                              <Badge className="bg-purple-50 text-purple-600 border border-purple-200 px-1.5 py-0 text-[10px]">
                                 Ashby
                               </Badge>
                             )}
                             {job.source === "smartrecruiters" && (
-                              <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0 text-[10px]">
+                              <Badge className="bg-orange-50 text-orange-600 border border-orange-200 px-1.5 py-0 text-[10px]">
                                 SmartRecruiters
                               </Badge>
                             )}
                             {job.source === "pinpoint" && (
-                              <Badge className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-1.5 py-0 text-[10px]">
+                              <Badge className="bg-cyan-50 text-cyan-600 border border-cyan-200 px-1.5 py-0 text-[10px]">
                                 Pinpoint
                               </Badge>
                             )}
@@ -968,7 +968,7 @@ export default function JobSearch({ user }) {
                               </Badge>
                             )}
                             {job.source === "aggregator" && !job.is_linkedin && (
-                              <Badge className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0 text-[10px]">
+                              <Badge className="bg-indigo-50 text-indigo-600 border border-indigo-200 px-1.5 py-0 text-[10px]">
                                 Job Board
                               </Badge>
                             )}
@@ -1048,7 +1048,7 @@ export default function JobSearch({ user }) {
                       </button>
 
                       {isExpanded && (
-                        <div className="mb-4 p-4 rounded-lg bg-white/5 border border-white/10 space-y-3">
+                        <div className="mb-4 p-4 rounded-lg bg-gray-50 border border-gray-200 space-y-3">
                           {/* Grounded Strengths (new format with evidence) */}
                           {job.grounded_strengths?.length > 0 ? (
                             <div>
@@ -1057,12 +1057,12 @@ export default function JobSearch({ user }) {
                               </h5>
                               <ul className="space-y-3">
                                 {job.grounded_strengths.map((s, idx) => (
-                                  <li key={idx} className="text-sm bg-emerald-500/5 p-2 rounded border-l-2 border-emerald-500/50">
-                                    <div className="text-emerald-300 font-medium">{s.strength_title}</div>
-                                    <div className="text-muted-foreground mt-1">
-                                      <span className="text-gray-400">Evidence:</span> {s.evidence}
+                                  <li key={idx} className="text-sm bg-emerald-50 p-2 rounded border-l-2 border-emerald-400">
+                                    <div className="text-emerald-700 font-medium">{s.strength_title}</div>
+                                    <div className="text-gray-600 mt-1">
+                                      <span className="text-gray-500">Evidence:</span> {s.evidence}
                                     </div>
-                                    <div className="text-emerald-400/80 text-xs mt-1 italic">{s.relevance}</div>
+                                    <div className="text-emerald-600 text-xs mt-1 italic">{s.relevance}</div>
                                   </li>
                                 ))}
                               </ul>
@@ -1089,7 +1089,7 @@ export default function JobSearch({ user }) {
                               </h5>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {job.matched_skills.map((skill, idx) => (
-                                  <span key={idx} className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                  <span key={idx} className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200">
                                     {skill}
                                   </span>
                                 ))}
@@ -1113,7 +1113,7 @@ export default function JobSearch({ user }) {
 
                           {/* Skip Reason */}
                           {job.skip_reason && (
-                            <div className="p-3 rounded bg-red-500/10 border border-red-500/20">
+                            <div className="p-3 rounded bg-red-50 border border-red-200">
                               <p className="text-sm text-red-400 flex items-center gap-2">
                                 <XCircle className="w-4 h-4 flex-shrink-0" />
                                 <strong>Not recommended:</strong> {job.skip_reason}

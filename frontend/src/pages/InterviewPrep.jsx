@@ -110,42 +110,42 @@ export default function InterviewPrep({ user }) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-foreground mb-2 block">Job Title *</Label>
+                  <Label className="text-gray-900 mb-2 block">Job Title *</Label>
                   <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
                       data-testid="job-title-input"
                       placeholder="e.g., Software Engineer"
                       value={jobTitle}
                       onChange={(e) => setJobTitle(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10"
+                      className="pl-10 bg-white border-gray-200"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-foreground mb-2 block">Company *</Label>
+                  <Label className="text-gray-900 mb-2 block">Company *</Label>
                   <div className="relative">
-                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
                       data-testid="company-input"
                       placeholder="e.g., Google"
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
-                      className="pl-10 bg-white/5 border-white/10"
+                      className="pl-10 bg-white border-gray-200"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-foreground mb-2 block">Job Description (Optional)</Label>
+                  <Label className="text-gray-900 mb-2 block">Job Description (Optional)</Label>
                   <Textarea
                     data-testid="job-description-input"
                     placeholder="Paste the job description for more targeted prep..."
                     value={jobDescription}
                     onChange={(e) => setJobDescription(e.target.value)}
                     rows={5}
-                    className="bg-white/5 border-white/10"
+                    className="bg-white border-gray-200"
                   />
                 </div>
 
@@ -181,12 +181,12 @@ export default function InterviewPrep({ user }) {
               <CardContent className="space-y-4">
                 {tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                      <tip.icon className="w-4 h-4 text-indigo-400" />
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <tip.icon className="w-4 h-4 text-indigo-500" />
                     </div>
                     <div>
-                      <p className="font-medium text-foreground text-sm">{tip.title}</p>
-                      <p className="text-xs text-muted-foreground">{tip.description}</p>
+                      <p className="font-medium text-gray-900 text-sm">{tip.title}</p>
+                      <p className="text-xs text-gray-500">{tip.description}</p>
                     </div>
                   </div>
                 ))}
@@ -355,13 +355,13 @@ export default function InterviewPrep({ user }) {
                   </ScrollArea>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[500px] text-center">
-                    <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
-                      <MessageSquare className="w-10 h-10 text-muted-foreground" />
+                    <div className="w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center mb-6">
+                      <MessageSquare className="w-10 h-10 text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
                       Ready to Prepare?
                     </h3>
-                    <p className="text-muted-foreground max-w-md mb-6">
+                    <p className="text-gray-500 max-w-md mb-6">
                       Enter the job details on the left and our AI will generate 
                       comprehensive interview preparation materials including common 
                       questions, tips, and strategies.

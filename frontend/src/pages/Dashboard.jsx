@@ -75,13 +75,13 @@ export default function Dashboard({ user }) {
   const getStatusColor = (status) => {
     switch (status) {
       case "applied":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "pending":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+        return "bg-amber-50 text-amber-700 border-amber-200";
       case "rejected":
-        return "bg-red-500/10 text-red-400 border-red-500/20";
+        return "bg-red-50 text-red-700 border-red-200";
       default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   };
 
@@ -159,11 +159,11 @@ export default function Dashboard({ user }) {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Applications</p>
-                  <p className="text-3xl font-bold text-foreground">{stats?.total_applications || 0}</p>
+                  <p className="text-sm text-gray-500 mb-1">Total Applications</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats?.total_applications || 0}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-indigo-400" />
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Briefcase className="w-6 h-6 text-indigo-500" />
                 </div>
               </div>
             </CardContent>
@@ -173,11 +173,11 @@ export default function Dashboard({ user }) {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Applied</p>
-                  <p className="text-3xl font-bold text-foreground">{stats?.applied || 0}</p>
+                  <p className="text-sm text-gray-500 mb-1">Applied</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats?.applied || 0}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-emerald-400" />
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-emerald-500" />
                 </div>
               </div>
             </CardContent>
@@ -187,15 +187,15 @@ export default function Dashboard({ user }) {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Time Saved</p>
-                  <p className="text-3xl font-bold text-foreground">
+                  <p className="text-sm text-gray-500 mb-1">Time Saved</p>
+                  <p className="text-3xl font-bold text-gray-900">
                     {(stats?.time_saved?.total_minutes || 0) >= 60
                       ? `${stats?.time_saved?.total_hours || 0}h`
                       : `${stats?.time_saved?.total_minutes || 0}m`}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                  <Timer className="w-6 h-6 text-amber-400" />
+                <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <Timer className="w-6 h-6 text-amber-500" />
                 </div>
               </div>
             </CardContent>
@@ -205,11 +205,11 @@ export default function Dashboard({ user }) {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Profile Complete</p>
-                  <p className="text-3xl font-bold text-foreground">{stats?.profile_completeness || 0}%</p>
+                  <p className="text-sm text-gray-500 mb-1">Profile Complete</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats?.profile_completeness || 0}%</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-rose-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-rose-400" />
+                <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-rose-500" />
                 </div>
               </div>
               <Progress value={stats?.profile_completeness || 0} className="mt-4 h-2" />
@@ -228,8 +228,8 @@ export default function Dashboard({ user }) {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-500/5">
-                  <Briefcase className="w-5 h-5 text-indigo-400 shrink-0" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-50">
+                  <Briefcase className="w-5 h-5 text-indigo-500 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {stats.time_saved.breakdown?.autofill_min || 0} min
@@ -239,8 +239,8 @@ export default function Dashboard({ user }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5">
-                  <FileText className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50">
+                  <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {stats.time_saved.breakdown?.resume_min || 0} min
@@ -250,8 +250,8 @@ export default function Dashboard({ user }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-rose-500/5">
-                  <Sparkles className="w-5 h-5 text-rose-400 shrink-0" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-rose-50">
+                  <Sparkles className="w-5 h-5 text-rose-500 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {stats.time_saved.breakdown?.cover_letter_min || 0} min
@@ -268,7 +268,7 @@ export default function Dashboard({ user }) {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {quickActions.map((action, i) => (
               <Card
@@ -281,7 +281,7 @@ export default function Dashboard({ user }) {
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4`}>
                     <action.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
                     {action.label}
                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </h3>
@@ -297,7 +297,7 @@ export default function Dashboard({ user }) {
           <Card className="glass-light" data-testid="recent-applications">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-indigo-400" />
+                <Briefcase className="w-5 h-5 text-indigo-500" />
                 Recent Applications
               </CardTitle>
             </CardHeader>
@@ -307,17 +307,17 @@ export default function Dashboard({ user }) {
                   {stats.recent_applications.map((app, i) => (
                     <div
                       key={app.application_id || i}
-                      className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                      className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{app.job_title}</p>
-                        <p className="text-sm text-muted-foreground truncate">{app.company}</p>
+                        <p className="font-medium text-gray-900 truncate">{app.job_title}</p>
+                        <p className="text-sm text-gray-500 truncate">{app.company}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge className={`${getStatusColor(app.status)} capitalize`}>
                           {app.status}
                         </Badge>
-                        <span className="text-sm font-bold text-emerald-400">{app.match_score}%</span>
+                        <span className="text-sm font-bold text-emerald-600">{app.match_score}%</span>
                       </div>
                     </div>
                   ))}
@@ -342,39 +342,39 @@ export default function Dashboard({ user }) {
           <Card className="glass-light" data-testid="profile-guide">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-emerald-400" />
+                <Target className="w-5 h-5 text-emerald-500" />
                 Complete Your Profile
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-white/5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stats?.profile_completeness >= 40 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stats?.profile_completeness >= 40 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
                     {stats?.profile_completeness >= 40 ? <CheckCircle className="w-4 h-4" /> : '1'}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">Upload Resume</p>
-                    <p className="text-sm text-muted-foreground">Required for ATS optimization</p>
+                    <p className="font-medium text-gray-900">Upload Resume</p>
+                    <p className="text-sm text-gray-500">Required for ATS optimization</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-white/5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stats?.profile_completeness >= 60 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stats?.profile_completeness >= 60 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
                     {stats?.profile_completeness >= 60 ? <CheckCircle className="w-4 h-4" /> : '2'}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">Add Skills</p>
-                    <p className="text-sm text-muted-foreground">Improve job matching accuracy</p>
+                    <p className="font-medium text-gray-900">Add Skills</p>
+                    <p className="text-sm text-gray-500">Improve job matching accuracy</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-white/5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stats?.profile_completeness >= 80 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stats?.profile_completeness >= 80 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
                     {stats?.profile_completeness >= 80 ? <CheckCircle className="w-4 h-4" /> : '3'}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">Set Preferences</p>
-                    <p className="text-sm text-muted-foreground">Location, salary, job type</p>
+                    <p className="font-medium text-gray-900">Set Preferences</p>
+                    <p className="text-sm text-gray-500">Location, salary, job type</p>
                   </div>
                 </div>
 
@@ -395,11 +395,11 @@ export default function Dashboard({ user }) {
         <Card className="glass-light" data-testid="saved-jobs">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-amber-400" />
+              <Briefcase className="w-5 h-5 text-amber-500" />
               Your Saved Jobs
               {savedJobs?.jobs?.filter(j => j.is_new_for_user).length > 0 && (
-                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 ml-2">
-                  <Star className="w-3 h-3 mr-1 fill-amber-400" />
+                <Badge className="bg-amber-50 text-amber-700 border-amber-200 ml-2">
+                  <Star className="w-3 h-3 mr-1 fill-amber-500" />
                   {savedJobs.jobs.filter(j => j.is_new_for_user).length} New
                 </Badge>
               )}
@@ -430,10 +430,10 @@ export default function Dashboard({ user }) {
                   {savedJobs.jobs.slice(0, 6).map((job, i) => (
                     <div
                       key={job.job_id || i}
-                      className={`relative p-4 rounded-lg border transition-all hover:shadow-lg ${
+                      className={`relative p-4 rounded-lg border transition-all hover:shadow-md ${
                         job.is_new_for_user 
-                          ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50' 
-                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                          ? 'bg-amber-50/50 border-amber-200 hover:border-amber-300' 
+                          : 'bg-white border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       {/* New Job Star Badge */}
@@ -451,10 +451,10 @@ export default function Dashboard({ user }) {
                         {job.match_score && (
                           <Badge className={`text-xs shrink-0 ${
                             job.match_score >= 70 
-                              ? 'bg-emerald-500/20 text-emerald-400' 
+                              ? 'bg-emerald-50 text-emerald-700' 
                               : job.match_score >= 50 
-                                ? 'bg-amber-500/20 text-amber-400'
-                                : 'bg-gray-500/20 text-gray-400'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-gray-50 text-gray-700'
                           }`}>
                             {job.match_score}%
                           </Badge>
@@ -478,7 +478,7 @@ export default function Dashboard({ user }) {
                             const displaySalary = getDisplaySalary(job);
                             const hasSalary = displaySalary !== 'Salary not listed';
                             return (
-                              <span className={`truncate ${hasSalary ? "text-emerald-400" : ""}`}>
+                              <span className={`truncate ${hasSalary ? "text-emerald-600" : ""}`}>
                                 {displaySalary}
                               </span>
                             );
@@ -499,7 +499,7 @@ export default function Dashboard({ user }) {
                             {expandedJobId === (job.job_id || i) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </button>
                           {expandedJobId === (job.job_id || i) && (
-                            <div className="mt-2 p-3 rounded-md bg-black/20 border border-white/5 max-h-72 overflow-y-auto">
+                            <div className="mt-2 p-3 rounded-md bg-gray-50 border border-gray-200 max-h-72 overflow-y-auto">
                               <FormattedJobDescription 
                                 description={job.description || job.description_preview} 
                                 className="text-xs"
@@ -527,13 +527,13 @@ export default function Dashboard({ user }) {
                           variant="outline" 
                           className={`text-xs capitalize ${
                             ['greenhouse', 'lever', 'ashby'].includes(job.source?.toLowerCase())
-                              ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                              ? 'bg-indigo-50 text-indigo-600 border-indigo-200'
                               : ''
                           }`}
                         >
                           {job.source}
                         </Badge>
-                        <button className="text-muted-foreground hover:text-indigo-400 transition-colors" onClick={() => job.apply_link && window.open(job.apply_link, '_blank')}>
+                        <button className="text-gray-400 hover:text-indigo-500 transition-colors" onClick={() => job.apply_link && window.open(job.apply_link, '_blank')}>
                           <ExternalLink className="w-3 h-3" />
                         </button>
                       </div>
