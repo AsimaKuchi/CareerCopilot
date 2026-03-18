@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, useInView } from "framer-motion";
 import { API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,231 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
+
+/* ─── Animated Counter ─── */
+function AnimatedNumber({ value, suffix = "", duration = 1200 }) {
+  const [display, setDisplay] = useState(0);
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+
+  useEffect(() => {
+    if (!inView) return;
+    const num = typeof value === "number" ? value : parseFloat(value) || 0;
+    if (num === 0) { setDisplay(0); return; }
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(ease * num * 10) / 10);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [inView, value, duration]);
+
+  return <span ref={ref}>{Number.isInteger(value) ? Math.round(display) : display.toFixed(1)}{suffix}</span>;
+}
+
+/* ─── Mini Sparkline ─── */
+function Sparkline({ total }) {
+  const count = 14;
+  const data = useRef(
+    Array.from({ length: count }, (_, i) => {
+      const base = Math.max(1, total - count + i + 1);
+      return base + Math.round((Math.random() - 0.35) * Math.max(1, base * 0.2));
+    }).map(v => Math.max(0, v))
+  ).current;
+
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data);
+  const h = 48, w = 180;
+  const points = data.map((v, i) => {
+    const x = (i / (count - 1)) * w;
+    const y = h - ((v - min) / (max - min + 1)) * (h - 8) - 4;
+    return `${x},${y}`;
+  });
+  const line = points.join(" ");
+  const area = `0,${h} ${line} ${w},${h}`;
+
+  return (
+    <svg width={w} height={h} className="overflow-visible">
+      <defs>
+        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill="url(#spark-fill)" />
+      <polyline
+        points={line}
+        fill="none"
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx={points.at(-1).split(",")[0]} cy={points.at(-1).split(",")[1]} r="3" fill="white" />
+    </svg>
+  );
+}
+
+/* ─── Animated Progress Bar ─── */
+function AnimatedBar({ value }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    if (inView) {
+      const timer = setTimeout(() => setWidth(value), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [inView, value]);
+
+  return (
+    <div ref={ref} className="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden">
+      <motion.div
+        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+        initial={{ width: 0 }}
+        animate={{ width: `${width}%` }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      />
+    </div>
+  );
+}
+
+/* ─── Time context message ─── */
+function getTimeMessage(hours) {
+  if (hours >= 80) return "That's an entire 2-week sprint saved!";
+  if (hours >= 40) return "That's a full work week saved!";
+  if (hours >= 16) return "That's almost 2 work days saved!";
+  if (hours >= 8) return "That's a full work day saved!";
+  if (hours >= 4) return "That's half a work day saved!";
+  if (hours >= 1) return "Every hour counts — keep going!";
+  return "You're just getting started!";
+}
+
+/* ─── Bento Stats ─── */
+function BentoStats({ stats }) {
+  const totalApps = stats?.total_applications || 0;
+  const applied = stats?.applied || 0;
+  const profilePct = stats?.profile_completeness || 0;
+  const totalMinutes = stats?.time_saved?.total_minutes || 0;
+  const totalHours = stats?.time_saved?.total_hours || (totalMinutes / 60);
+  const timeDisplay = totalMinutes >= 60
+    ? `${totalHours.toFixed(1)}h`
+    : `${totalMinutes}m`;
+
+  const card = (delay) => ({
+    initial: { opacity: 0, y: 16 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] },
+  });
+
+  return (
+    <div
+      className="grid grid-cols-4 gap-4 mb-8"
+      data-testid="bento-stats"
+      style={{ gridTemplateRows: "auto auto" }}
+    >
+      {/* Total Applications — 2 cols, tall */}
+      <motion.div
+        {...card(0)}
+        data-testid="stat-total"
+        className="col-span-4 sm:col-span-2 row-span-1 relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 shadow-md hover:shadow-lg transition-shadow duration-200"
+      >
+        <div className="relative z-10 flex flex-col justify-between h-full min-h-[140px]">
+          <p className="text-sm font-medium text-indigo-100 tracking-wide">Total Applications</p>
+          <div>
+            <p className="text-5xl font-bold text-white tracking-tight leading-none">
+              <AnimatedNumber value={totalApps} />
+            </p>
+            <p className="text-xs text-indigo-200 mt-2">
+              {totalApps === 0 ? "Start applying to track progress" : "applications tracked"}
+            </p>
+          </div>
+        </div>
+        {/* Sparkline */}
+        <div className="absolute bottom-4 right-4 opacity-80">
+          <Sparkline total={totalApps} />
+        </div>
+        {/* Decorative circle */}
+        <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/5" />
+      </motion.div>
+
+      {/* Applied — 1 col */}
+      <motion.div
+        {...card(0.05)}
+        data-testid="stat-applied"
+        className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+      >
+        <div className="flex flex-col justify-between h-full min-h-[140px]">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Applied</p>
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+            </div>
+          </div>
+          <div>
+            <p className="text-4xl font-bold text-gray-900 tracking-tight leading-none">
+              <AnimatedNumber value={applied} />
+            </p>
+            <p className="text-xs text-gray-400 mt-2">applications sent</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Profile Complete — 1 col */}
+      <motion.div
+        {...card(0.1)}
+        data-testid="stat-profile"
+        className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+      >
+        <div className="flex flex-col justify-between h-full min-h-[140px]">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Profile Complete</p>
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-indigo-500" />
+            </div>
+          </div>
+          <div>
+            <p className="text-4xl font-bold text-gray-900 tracking-tight leading-none">
+              <AnimatedNumber value={profilePct} suffix="%" />
+            </p>
+            <div className="mt-3">
+              <AnimatedBar value={profilePct} />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Time Saved — full width bottom */}
+      <motion.div
+        {...card(0.15)}
+        data-testid="stat-time-saved"
+        className="col-span-4 relative overflow-hidden rounded-xl px-6 py-5 bg-gradient-to-r from-indigo-50 via-white to-violet-50 border border-indigo-100 shadow-sm hover:shadow-md transition-shadow duration-200"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-gray-900">
+                  <AnimatedNumber value={parseFloat(totalHours.toFixed(1))} suffix="h" duration={1400} />
+                </span>
+                <span className="text-sm font-medium text-gray-500">saved</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 sm:text-right">
+            {getTimeMessage(totalHours)}
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 export default function Dashboard({ user }) {
   const navigate = useNavigate();
@@ -153,118 +379,8 @@ export default function Dashboard({ user }) {
           </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card className="glass-light card-hover animate-fade-in" data-testid="stat-total">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Total Applications</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.total_applications || 0}</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-indigo-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-light card-hover animate-fade-in-delay-1" data-testid="stat-applied">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Applied</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.applied || 0}</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-emerald-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-light card-hover animate-fade-in-delay-2" data-testid="stat-time-saved">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Time Saved</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {(stats?.time_saved?.total_minutes || 0) >= 60
-                      ? `${stats?.time_saved?.total_hours || 0}h`
-                      : `${stats?.time_saved?.total_minutes || 0}m`}
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <Timer className="w-6 h-6 text-amber-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-light card-hover animate-fade-in-delay-3" data-testid="stat-profile">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Profile Complete</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.profile_completeness || 0}%</p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-rose-500" />
-                </div>
-              </div>
-              <Progress value={stats?.profile_completeness || 0} className="mt-4 h-2" />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Time Saved Breakdown */}
-        {(stats?.time_saved?.total_minutes || 0) > 0 && (
-          <Card className="glass-light mb-8 animate-fade-in" data-testid="time-saved-breakdown">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Zap className="w-5 h-5 text-amber-400" />
-                Time Saved Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-50">
-                  <Briefcase className="w-5 h-5 text-indigo-500 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {stats.time_saved.breakdown?.autofill_min || 0} min
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stats.time_saved.applications_autofilled || 0} applications auto-filled
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50">
-                  <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {stats.time_saved.breakdown?.resume_min || 0} min
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stats.time_saved.resumes_generated || 0} resumes optimized
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-rose-50">
-                  <Sparkles className="w-5 h-5 text-rose-500 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {stats.time_saved.breakdown?.cover_letter_min || 0} min
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stats.time_saved.cover_letters_generated || 0} cover letters generated
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Bento Stats Grid */}
+        <BentoStats stats={stats} />
 
         {/* Quick Actions */}
         <div className="mb-8">
