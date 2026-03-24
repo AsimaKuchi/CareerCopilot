@@ -317,28 +317,40 @@ export default function Dashboard({ user }) {
       label: "Find Jobs",
       description: "Search AI-matched opportunities",
       path: "/jobs",
-      color: "from-indigo-500 to-indigo-600",
+      bg: "bg-indigo-50",
+      iconColor: "text-indigo-500",
+      ring: "ring-indigo-500/10",
+      accent: "bg-indigo-500",
     },
     {
       icon: FileText,
       label: "Update Profile",
       description: "Optimize your resume",
       path: "/profile",
-      color: "from-emerald-500 to-emerald-600",
+      bg: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      ring: "ring-emerald-500/10",
+      accent: "bg-emerald-500",
     },
     {
       icon: Target,
       label: "Applications",
       description: "Track your progress",
       path: "/applications",
-      color: "from-amber-500 to-amber-600",
+      bg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      ring: "ring-amber-500/10",
+      accent: "bg-amber-500",
     },
     {
       icon: Sparkles,
       label: "Interview Prep",
       description: "AI-powered preparation",
       path: "/interview-prep",
-      color: "from-rose-500 to-rose-600",
+      bg: "bg-rose-50",
+      iconColor: "text-rose-500",
+      ring: "ring-rose-500/10",
+      accent: "bg-rose-500",
     },
   ];
 
@@ -390,18 +402,23 @@ export default function Dashboard({ user }) {
               <Card
                 key={i}
                 data-testid={`quick-action-${action.label.toLowerCase().replace(/\s/g, '-')}`}
-                className="glass-light card-hover cursor-pointer group"
+                className="border border-gray-200 bg-white hover:border-gray-300 hover:shadow-md cursor-pointer group transition-all duration-200"
                 onClick={() => navigate(action.path)}
               >
                 <CardContent className="p-6">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4`}>
-                    <action.icon className="w-6 h-6 text-white" />
+                  <div className="relative mb-5">
+                    {/* Main icon circle */}
+                    <div className={`w-11 h-11 rounded-xl ${action.bg} ring-4 ${action.ring} flex items-center justify-center transition-transform duration-200 group-hover:scale-105`}>
+                      <action.icon className={`w-5 h-5 ${action.iconColor}`} />
+                    </div>
+                    {/* Small floating dot accent */}
+                    <div className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${action.accent} opacity-60 group-hover:opacity-100 transition-opacity duration-200`} />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
                     {action.label}
-                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="w-3.5 h-3.5 text-gray-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
                   </h3>
-                  <p className="text-sm text-muted-foreground">{action.description}</p>
+                  <p className="text-sm text-gray-500">{action.description}</p>
                 </CardContent>
               </Card>
             ))}
