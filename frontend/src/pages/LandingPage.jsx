@@ -225,8 +225,8 @@ export default function LandingPage() {
               {[0, 1].map((set) => (
                 <div key={set} className="flex items-center gap-14 px-8 shrink-0">
                   {logos.map((c, i) => (
-                    <div key={`logo-${set}-${i}`} className="flex items-center justify-center h-8 opacity-40 hover:opacity-80 transition-opacity duration-300">
-                      <img src={c.logo} alt={c.name} className="h-6 w-auto object-contain grayscale" loading="lazy" />
+                    <div key={`logo-${set}-${i}`} className="flex items-center justify-center h-8 opacity-70 hover:opacity-100 transition-opacity duration-300">
+                      <img src={c.logo} alt={c.name} className="h-6 w-auto object-contain" loading="lazy" />
                     </div>
                   ))}
                 </div>
