@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
+import IdleTimeout from "@/components/IdleTimeout";
 import LandingPage from "@/pages/LandingPage";
 import HowItWorks from "@/pages/HowItWorks";
 import Dashboard from "@/pages/Dashboard";
@@ -111,7 +112,12 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) return null;
 
-  return children({ user });
+  return (
+    <>
+      <IdleTimeout />
+      {children({ user })}
+    </>
+  );
 };
 
 const AppRouter = () => {

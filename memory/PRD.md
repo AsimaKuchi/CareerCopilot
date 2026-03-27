@@ -119,6 +119,20 @@ Build a browser extension that auto-fills job application forms using a central 
 ### Files Modified:
 - `backend/server.py`: Added `RateLimiter` class, `get_client_ip()`, rate limit + lockout logic on `/auth/login`, `/auth/signup`, `/auth/forgot-password`, `/auth/reset-password`
 
+## Session Idle Timeout (Mar 27, 2026) - COMPLETE
+
+### Implementation:
+- `IdleTimeout` component mounted in `ProtectedRoute` (all authenticated pages)
+- Tracks: mousedown, keydown, scroll, touchstart, mousemove events
+- **55 min inactivity**: Warning dialog with live countdown (MM:SS)
+- **60 min inactivity**: Auto-logout via `/api/auth/logout`, redirect to `/auth`
+- **"Stay Logged In" button**: Resets all timers
+- **"Log out now" button**: Immediate logout
+
+### Files:
+- `frontend/src/components/IdleTimeout.jsx`: Self-contained component with AlertDialog
+- `frontend/src/App.js`: IdleTimeout rendered inside ProtectedRoute wrapper
+
 ### Test Results (manual curl):
 - Rate limiting: Blocks 6th signup ✓
 - Account lockout: Locks after 5 failures, blocks even correct password ✓
