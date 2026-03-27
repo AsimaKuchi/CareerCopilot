@@ -125,6 +125,33 @@ Build a browser extension that auto-fills job application forms using a central 
 - Lockout message shows remaining minutes ✓
 - Successful login resets counter ✓
 
+## Security: Headers, Admin Roles, CSRF (Mar 27, 2026) - COMPLETE
+
+### Security Headers (middleware on every response):
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `X-XSS-Protection: 1; mode=block`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `Content-Security-Policy: default-src 'self'; script/style/img/connect policies`
+
+### Admin Role System:
+- `role` field on User model ("user" | "admin")
+- `get_admin_user()` dependency returns 403 for non-admins
+- Endpoints: GET `/admin/users`, GET `/admin/stats`, PUT `/admin/users/{id}/role`, POST `/admin/unlock-user`
+- Admin: fuzailbukhari@gmail.com
+
+### CSRF Protection:
+- Token generated on login, stored in session + non-httponly cookie
+- Frontend `apiFetch.js` reads cookie and sends `X-CSRF-Token` header on POST/PUT/PATCH/DELETE
+- Middleware validates token on state-changing requests (exempt: auth, public endpoints)
+- All authenticated pages updated to use `apiFetch` wrapper
+
+### Test Results (iteration_25.json):
+- Backend: 100% (12/12 tests passed)
+- Frontend: 100% - Login, navigation, CSRF all working
+
 ## Personalized Match Analysis (Mar 8, 2026) - COMPLETE
 
 ### Problem Solved:
