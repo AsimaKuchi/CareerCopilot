@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { API } from "@/App";
+import { apiFetch } from "@/utils/apiFetch";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,7 +132,7 @@ export default function JobSearch({ user }) {
   const downloadDocx = async (content, docType) => {
     if (!content || !selectedJob) return;
     try {
-      const response = await fetch(`${API}/ai/download-docx`, {
+      const response = await apiFetch(`${API}/ai/download-docx`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -221,7 +222,7 @@ export default function JobSearch({ user }) {
       if (source === "greenhouse" || source === "quality" || source === "all") {
         // Search Greenhouse with streaming
         try {
-          const ghResponse = await fetch(`${API}/jobs/greenhouse/search`, {
+          const ghResponse = await apiFetch(`${API}/jobs/greenhouse/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -305,7 +306,7 @@ export default function JobSearch({ user }) {
       // Search aggregators (LinkedIn, Indeed, Glassdoor, etc.) or LinkedIn only
       if (source === "aggregator" || source === "linkedin" || source === "all") {
         try {
-          const aggResponse = await fetch(`${API}/jobs/search`, {
+          const aggResponse = await apiFetch(`${API}/jobs/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -383,7 +384,7 @@ export default function JobSearch({ user }) {
       // Quality sources with fallback flag - use the STREAMING endpoint, not JSearch
       if (source === "quality" || source === "all") {
         try {
-          const response = await fetch(`${API}/jobs/greenhouse/search`, {
+          const response = await apiFetch(`${API}/jobs/greenhouse/search`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -545,7 +546,7 @@ export default function JobSearch({ user }) {
     setInterviewPrepLoading(true);
 
     try {
-      const response = await fetch(`${API}/ai/interview-prep`, {
+      const response = await apiFetch(`${API}/ai/interview-prep`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

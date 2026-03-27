@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API } from "@/App";
+import { apiFetch } from "@/utils/apiFetch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,13 +81,13 @@ export default function CareerPaths({ user }) {
 
     try {
       if (force) {
-        await fetch(`${API}/ai/career-paths`, {
+        await apiFetch(`${API}/ai/career-paths`, {
           method: "DELETE",
           credentials: "include",
         });
       }
 
-      const res = await fetch(`${API}/ai/career-paths`, {
+      const res = await apiFetch(`${API}/ai/career-paths`, {
         method: "POST",
         credentials: "include",
       });

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 import { API } from "@/App";
+import { apiFetch } from "@/utils/apiFetch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -271,7 +272,7 @@ export default function Dashboard({ user }) {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API}/dashboard/stats`, {
+      const response = await apiFetch(`${API}/dashboard/stats`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch stats");
@@ -286,7 +287,7 @@ export default function Dashboard({ user }) {
 
   const fetchSavedJobs = async () => {
     try {
-      const response = await fetch(`${API}/jobs/saved`, {
+      const response = await apiFetch(`${API}/jobs/saved`, {
         credentials: "include",
       });
       if (response.ok) {

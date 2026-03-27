@@ -376,6 +376,7 @@ class User(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
+    role: str = "user"  # "user" or "admin"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Skill(BaseModel):
@@ -1020,6 +1021,13 @@ async def get_current_user(request: Request) -> User:
     
     return User(**user_doc)
 
+async def get_admin_user(request: Request) -> User:
+    """Verify the current user has admin role."""
+    user = await get_current_user(request)
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
 # ========================
 # AUTH ROUTES
 # ========================
@@ -1096,10 +1104,12 @@ async def create_session(request: Request, response: Response):
         await db.user_profiles.insert_one(default_profile)
     
     # Create session
+    csrf_token = generate_token()
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     session_doc = {
         "user_id": user_id,
         "session_token": session_token,
+        "csrf_token": csrf_token,
         "expires_at": expires_at.isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -1108,11 +1118,20 @@ async def create_session(request: Request, response: Response):
     await db.user_sessions.delete_many({"user_id": user_id})
     await db.user_sessions.insert_one(session_doc)
     
-    # Set cookie
+    # Set cookies
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7 * 24 * 60 * 60,
+        path="/"
+    )
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=False,
         secure=True,
         samesite="none",
         max_age=7 * 24 * 60 * 60,
@@ -1131,7 +1150,14 @@ async def create_session(request: Request, response: Response):
 async def get_me(request: Request):
     """Get current authenticated user."""
     user = await get_current_user(request)
-    return user.model_dump()
+    data = user.model_dump()
+    # Fetch csrf_token from session
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0, "csrf_token": 1})
+        if session:
+            data["csrf_token"] = session.get("csrf_token")
+    return data
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
@@ -1142,6 +1168,7 @@ async def logout(request: Request, response: Response):
         await db.user_sessions.delete_many({"session_token": session_token})
     
     response.delete_cookie(key="session_token", path="/")
+    response.delete_cookie(key="csrf_token", path="/")
     return {"message": "Logged out successfully"}
 
 # ========================
@@ -1557,11 +1584,13 @@ async def email_login(data: EmailLoginRequest, request: Request, response: Respo
     
     # Create session
     session_token = generate_token()
+    csrf_token = generate_token()
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     
     session_doc = {
         "user_id": user["user_id"],
         "session_token": session_token,
+        "csrf_token": csrf_token,
         "expires_at": expires_at.isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -1570,11 +1599,20 @@ async def email_login(data: EmailLoginRequest, request: Request, response: Respo
     await db.user_sessions.delete_many({"user_id": user["user_id"]})
     await db.user_sessions.insert_one(session_doc)
     
-    # Set cookie
+    # Set cookies
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7 * 24 * 60 * 60,
+        path="/"
+    )
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=False,  # JS must read this
         secure=True,
         samesite="none",
         max_age=7 * 24 * 60 * 60,
@@ -1585,7 +1623,9 @@ async def email_login(data: EmailLoginRequest, request: Request, response: Respo
         "user_id": user["user_id"],
         "email": user["email"],
         "name": user.get("name"),
-        "picture": user.get("picture")
+        "picture": user.get("picture"),
+        "role": user.get("role", "user"),
+        "csrf_token": csrf_token
     }
 
 @api_router.post("/auth/forgot-password")
@@ -8948,6 +8988,72 @@ async def track_company_search(request: Request):
     return {"status": "tracked"}
 
 
+# ========================
+# ADMIN ENDPOINTS
+# ========================
+
+@api_router.get("/admin/users")
+async def admin_list_users(request: Request, page: int = 1, limit: int = 20):
+    """List all users (admin only)."""
+    admin = await get_admin_user(request)
+    skip = (page - 1) * limit
+    total = await db.users.count_documents({})
+    users = await db.users.find(
+        {},
+        {"_id": 0, "password_hash": 0, "reset_token": 0, "verification_token": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"users": users, "total": total, "page": page, "pages": (total + limit - 1) // limit}
+
+@api_router.put("/admin/users/{user_id}/role")
+async def admin_set_user_role(user_id: str, request: Request):
+    """Set a user's role (admin only)."""
+    admin = await get_admin_user(request)
+    body = await request.json()
+    new_role = body.get("role")
+    if new_role not in ("user", "admin"):
+        raise HTTPException(status_code=400, detail="Role must be 'user' or 'admin'")
+    if admin.user_id == user_id and new_role != "admin":
+        raise HTTPException(status_code=400, detail="Cannot remove your own admin role")
+    result = await db.users.update_one({"user_id": user_id}, {"$set": {"role": new_role}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": f"User role updated to {new_role}"}
+
+@api_router.get("/admin/stats")
+async def admin_stats(request: Request):
+    """Get admin dashboard statistics (admin only)."""
+    await get_admin_user(request)
+    total_users = await db.users.count_documents({})
+    total_jobs = await db.stored_jobs.count_documents({})
+    total_apps = await db.applications.count_documents({})
+    total_sessions = await db.user_sessions.count_documents({})
+    recent_signups = await db.users.count_documents({
+        "created_at": {"$gte": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()}
+    })
+    return {
+        "total_users": total_users,
+        "total_jobs_indexed": total_jobs,
+        "total_applications": total_apps,
+        "active_sessions": total_sessions,
+        "signups_last_7_days": recent_signups
+    }
+
+@api_router.post("/admin/unlock-user")
+async def admin_unlock_user(request: Request):
+    """Unlock a locked user account (admin only)."""
+    await get_admin_user(request)
+    body = await request.json()
+    email = body.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    result = await db.users.update_one(
+        {"email": email.lower()},
+        {"$set": {"failed_login_attempts": 0}, "$unset": {"locked_until": ""}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": f"Account {email} unlocked"}
+
 # Include the routers
 app.include_router(api_router)
 app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
@@ -9000,6 +9106,76 @@ class CustomCORSMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(CustomCORSMiddleware)
+
+
+# ========================
+# SECURITY HEADERS MIDDLEWARE
+# ========================
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://auth.emergentagent.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https: wss:; "
+        "frame-ancestors 'none'"
+    )
+    return response
+
+
+# ========================
+# CSRF PROTECTION MIDDLEWARE
+# ========================
+# Exempt paths that don't need CSRF (public, auth login/signup, read-only)
+CSRF_EXEMPT_PREFIXES = (
+    "/api/auth/login",
+    "/api/auth/signup",
+    "/api/auth/google",
+    "/api/auth/forgot-password",
+    "/api/auth/reset-password",
+    "/api/auth/verify-email",
+    "/api/public/",
+    "/api/downloads/",
+    "/api/health",
+)
+
+@app.middleware("http")
+async def csrf_protection_middleware(request: Request, call_next):
+    # Only validate CSRF for state-changing methods
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        path = request.url.path
+        # Skip exempt paths
+        if not any(path.startswith(prefix) for prefix in CSRF_EXEMPT_PREFIXES):
+            session_token = request.cookies.get("session_token")
+            if session_token:
+                csrf_header = request.headers.get("x-csrf-token", "")
+                csrf_cookie = request.cookies.get("csrf_token", "")
+                if not csrf_header and not csrf_cookie:
+                    # Allow requests without CSRF if no session (unauthenticated)
+                    pass
+                elif csrf_header:
+                    # Validate header against stored token
+                    session = await db.user_sessions.find_one(
+                        {"session_token": session_token},
+                        {"_id": 0, "csrf_token": 1}
+                    )
+                    if session and session.get("csrf_token") != csrf_header:
+                        return Response(
+                            content='{"detail":"CSRF token invalid"}',
+                            status_code=403,
+                            media_type="application/json"
+                        )
+    return await call_next(request)
+
 
 
 # ========================

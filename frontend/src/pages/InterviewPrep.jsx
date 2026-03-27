@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { API } from "@/App";
+import { apiFetch } from "@/utils/apiFetch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,7 @@ export default function InterviewPrep({ user }) {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API}/ai/interview-prep`, {
+      const response = await apiFetch(`${API}/ai/interview-prep`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { API } from "@/App";
+import { apiFetch } from "@/utils/apiFetch";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,7 +84,7 @@ export default function Profile({ user }) {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`${API}/profile`, {
+      const response = await apiFetch(`${API}/profile`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch profile");
@@ -100,7 +101,7 @@ export default function Profile({ user }) {
   const updateProfileImmediate = async (updates) => {
     setSaving(true);
     try {
-      const response = await fetch(`${API}/profile`, {
+      const response = await apiFetch(`${API}/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -135,7 +136,7 @@ export default function Profile({ user }) {
       
       setSaving(true);
       try {
-        const response = await fetch(`${API}/profile`, {
+        const response = await apiFetch(`${API}/profile`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -204,7 +205,7 @@ export default function Profile({ user }) {
   const extractFieldsFromResume = async () => {
     setPrefillLoading(true);
     try {
-      const res = await fetch(`${API}/profile/resume/extract-fields`, {
+      const res = await apiFetch(`${API}/profile/resume/extract-fields`, {
         method: "POST",
         credentials: "include",
       });

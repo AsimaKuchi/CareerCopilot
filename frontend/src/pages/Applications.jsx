@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { API } from "@/App";
+import { apiFetch } from "@/utils/apiFetch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +97,7 @@ export default function Applications({ user }) {
     setInterviewPrepLoading(true);
 
     try {
-      const response = await fetch(`${API}/ai/interview-prep`, {
+      const response = await apiFetch(`${API}/ai/interview-prep`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -129,7 +130,7 @@ export default function Applications({ user }) {
     setConfirmSubmit({ applicationId, jobTitle, company, applyLink });
     
     try {
-      const response = await fetch(`${API}/applications/${applicationId}/autofill-payload`, {
+      const response = await apiFetch(`${API}/applications/${applicationId}/autofill-payload`, {
         credentials: "include",
       });
       if (response.ok) {
@@ -163,7 +164,7 @@ export default function Applications({ user }) {
     }
     
     try {
-      const response = await fetch(`${API}/ai/download-docx`, {
+      const response = await apiFetch(`${API}/ai/download-docx`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -245,7 +246,7 @@ export default function Applications({ user }) {
 
   const fetchApplications = async () => {
     try {
-      const response = await fetch(`${API}/applications`, {
+      const response = await apiFetch(`${API}/applications`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch applications");
@@ -261,7 +262,7 @@ export default function Applications({ user }) {
   const handleApprove = async (applicationId) => {
     setActionLoading(applicationId);
     try {
-      const response = await fetch(`${API}/applications/${applicationId}/approve`, {
+      const response = await apiFetch(`${API}/applications/${applicationId}/approve`, {
         method: "PUT",
         credentials: "include",
       });
@@ -285,7 +286,7 @@ export default function Applications({ user }) {
   const handleAutoSubmit = async (applicationId, jobTitle, company) => {
     setActionLoading(applicationId);
     try {
-      const response = await fetch(`${API}/applications/${applicationId}/auto-submit`, {
+      const response = await apiFetch(`${API}/applications/${applicationId}/auto-submit`, {
         method: "POST",
         credentials: "include",
       });
@@ -342,7 +343,7 @@ export default function Applications({ user }) {
     try {
       toast.info(`🔄 Auto-filling application for ${company}...`, { duration: 5000 });
 
-      const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
+      const response = await apiFetch(`${API}/applications/${applicationId}/auto-fill`, {
         method: "POST",
         credentials: "include",
       });
@@ -427,7 +428,7 @@ export default function Applications({ user }) {
     try {
       toast.info(`🚀 Auto-filling and submitting application to ${company}...`, { duration: 8000 });
 
-      const response = await fetch(`${API}/applications/${applicationId}/auto-fill`, {
+      const response = await apiFetch(`${API}/applications/${applicationId}/auto-fill`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -567,7 +568,7 @@ export default function Applications({ user }) {
   const handleReject = async (applicationId) => {
     setActionLoading(applicationId);
     try {
-      const response = await fetch(`${API}/applications/${applicationId}/reject`, {
+      const response = await apiFetch(`${API}/applications/${applicationId}/reject`, {
         method: "PUT",
         credentials: "include",
       });
@@ -590,7 +591,7 @@ export default function Applications({ user }) {
     if (!deleteId) return;
     setActionLoading(deleteId);
     try {
-      const response = await fetch(`${API}/applications/${deleteId}`, {
+      const response = await apiFetch(`${API}/applications/${deleteId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -618,7 +619,7 @@ export default function Applications({ user }) {
 
     for (const app of pendingApps) {
       try {
-        const response = await fetch(`${API}/applications/${app.application_id}/approve`, {
+        const response = await apiFetch(`${API}/applications/${app.application_id}/approve`, {
           method: "PUT",
           credentials: "include",
         });
