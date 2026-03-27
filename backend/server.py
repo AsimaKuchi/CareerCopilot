@@ -19,6 +19,8 @@ import io
 import asyncio
 import re
 from bs4 import BeautifulSoup
+import collections
+import time
 
 # Set Playwright browsers path before importing
 os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
@@ -95,6 +97,46 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, ""
 
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://job-match-ai-62.preview.emergentagent.com')
+
+# ========================
+# RATE LIMITER (in-memory)
+# ========================
+class RateLimiter:
+    """Sliding-window rate limiter keyed by IP."""
+    def __init__(self):
+        self._hits = collections.defaultdict(list)
+
+    def _cleanup(self, key, window):
+        cutoff = time.monotonic() - window
+        self._hits[key] = [t for t in self._hits[key] if t > cutoff]
+
+    def is_limited(self, key: str, max_hits: int, window_seconds: int) -> bool:
+        self._cleanup(key, window_seconds)
+        if len(self._hits[key]) >= max_hits:
+            return True
+        self._hits[key].append(time.monotonic())
+        return False
+
+    def remaining(self, key: str, max_hits: int, window_seconds: int) -> int:
+        self._cleanup(key, window_seconds)
+        return max(0, max_hits - len(self._hits[key]))
+
+rate_limiter = RateLimiter()
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+# Rate limits: (max_attempts, window_seconds)
+RATE_LOGIN  = (10, 60)    # 10 per minute per IP
+RATE_SIGNUP = (5, 60)     # 5 per minute per IP
+RATE_RESET  = (3, 300)    # 3 per 5 minutes per IP
+
+# Account lockout
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_MINUTES = 15
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -1319,8 +1361,13 @@ async def send_welcome_email(email: str, first_name: str):
         return False
 
 @api_router.post("/auth/signup")
-async def email_signup(data: EmailSignupRequest):
+async def email_signup(data: EmailSignupRequest, request: Request):
     """Sign up with email and password."""
+    # --- Rate limit by IP ---
+    ip = get_client_ip(request)
+    if rate_limiter.is_limited(f"signup:{ip}", *RATE_SIGNUP):
+        raise HTTPException(status_code=429, detail="Too many signup attempts. Please wait a minute and try again.")
+
     # Validate password strength
     is_valid, error_msg = validate_password_strength(data.password)
     if not is_valid:
@@ -1453,18 +1500,60 @@ async def resend_verification(data: ResendVerificationRequest):
     return {"message": "If an account exists with this email, a verification link will be sent."}
 
 @api_router.post("/auth/login")
-async def email_login(data: EmailLoginRequest, response: Response):
+async def email_login(data: EmailLoginRequest, request: Request, response: Response):
     """Login with email and password."""
+    # --- Rate limit by IP ---
+    ip = get_client_ip(request)
+    if rate_limiter.is_limited(f"login:{ip}", *RATE_LOGIN):
+        raise HTTPException(status_code=429, detail="Too many login attempts. Please wait a minute and try again.")
+
     user = await db.users.find_one({"email": data.email.lower()})
-    
+
     if not user or not user.get("password_hash"):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    
+
+    # --- Account lockout check ---
+    lockout_until = user.get("locked_until")
+    if lockout_until:
+        lock_dt = datetime.fromisoformat(lockout_until)
+        if lock_dt.tzinfo is None:
+            lock_dt = lock_dt.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) < lock_dt:
+            remaining = int((lock_dt - datetime.now(timezone.utc)).total_seconds() / 60) + 1
+            raise HTTPException(
+                status_code=423,
+                detail=f"Account locked due to too many failed attempts. Try again in {remaining} minute{'s' if remaining != 1 else ''}."
+            )
+        # Lockout expired — reset
+        await db.users.update_one(
+            {"email": data.email.lower()},
+            {"$set": {"failed_login_attempts": 0}, "$unset": {"locked_until": ""}}
+        )
+
     if not verify_password(data.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    
+        # --- Increment failed attempts ---
+        failed = user.get("failed_login_attempts", 0) + 1
+        update = {"$set": {"failed_login_attempts": failed}}
+        if failed >= MAX_FAILED_ATTEMPTS:
+            lock_until = (datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)).isoformat()
+            update["$set"]["locked_until"] = lock_until
+            await db.users.update_one({"email": data.email.lower()}, update)
+            raise HTTPException(
+                status_code=423,
+                detail=f"Account locked after {MAX_FAILED_ATTEMPTS} failed attempts. Try again in {LOCKOUT_MINUTES} minutes."
+            )
+        await db.users.update_one({"email": data.email.lower()}, update)
+        remaining = MAX_FAILED_ATTEMPTS - failed
+        raise HTTPException(status_code=401, detail=f"Invalid email or password. {remaining} attempt{'s' if remaining != 1 else ''} remaining.")
+
     if not user.get("email_verified", False):
         raise HTTPException(status_code=401, detail="Please verify your email before logging in")
+
+    # --- Successful login: reset failed attempts ---
+    await db.users.update_one(
+        {"email": data.email.lower()},
+        {"$set": {"failed_login_attempts": 0}, "$unset": {"locked_until": ""}}
+    )
     
     # Create session
     session_token = generate_token()
@@ -1500,8 +1589,13 @@ async def email_login(data: EmailLoginRequest, response: Response):
     }
 
 @api_router.post("/auth/forgot-password")
-async def forgot_password(data: ForgotPasswordRequest):
+async def forgot_password(data: ForgotPasswordRequest, request: Request):
     """Request password reset email."""
+    # --- Rate limit by IP ---
+    ip = get_client_ip(request)
+    if rate_limiter.is_limited(f"reset:{ip}", *RATE_RESET):
+        raise HTTPException(status_code=429, detail="Too many reset requests. Please wait a few minutes and try again.")
+
     user = await db.users.find_one({"email": data.email.lower()})
     
     # Always return same message to prevent email enumeration
@@ -1523,8 +1617,13 @@ async def forgot_password(data: ForgotPasswordRequest):
     return {"message": "If an account exists with this email, a password reset link will be sent."}
 
 @api_router.post("/auth/reset-password")
-async def reset_password(data: ResetPasswordRequest):
+async def reset_password(data: ResetPasswordRequest, request: Request):
     """Reset password with token."""
+    # --- Rate limit by IP ---
+    ip = get_client_ip(request)
+    if rate_limiter.is_limited(f"reset:{ip}", *RATE_RESET):
+        raise HTTPException(status_code=429, detail="Too many reset attempts. Please wait a few minutes and try again.")
+
     # Validate password strength
     is_valid, error_msg = validate_password_strength(data.password)
     if not is_valid:

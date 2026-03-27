@@ -102,6 +102,29 @@ Build a browser extension that auto-fills job application forms using a central 
 ### Test Results (iteration_24.json):
 - Frontend: 100% - All bento stats cards verified with proper styling and animations
 
+## Security: Rate Limiting & Account Lockout (Mar 27, 2026) - COMPLETE
+
+### Rate Limiting (in-memory sliding window):
+- **Login**: 10 attempts/minute per IP (HTTP 429 when exceeded)
+- **Signup**: 5 attempts/minute per IP
+- **Password Reset**: 3 attempts/5 minutes per IP
+
+### Account Lockout (MongoDB-persisted):
+- Tracks `failed_login_attempts` per user in DB
+- **Locks account after 5 failed attempts** for 15 minutes (HTTP 423)
+- Shows remaining attempts on each failure
+- Resets counter on successful login
+- Lockout auto-expires after 15 minutes
+
+### Files Modified:
+- `backend/server.py`: Added `RateLimiter` class, `get_client_ip()`, rate limit + lockout logic on `/auth/login`, `/auth/signup`, `/auth/forgot-password`, `/auth/reset-password`
+
+### Test Results (manual curl):
+- Rate limiting: Blocks 6th signup ✓
+- Account lockout: Locks after 5 failures, blocks even correct password ✓
+- Lockout message shows remaining minutes ✓
+- Successful login resets counter ✓
+
 ## Personalized Match Analysis (Mar 8, 2026) - COMPLETE
 
 ### Problem Solved:
