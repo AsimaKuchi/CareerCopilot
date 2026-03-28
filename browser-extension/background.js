@@ -1,4 +1,4 @@
-// JobMatch AI - Background Service Worker
+// MyCareerCoPilot - Background Service Worker
 
 const STORAGE_KEYS = {
   API_URL: 'jobmatch_api_url',
@@ -8,9 +8,9 @@ const STORAGE_KEYS = {
 // Handle installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('[JobMatch AI] Extension installed');
+    console.log('[MyCareerCoPilot] Extension installed');
   } else if (details.reason === 'update') {
-    console.log('[JobMatch AI] Extension updated');
+    console.log('[MyCareerCoPilot] Extension updated');
   }
 });
 
@@ -34,6 +34,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
   
+  // Handle autofill data fetch from popup
+  if (message.action === 'FETCH_AUTOFILL') {
+    handleFetchAutofill(message.apiUrl, message.jobUrl).then(sendResponse);
+    return true;
+  }
+  
   // Handle submission tracking from content script
   if (message.action === 'TRACK_SUBMISSION') {
     handleTrackSubmission(message.data).then(sendResponse);
@@ -46,26 +52,36 @@ async function handleFetchProfile(apiUrl) {
   console.log('[CareerCopilot AI] Fetching profile from:', apiUrl);
   
   try {
-    // First, check if we have any cookies for this domain
     const url = new URL(apiUrl);
-    const cookies = await chrome.cookies.getAll({ domain: url.hostname });
     
-    console.log('[CareerCopilot AI] Found cookies:', cookies.length);
+    // Get the session cookie using the cookies API
+    const sessionCookie = await chrome.cookies.get({
+      url: apiUrl,
+      name: 'session_token'
+    });
     
-    // Make API call with credentials (cookies)
+    if (!sessionCookie) {
+      return { 
+        error: 'Not logged in. Please sign in to CareerCopilot AI website first, then try connecting again.' 
+      };
+    }
+    
+    console.log('[CareerCopilot AI] Found session cookie');
+    
+    // Make API call with cookie header manually set
     const response = await fetch(`${apiUrl}/api/profile`, {
       method: 'GET',
-      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Cookie': `session_token=${sessionCookie.value}`
       }
     });
     
     if (!response.ok) {
       if (response.status === 401) {
         return { 
-          error: 'Please sign in to CareerCopilot AI website first (use "Sign in with Google"), then try connecting again.' 
+          error: 'Session expired. Please sign in to CareerCopilot AI website again, then reconnect.' 
         };
       }
       return { 
@@ -80,7 +96,6 @@ async function handleFetchProfile(apiUrl) {
   } catch (error) {
     console.error('[CareerCopilot AI] Error fetching profile:', error);
     
-    // Provide helpful error messages based on error type
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       return { 
         error: 'Could not reach CareerCopilot AI. Please check the URL and your internet connection.' 
@@ -92,25 +107,67 @@ async function handleFetchProfile(apiUrl) {
 }
 
 // Track submission API call (runs in background with cookie access)
+async function handleFetchAutofill(apiUrl, jobUrl) {
+  try {
+    const sessionCookie = await chrome.cookies.get({
+      url: apiUrl,
+      name: 'session_token'
+    });
+    
+    if (!sessionCookie) {
+      return { error: 'Session expired. Please sign in to CareerCopilot AI and reconnect.' };
+    }
+    
+    const response = await fetch(`${apiUrl}/api/extension/autofill-data?job_url=${encodeURIComponent(jobUrl || '')}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cookie': `session_token=${sessionCookie.value}`
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        return { error: 'Session expired. Please sign in to CareerCopilot AI and reconnect.' };
+      }
+      return { error: `Failed to fetch profile data (${response.status}).` };
+    }
+    
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    return { error: error.message || 'Failed to fetch profile data.' };
+  }
+}
+
+// Track submission API call (runs in background with cookie access)
 async function handleTrackSubmission(data) {
-  console.log('[JobMatch AI] Tracking submission:', data);
+  console.log('[CareerCopilot AI] Tracking submission:', data);
   
   try {
-    // Get stored API URL
     const stored = await chrome.storage.local.get([STORAGE_KEYS.API_URL]);
     const apiUrl = stored[STORAGE_KEYS.API_URL];
     
     if (!apiUrl) {
-      console.log('[JobMatch AI] No API URL stored');
-      return { success: false, message: 'Not connected to JobMatch AI' };
+      return { success: false, message: 'Not connected to CareerCopilot AI' };
     }
     
-    // Make API call with credentials (cookies)
+    // Get session cookie
+    const sessionCookie = await chrome.cookies.get({
+      url: apiUrl,
+      name: 'session_token'
+    });
+    
+    if (!sessionCookie) {
+      return { success: false, message: 'Session expired. Please reconnect.' };
+    }
+    
     const response = await fetch(`${apiUrl}/api/extension/track-submission`, {
       method: 'POST',
-      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Cookie': `session_token=${sessionCookie.value}`
       },
       body: JSON.stringify({
         job_url: data.job_url,
@@ -120,16 +177,14 @@ async function handleTrackSubmission(data) {
     });
     
     if (!response.ok) {
-      console.log('[JobMatch AI] API returned error:', response.status);
       return { success: false, message: 'Failed to track submission' };
     }
     
     const result = await response.json();
-    console.log('[JobMatch AI] Track submission result:', result);
     return result;
     
   } catch (error) {
-    console.error('[JobMatch AI] Error tracking submission:', error);
+    console.error('[CareerCopilot AI] Error tracking submission:', error);
     return { success: false, message: error.message };
   }
 }
@@ -197,4 +252,4 @@ function checkIfKnownATS(url) {
   return knownPatterns.some(pattern => pattern.test(url));
 }
 
-console.log('[JobMatch AI] Background service worker loaded');
+console.log('[MyCareerCoPilot] Background service worker loaded');

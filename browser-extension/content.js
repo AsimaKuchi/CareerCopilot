@@ -1,11 +1,11 @@
-// JobMatch AI - Content Script v4
+// MyCareerCoPilot - Content Script v4
 // Fixed for Greenhouse react-select - using keyboard navigation
 
 (function() {
   'use strict';
 
   function log(...args) {
-    console.log('[JobMatch AI]', ...args);
+    console.log('[MyCareerCoPilot]', ...args);
   }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -832,7 +832,7 @@
         <div>
           <div style="font-weight: 600; margin-bottom: 4px;">Application Submitted!</div>
           <div style="opacity: 0.9; font-size: 13px;">
-            ${data.job_title ? `${data.job_title} at ` : ''}${data.company || 'Company'} - Tracked in JobMatch AI
+            ${data.job_title ? `${data.job_title} at ` : ''}${data.company || 'Company'} - Tracked in MyCareerCoPilot
           </div>
         </div>
       </div>

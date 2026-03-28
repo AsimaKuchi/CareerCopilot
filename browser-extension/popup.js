@@ -1,4 +1,4 @@
-// JobMatch AI - Browser Extension Popup Script
+// MyCareerCoPilot - Browser Extension Popup Script
 
 const STORAGE_KEYS = {
   API_URL: 'jobmatch_api_url',
@@ -252,25 +252,28 @@ async function handleAutoFill() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const currentUrl = tab?.url || '';
     
-    // Step 1: Fetch autofill data (pass job URL for optimized content matching)
+    // Step 1: Fetch autofill data via background script (which has cookie access)
     updateProgress(20, 'Fetching your profile data...');
     
     const stored = await chrome.storage.local.get([STORAGE_KEYS.API_URL]);
     const apiUrl = stored[STORAGE_KEYS.API_URL];
     
-    const response = await fetch(`${apiUrl}/api/extension/autofill-data?job_url=${encodeURIComponent(currentUrl)}`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    const autofillData = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        { action: 'FETCH_AUTOFILL', apiUrl, jobUrl: currentUrl },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error('Extension error. Please reload and try again.'));
+            return;
+          }
+          if (response.error) {
+            reject(new Error(response.error));
+            return;
+          }
+          resolve(response.data);
+        }
+      );
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch profile data. Please log in to JobMatch AI.');
-    }
-
-    const autofillData = await response.json();
     
     // Store API URL and current job URL for submission tracking
     // The content script will use these to track submissions
