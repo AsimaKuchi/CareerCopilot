@@ -289,7 +289,7 @@ export default function LandingPage() {
           <div className="text-center mt-10">
             <Button
               className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 h-10 text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
-              onClick={() => window.open('/api/downloads/browser-extension.zip', '_blank')}
+              onClick={() => window.open('/api/public/extension/download', '_blank')}
             >
               <Download className="w-4 h-4 mr-2" />
               Download Chrome Extension
