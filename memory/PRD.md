@@ -235,6 +235,25 @@ Build a browser extension that auto-fills job application forms using a central 
 - Streaming: 100 jobs, 0 sort violations
 - Non-streaming: 17 jobs, 0 sort violations
 
+
+## Audit Logging & Session Revocation (Apr 5, 2026) - COMPLETE
+
+### Comprehensive Audit Logging:
+- Logs: login_success, failed_login (with IP), signup, forgot_password, password_reset, profile_update, subscription_upgrade/cancel/reactivate, revoke_all_sessions, all admin_actions
+- Stored in `audit_logs` collection with timestamp, user_email, severity, details
+- Viewable and filterable in Admin Dashboard > Audit Logs
+
+### Session Revocation:
+- GET /api/auth/sessions - Lists active sessions with device info (IP, user agent, last active)
+- POST /api/auth/revoke-all-sessions - Logout from all devices except current
+- Multi-session support (login no longer kills other sessions)
+- SessionManagement component on Profile page shows active sessions with "This device" badge
+- "Logout All Devices" button when multiple sessions exist
+
+### Test Results (iteration_29.json):
+- Backend: 100% (13/13 tests passed)
+- Frontend: 100% (all UI tests passed)
+
 ## Prioritized Backlog
 
 ### P0: Refactor Monolithic Backend (URGENT)
@@ -256,20 +275,14 @@ Build a browser extension that auto-fills job application forms using a central 
 ### P2: Speed up "Find Jobs" load times
 - Instantly load cached DB results while streaming live results in the background
 
-### P3: Audit Logging
-- Log login attempts, password changes, etc. (Security Baseline)
-
-### P4: Session Revocation UI
-- Allow users to "logout all devices"
-
-### P4: Enhance Extension Dropdown Matching
+### P3: Enhance Extension Dropdown Matching
 - Improve universal extension logic for complex dropdown scenarios
 
-### P5: Fine-tune Extension for Lever/Ashby
+### P4: Fine-tune Extension for Lever/Ashby
 - Add platform-specific logic for better reliability
 
 ### Future
-- Stripe Integration (payment tiers)
+- Admin Dashboard Phase 2 (Revenue metrics from Stripe)
 - Analytics Dashboard (admin)
 - Maintenance Mode toggle
 - "Follow Company" feature
