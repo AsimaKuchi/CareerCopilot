@@ -14,6 +14,18 @@ logger = logging.getLogger("server")
 
 stripe_router = APIRouter(tags=["stripe"])
 
+
+async def _log_event(event_type, user_email="", details="", severity="info"):
+    """Log an event to audit_logs."""
+    if db:
+        await db.audit_logs.insert_one({
+            "type": event_type,
+            "user_email": user_email,
+            "details": details,
+            "severity": severity,
+            "timestamp": datetime.now(timezone.utc),
+        })
+
 # Initialize Stripe - loaded lazily via init
 STRIPE_SECRET_KEY = None
 STRIPE_PUBLISHABLE_KEY = None
@@ -215,6 +227,7 @@ async def get_checkout_status(session_id: str, request: Request):
                 {"$set": {"processed": True}},
             )
             logger.info(f"Subscription activated for user {user.user_id}")
+            await _log_event("subscription_upgrade", user.email, "Upgraded to Pro ($19.99/mo)")
 
     return {
         "status": session.status,
@@ -366,6 +379,7 @@ async def cancel_subscription(request: Request):
             {"user_id": user.user_id},
             {"$set": {"subscription_status": "cancelling"}},
         )
+        await _log_event("subscription_cancel", user.email, "Subscription cancellation requested")
         return {"message": "Subscription will be cancelled at the end of your billing period"}
     except stripe.error.StripeError as e:
         raise HTTPException(400, str(e))
@@ -387,6 +401,7 @@ async def reactivate_subscription(request: Request):
             {"user_id": user.user_id},
             {"$set": {"subscription_status": "active", "plan": "pro"}},
         )
+        await _log_event("subscription_reactivate", user.email, "Subscription reactivated")
         return {"message": "Subscription reactivated"}
     except stripe.error.StripeError as e:
         raise HTTPException(400, str(e))

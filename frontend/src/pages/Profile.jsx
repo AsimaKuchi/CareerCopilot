@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
+import SessionManagement from "@/components/SessionManagement";
 import {
   User,
   FileText,
@@ -1166,6 +1167,11 @@ export default function Profile({ user }) {
               </Select>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Session Management */}
+        <div className="mt-6">
+          <SessionManagement />
         </div>
       </main>
     </div>

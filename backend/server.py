@@ -1131,11 +1131,17 @@ async def create_session(request: Request, response: Response):
         "session_token": session_token,
         "csrf_token": csrf_token,
         "expires_at": expires_at.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_active": datetime.now(timezone.utc).isoformat(),
+        "ip_address": request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown"),
+        "user_agent": (request.headers.get("user-agent", "")[:200]),
     }
     
-    # Remove old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user_id})
+    # Keep existing sessions, clean expired
+    await db.user_sessions.delete_many({
+        "user_id": user_id,
+        "expires_at": {"$lt": datetime.now(timezone.utc).isoformat()}
+    })
     await db.user_sessions.insert_one(session_doc)
     
     # Set cookies
@@ -1190,6 +1196,51 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token", path="/")
     response.delete_cookie(key="csrf_token", path="/")
     return {"message": "Logged out successfully"}
+
+
+@api_router.get("/auth/sessions")
+async def list_sessions(request: Request):
+    """List all active sessions for the current user."""
+    user = await get_current_user(request)
+    current_token = request.cookies.get("session_token")
+    
+    sessions = await db.user_sessions.find(
+        {"user_id": user.user_id},
+        {"_id": 0, "csrf_token": 0}
+    ).sort("last_active", -1).to_list(50)
+    
+    result = []
+    for s in sessions:
+        is_current = (s.get("session_token", "") == current_token)
+        result.append({
+            "created_at": s.get("created_at", ""),
+            "last_active": s.get("last_active", s.get("created_at", "")),
+            "ip_address": s.get("ip_address", "Unknown"),
+            "user_agent": s.get("user_agent", "Unknown"),
+            "is_current": is_current,
+        })
+    
+    return {"sessions": result, "total": len(result)}
+
+
+@api_router.post("/auth/revoke-all-sessions")
+async def revoke_all_sessions(request: Request, response: Response):
+    """Logout from all devices except the current session."""
+    user = await get_current_user(request)
+    current_token = request.cookies.get("session_token")
+    
+    # Delete all sessions except current
+    if current_token:
+        result = await db.user_sessions.delete_many({
+            "user_id": user.user_id,
+            "session_token": {"$ne": current_token}
+        })
+    else:
+        result = await db.user_sessions.delete_many({"user_id": user.user_id})
+    
+    await log_event("revoke_all_sessions", user.email, f"Revoked {result.deleted_count} sessions", "info")
+    
+    return {"message": f"Logged out from {result.deleted_count} other device(s)", "revoked": result.deleted_count}
 
 # ========================
 # EMAIL AUTHENTICATION
@@ -1477,6 +1528,8 @@ async def email_signup(data: EmailSignupRequest, request: Request):
     # Send verification email
     email_sent = await send_verification_email(data.email.lower(), verification_token, data.name)
     
+    await log_event("signup", data.email.lower(), "New account created", "info")
+    
     if email_sent:
         return {"message": "Account created! Please check your email to verify your account."}
     else:
@@ -1623,11 +1676,17 @@ async def email_login(data: EmailLoginRequest, request: Request, response: Respo
         "session_token": session_token,
         "csrf_token": csrf_token,
         "expires_at": expires_at.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_active": datetime.now(timezone.utc).isoformat(),
+        "ip_address": request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown"),
+        "user_agent": (request.headers.get("user-agent", "")[:200]),
     }
     
-    # Remove old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user["user_id"]})
+    # Keep existing sessions (allow multi-device), just clean expired ones
+    await db.user_sessions.delete_many({
+        "user_id": user["user_id"],
+        "expires_at": {"$lt": datetime.now(timezone.utc).isoformat()}
+    })
     await db.user_sessions.insert_one(session_doc)
     
     # Set cookies
@@ -1685,6 +1744,8 @@ async def forgot_password(data: ForgotPasswordRequest, request: Request):
     
     await send_password_reset_email(data.email.lower(), reset_token, user.get("name", "there"))
     
+    await log_event("forgot_password", data.email.lower(), "Password reset requested", "info")
+    
     return {"message": "If an account exists with this email, a password reset link will be sent."}
 
 @api_router.post("/auth/reset-password")
@@ -1721,6 +1782,8 @@ async def reset_password(data: ResetPasswordRequest, request: Request):
     
     # Clear all sessions for this user (force re-login)
     await db.user_sessions.delete_many({"user_id": user["user_id"]})
+    
+    await log_event("password_reset", user.get("email", ""), "Password reset via email link", "info")
     
     return {"message": "Password reset successfully! You can now log in with your new password."}
 
@@ -1797,6 +1860,8 @@ async def update_profile(request: Request, update: ProfileUpdate):
         {"$set": update_data},
         upsert=True
     )
+    
+    await log_event("profile_update", user.email, f"Profile updated: {', '.join(update_data.keys())}", "info")
     
     # Fetch updated profile
     profile = await db.user_profiles.find_one(
