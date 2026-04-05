@@ -559,7 +559,8 @@ export default function JobSearch({ user }) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || "Failed to generate prep materials");
+        const detail = error.detail;
+        throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to generate prep materials");
       }
 
       const data = await response.json();
@@ -586,7 +587,8 @@ export default function JobSearch({ user }) {
       setOptimizedResume(response.data.optimized_resume);
       toast.success("Resume optimized for ATS!");
     } catch (error) {
-      const message = error.response?.data?.detail || error.message || "Failed to optimize resume";
+      const detail = error.response?.data?.detail;
+      const message = typeof detail === 'object' ? detail?.message : detail || error.message || "Failed to optimize resume";
       toast.error(message);
     } finally {
       setGeneratingResume(false);
@@ -608,7 +610,8 @@ export default function JobSearch({ user }) {
       setCoverLetter(response.data.cover_letter);
       toast.success("Cover letter generated!");
     } catch (error) {
-      const message = error.response?.data?.detail || error.message || "Failed to generate cover letter";
+      const detail = error.response?.data?.detail;
+      const message = typeof detail === 'object' ? detail?.message : detail || error.message || "Failed to generate cover letter";
       toast.error(message);
     } finally {
       setGeneratingCover(false);
@@ -637,7 +640,11 @@ export default function JobSearch({ user }) {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to save application");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const detail = errData.detail;
+        throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to save application");
+      }
 
       const savedDocs = [];
       if (optimizedResume) savedDocs.push("optimized resume");

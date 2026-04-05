@@ -94,7 +94,8 @@ export default function CareerPaths({ user }) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || "Failed to generate career analysis");
+        const detail = body.detail;
+        throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to generate career analysis");
       }
 
       setAnalysis(await res.json());

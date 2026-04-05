@@ -49,7 +49,8 @@ export default function InterviewPrep({ user }) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || "Failed to generate prep materials");
+        const detail = error.detail;
+        throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to generate prep materials");
       }
 
       const data = await response.json();
