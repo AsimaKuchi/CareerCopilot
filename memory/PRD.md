@@ -23,14 +23,22 @@ Build a browser extension that auto-fills job application forms using a central 
 - **Canadian Job Coverage**: Jobs from USA and Canada for all major sources
 - **Personalized Match Analysis**: AI-powered matching with actual resume evidence (COMPLETE - Mar 8, 2026)
 - **Professional Design System**: Clean light-theme SaaS design with Indigo primary, Inter font, shadcn/ui components (COMPLETE - Mar 12, 2026)
+- **Stripe Subscription**: Freemium model with Free ($0) and Pro ($19.99/month) tiers (COMPLETE - Apr 5, 2026)
+  - Free tier: Monthly usage limits (3 applications, 2 resumes, 2 cover letters, 1 interview prep, 1 career path, 3 extension uses)
+  - Pro tier: Unlimited everything + advanced analytics + priority support + premium templates
+  - Stripe Checkout for payments, webhook handling for subscription lifecycle
+  - In-app billing management (cancel, reactivate, update payment, view invoices)
+  - Inline upgrade modals when free users hit limits (HTTP 402 responses)
+  - /pricing page (public) and /billing page (authenticated)
 
 ## Tech Stack
-- **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4
-- **Frontend**: React, Tailwind CSS, Shadcn/UI
+- **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4, stripe
+- **Frontend**: React, Tailwind CSS, Shadcn/UI, framer-motion
 - **Browser Extension**: Manifest V3, universal field detection
 - **AI**: OpenAI (GPT-5.2, GPT-4o, GPT-4o-mini) via Emergent LLM Key
 - **Jobs API**: JSearch (RapidAPI), Amazon Jobs API, Greenhouse API, Lever API
 - **Auth**: Google OAuth + JWT for email/password
+- **Payments**: Stripe (test mode), subscription billing
 
 ## Job Sources (~13,094 jobs)
 | Source | Method | USA | Canada | Total |
@@ -223,7 +231,7 @@ Build a browser extension that auto-fills job application forms using a central 
 ## Prioritized Backlog
 
 ### P0: Refactor Monolithic Backend (URGENT)
-- `backend/server.py` is 9,275+ lines and becoming unmanageable
+- `backend/server.py` is 9,350+ lines and becoming unmanageable
 - Must break into structured FastAPI application:
   - routes/ (API routers by domain)
   - models/ (Pydantic models)
@@ -231,13 +239,21 @@ Build a browser extension that auto-fills job application forms using a central 
   - utils/ (helpers)
 - Critical for maintainability and scalability
 
-### P1: Speed up "Find Jobs" load times
+### P1: Admin Dashboard
+- Overview: Total users, active users, failed logins, system errors
+- User Management: View/search/filter, ban/suspend, reset password
+- Security Monitoring: Failed login attempts, lockouts
+- Audit Logs: Admin actions, security events
+- Support Tools: User search, session details
+- Revenue section after Stripe is live
+
+### P2: Speed up "Find Jobs" load times
 - Instantly load cached DB results while streaming live results in the background
 
-### P2: Audit Logging
+### P3: Audit Logging
 - Log login attempts, password changes, etc. (Security Baseline)
 
-### P3: Session Revocation UI
+### P4: Session Revocation UI
 - Allow users to "logout all devices"
 
 ### P4: Enhance Extension Dropdown Matching
