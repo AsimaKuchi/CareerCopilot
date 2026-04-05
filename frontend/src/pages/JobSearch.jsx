@@ -278,12 +278,11 @@ export default function JobSearch({ user }) {
                       // New job received - add it to temp list
                       tempJobs.push(data);
                       
-                      // Update UI with new job immediately
+                      // Update UI with new job immediately (sorted by date, newest first)
                       const sortedJobs = [...tempJobs].sort((a, b) => {
-                        const aSkip = a.match_recommendation === "skip" ? 0 : 1;
-                        const bSkip = b.match_recommendation === "skip" ? 0 : 1;
-                        if (aSkip !== bSkip) return bSkip - aSkip;
-                        return (b.match_score || 0) - (a.match_score || 0);
+                        const dateA = a.posted_at ? new Date(a.posted_at).getTime() : 0;
+                        const dateB = b.posted_at ? new Date(b.posted_at).getTime() : 0;
+                        return dateB - dateA;
                       });
                       setJobs(sortedJobs);
                     }
@@ -336,12 +335,11 @@ export default function JobSearch({ user }) {
 
       // Sort and set final results
       
-      // Sort combined results by match score
+      // Sort combined results by date (newest first)
       allJobs.sort((a, b) => {
-        const aSkip = a.match_recommendation === "skip" ? 0 : 1;
-        const bSkip = b.match_recommendation === "skip" ? 0 : 1;
-        if (aSkip !== bSkip) return bSkip - aSkip;
-        return (b.match_score || 0) - (a.match_score || 0);
+        const dateA = a.posted_at ? new Date(a.posted_at).getTime() : 0;
+        const dateB = b.posted_at ? new Date(b.posted_at).getTime() : 0;
+        return dateB - dateA;
       });
       
       setJobs(allJobs);
@@ -426,9 +424,11 @@ export default function JobSearch({ user }) {
                   } else {
                     tempJobs.push(data);
                     
-                    // Update UI immediately
+                    // Update UI immediately (sorted by date, newest first)
                     const sortedJobs = [...tempJobs].sort((a, b) => {
-                      return (b.match_score || 0) - (a.match_score || 0);
+                      const dateA = a.posted_at ? new Date(a.posted_at).getTime() : 0;
+                      const dateB = b.posted_at ? new Date(b.posted_at).getTime() : 0;
+                      return dateB - dateA;
                     });
                     setJobs(sortedJobs);
                   }

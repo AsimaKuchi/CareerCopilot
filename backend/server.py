@@ -2668,24 +2668,23 @@ async def search_greenhouse(request: Request):
         
         logger.info(f"Search complete: {jobs_found} jobs matched from {len(all_raw_jobs)} total")
         
-        # Sort jobs: new for user first, then recently posted, then by date
-        matched_jobs.sort(key=lambda x: (
-            0 if x.get("is_new_for_user", False) else 1,
-            0 if x.get("is_new", False) else 1,
-            str(x.get("posted_at") or "")
-        ), reverse=False)
+        # Normalize all posted_at to proper datetimes for reliable sorting
+        EPOCH = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        for job in matched_jobs:
+            sort_dt = normalize_posted_date(job.get("posted_at"), fallback=EPOCH)
+            job["_sort_dt"] = sort_dt
+            # Ensure posted_at is a consistent ISO string for the frontend
+            if sort_dt and sort_dt != EPOCH:
+                job["posted_at"] = sort_dt.isoformat()
+            else:
+                job["posted_at"] = ""
         
-        # Re-sort: new for user first, then by posted date descending
-        matched_jobs.sort(key=lambda x: (
-            0 if x.get("is_new_for_user", False) else 1,
-            str(x.get("posted_at") or "")
-        ), reverse=False)
-        # Reverse to get newest first, but keep new-for-user at top
-        new_for_user = [j for j in matched_jobs if j.get("is_new_for_user")]
-        not_new = [j for j in matched_jobs if not j.get("is_new_for_user")]
-        new_for_user.sort(key=lambda x: str(x.get("posted_at") or ""), reverse=True)
-        not_new.sort(key=lambda x: str(x.get("posted_at") or ""), reverse=True)
-        matched_jobs = new_for_user + not_new
+        # Sort strictly by posted_at descending (newest first)
+        matched_jobs.sort(key=lambda x: x.get("_sort_dt") or EPOCH, reverse=True)
+        
+        # Remove temp sort field before streaming
+        for job in matched_jobs:
+            job.pop("_sort_dt", None)
         
         # Now stream the sorted jobs
         for job in matched_jobs:
@@ -3341,8 +3340,8 @@ async def search_jobs(request: Request):
                     "skip_reason": job.get("skip_reason")
                 })
             
-            # Sort by match score
-            enriched_jobs.sort(key=lambda x: (0 if x.get("match_recommendation") == "skip" else 1, x.get("match_score", 0)), reverse=True)
+            # Sort by posted date (newest first)
+            enriched_jobs.sort(key=lambda x: x.get("posted_at") or "", reverse=True)
             
             return {
                 "jobs": enriched_jobs,

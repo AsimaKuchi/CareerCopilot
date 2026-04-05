@@ -1,0 +1,48 @@
+{
+  "summary": "Tested job search sorting by posted_at date (descending - newest first). All 3 backend tests passed. Both streaming (/api/jobs/greenhouse/search) and non-streaming (/api/jobs/search) endpoints correctly return jobs sorted by date descending.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_job_sort_by_date.py",
+    "/app/test_reports/pytest/job_sort_by_date_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_job_sort_by_date.py"
+  ],
+  "success_rate": {
+    "backend": "100% (3/3 tests passed)",
+    "frontend": "N/A - backend only testing requested"
+  },
+  "test_credentials": {
+    "test_user": {"email": "test@demo.com", "password": "Test1234!"}
+  },
+  "seed_data_creation": "None - used existing test user",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Job sorting by posted_at date verified working. Streaming endpoint returned 100 jobs with 0 sort violations (dates range from 2026-04-04 to 2025-12-15, newest first). Non-streaming endpoint returned 17 jobs with 0 sort violations. Date format is consistent ISO format. Note: Non-streaming endpoint has some jobs with null/empty posted_at dates which sort to the end.",
+  "features_tested": {
+    "streaming_search_sort": {
+      "status": "PASS",
+      "endpoint": "POST /api/jobs/greenhouse/search",
+      "details": "100 jobs returned, 0 sort violations, dates properly sorted descending (newest: 2026-04-04, oldest: 2025-12-15)"
+    },
+    "non_streaming_search_sort": {
+      "status": "PASS",
+      "endpoint": "POST /api/jobs/search",
+      "details": "17 jobs returned, 0 sort violations, jobs with valid dates sorted descending, jobs with null dates at end"
+    },
+    "date_format_consistency": {
+      "status": "PASS",
+      "details": "91 valid ISO dates, 0 empty dates, 0 invalid date formats in streaming response"
+    }
+  }
+}
