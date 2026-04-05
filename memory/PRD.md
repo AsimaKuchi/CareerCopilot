@@ -30,6 +30,13 @@ Build a browser extension that auto-fills job application forms using a central 
   - In-app billing management (cancel, reactivate, update payment, view invoices)
   - Inline upgrade modals when free users hit limits (HTTP 402 responses)
   - /pricing page (public) and /billing page (authenticated)
+- **Admin Dashboard**: Full admin panel at /admin with dark theme (COMPLETE - Apr 5, 2026)
+  - Overview: Total users, MRR, active users, failed logins, signups, jobs indexed, feature usage
+  - User Management: Search/filter/paginate, view details, ban/unban, unlock, reset password, subscription override, CSV export
+  - Security Monitoring: Failed login tracking, locked accounts, top offending IPs, banned users
+  - Audit Logs: Filterable event log of all admin actions and critical user events
+  - Support Tools: User search, send notifications, quick action links
+  - Access restricted to admin-role users only (403 for non-admin)
 
 ## Tech Stack
 - **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4, stripe
@@ -231,21 +238,20 @@ Build a browser extension that auto-fills job application forms using a central 
 ## Prioritized Backlog
 
 ### P0: Refactor Monolithic Backend (URGENT)
-- `backend/server.py` is 9,350+ lines and becoming unmanageable
+- `backend/server.py` is 9,380+ lines and becoming unmanageable
 - Must break into structured FastAPI application:
   - routes/ (API routers by domain)
   - models/ (Pydantic models)
   - services/ (business logic)
   - utils/ (helpers)
 - Critical for maintainability and scalability
+- Note: `stripe_routes.py` and `admin_routes.py` already started the pattern
 
-### P1: Admin Dashboard
-- Overview: Total users, active users, failed logins, system errors
-- User Management: View/search/filter, ban/suspend, reset password
-- Security Monitoring: Failed login attempts, lockouts
-- Audit Logs: Admin actions, security events
-- Support Tools: User search, session details
-- Revenue section after Stripe is live
+### P1: Admin Dashboard Phase 2 (Revenue)
+- Revenue dashboard with Stripe data (daily/monthly/yearly)
+- Conversion funnel (signups -> free -> pro)
+- Churn rate, LTV metrics
+- Stripe webhook event tracking
 
 ### P2: Speed up "Find Jobs" load times
 - Instantly load cached DB results while streaming live results in the background
