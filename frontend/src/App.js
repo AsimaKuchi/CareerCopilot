@@ -13,6 +13,8 @@ import InterviewPrep from "@/pages/InterviewPrep";
 import CareerPaths from "@/pages/CareerPaths";
 import Support from "@/pages/Support";
 import Auth from "@/pages/Auth";
+import Pricing from "@/pages/Pricing";
+import Billing from "@/pages/Billing";
 import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
 
@@ -136,6 +138,7 @@ const AppRouter = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
       <Route path="/support" element={<Support />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route
         path="/dashboard"
         element={
@@ -181,6 +184,14 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             {({ user }) => <CareerPaths user={user} />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            {({ user }) => <Billing user={user} />}
           </ProtectedRoute>
         }
       />

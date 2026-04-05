@@ -142,6 +142,13 @@ export default function LandingPage() {
             >
               How It Works
             </button>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="text-sm text-gray-500 hover:text-gray-900 px-3 py-1.5 rounded-md transition-colors duration-200 hidden sm:inline-flex"
+              data-testid="header-pricing-btn"
+            >
+              Pricing
+            </button>
             <Button
               data-testid="header-signin-btn"
               onClick={() => navigate(isLoggedIn ? '/dashboard' : '/auth')}
@@ -402,6 +409,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-5">
             <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Privacy</a>
             <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Terms</a>
+            <Link to="/pricing" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Pricing</Link>
             <Link to="/support" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Support</Link>
           </div>
         </div>

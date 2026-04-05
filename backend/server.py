@@ -52,6 +52,9 @@ from ats_scrapers import (
     PINPOINT_COMPANIES,
 )
 
+# Stripe subscription routes
+from stripe_routes import stripe_router, init_stripe_routes, check_usage_limit, increment_usage
+
 # Location parsing utilities
 from location_utils import (
     parse_location,
@@ -146,6 +149,9 @@ db = client[os.environ['DB_NAME']]
 # API Keys
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
+
+# Initialize Stripe routes with database
+init_stripe_routes(db, None)  # get_current_user set after definition
 
 # VERIFIED Greenhouse company boards (tested and working - no 404s)
 # These companies have active Greenhouse job boards as of Jan 2025
@@ -1031,6 +1037,10 @@ async def get_admin_user(request: Request) -> User:
 # ========================
 # AUTH ROUTES
 # ========================
+
+# Now that get_current_user is defined, wire it into stripe routes
+import stripe_routes as _sr
+_sr.get_current_user = get_current_user
 
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
@@ -4053,6 +4063,17 @@ async def optimize_resume(request: Request, req: OptimizeResumeRequest):
     """Optimize resume for ATS based on job description while preserving original format."""
     user = await get_current_user(request)
     
+    # Check usage limits
+    usage_check = await check_usage_limit(user.user_id, "resume_optimizations")
+    if not usage_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": "usage_limit_reached",
+            "feature": "resume_optimizations",
+            "current": usage_check["current"],
+            "limit": usage_check["limit"],
+            "message": f"You've used all {usage_check['limit']} resume optimizations this month. Upgrade to Pro for unlimited access."
+        })
+    
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
@@ -4122,6 +4143,7 @@ Return the concise, one-page optimized resume now:"""
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
+        await increment_usage(user.user_id, "resume_optimizations")
         return {"optimized_resume": response, "original_format": resume_format}
     except Exception as e:
         logger.error(f"Resume optimization error: {str(e)}")
@@ -4254,6 +4276,17 @@ async def generate_cover_letter(request: Request, req: GenerateCoverLetterReques
     """Generate personalized cover letter."""
     user = await get_current_user(request)
     
+    # Check usage limits
+    usage_check = await check_usage_limit(user.user_id, "cover_letters")
+    if not usage_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": "usage_limit_reached",
+            "feature": "cover_letters",
+            "current": usage_check["current"],
+            "limit": usage_check["limit"],
+            "message": f"You've used all {usage_check['limit']} cover letter generations this month. Upgrade to Pro for unlimited access."
+        })
+    
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
@@ -4318,6 +4351,7 @@ Generate a professional, ATS-optimized cover letter following the strict rules a
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
+        await increment_usage(user.user_id, "cover_letters")
         return {"cover_letter": response}
     except Exception as e:
         logger.error(f"Cover letter generation error: {str(e)}")
@@ -4534,6 +4568,17 @@ async def get_interview_prep(request: Request, req: InterviewPrepRequest):
     """Generate interview preparation materials."""
     user = await get_current_user(request)
     
+    # Check usage limits
+    usage_check = await check_usage_limit(user.user_id, "interview_prep")
+    if not usage_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": "usage_limit_reached",
+            "feature": "interview_prep",
+            "current": usage_check["current"],
+            "limit": usage_check["limit"],
+            "message": f"You've used your {usage_check['limit']} interview prep session this month. Upgrade to Pro for unlimited access."
+        })
+    
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
@@ -4616,6 +4661,7 @@ Generate interview prep for {req.job_title} at {req.company} following this stru
     
     try:
         response = await chat.send_message(UserMessage(text=prompt))
+        await increment_usage(user.user_id, "interview_prep")
         return {"prep_materials": response}
     except Exception as e:
         logger.error(f"Interview prep error: {str(e)}")
@@ -4631,6 +4677,17 @@ Generate interview prep for {req.job_title} at {req.company} following this stru
 async def analyze_career_paths(request: Request):
     """Analyze user's resume and profile to suggest realistic career paths."""
     user = await get_current_user(request)
+
+    # Check usage limits
+    usage_check = await check_usage_limit(user.user_id, "career_paths")
+    if not usage_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": "usage_limit_reached",
+            "feature": "career_paths",
+            "current": usage_check["current"],
+            "limit": usage_check["limit"],
+            "message": f"You've used your {usage_check['limit']} career path analysis this month. Upgrade to Pro for unlimited access."
+        })
 
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
@@ -4772,6 +4829,7 @@ Return ONLY valid JSON, no markdown."""
         )
 
         logger.info(f"Generated career path analysis for user {user.user_id}")
+        await increment_usage(user.user_id, "career_paths")
         return result
 
     except ValueError as e:
@@ -5442,6 +5500,17 @@ async def create_application(request: Request, req: ApplyRequest):
     """Create a new job application (pending approval)."""
     user = await get_current_user(request)
     
+    # Check usage limits
+    usage_check = await check_usage_limit(user.user_id, "job_applications")
+    if not usage_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": "usage_limit_reached",
+            "feature": "job_applications",
+            "current": usage_check["current"],
+            "limit": usage_check["limit"],
+            "message": f"You've used all {usage_check['limit']} job applications this month. Upgrade to Pro for unlimited access."
+        })
+    
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
@@ -5482,6 +5551,7 @@ async def create_application(request: Request, req: ApplyRequest):
     await db.applications.insert_one(application)
     application.pop("_id", None)
     
+    await increment_usage(user.user_id, "job_applications")
     return application
 
 @api_router.get("/applications")
@@ -8098,6 +8168,19 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     """
     user = await get_current_user(request)
     
+    # Check usage limits for extension
+    usage_check = await check_usage_limit(user.user_id, "extension_uses")
+    if not usage_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": "usage_limit_reached",
+            "feature": "extension_uses",
+            "current": usage_check["current"],
+            "limit": usage_check["limit"],
+            "message": f"You've used all {usage_check['limit']} extension uses this month. Upgrade to Pro for unlimited access."
+        })
+    
+    await increment_usage(user.user_id, "extension_uses")
+    
     # Get user info
     user_doc = await db.users.find_one(
         {"user_id": user.user_id},
@@ -9055,6 +9138,7 @@ async def admin_unlock_user(request: Request):
 
 # Include the routers
 app.include_router(api_router)
+app.include_router(stripe_router, prefix="/api")
 app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
 
 # Custom CORS middleware to handle chrome-extension origins
@@ -9145,6 +9229,7 @@ CSRF_EXEMPT_PREFIXES = (
     "/api/public/",
     "/api/downloads/",
     "/api/health",
+    "/api/webhook/",
 )
 
 @app.middleware("http")

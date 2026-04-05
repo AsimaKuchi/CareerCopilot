@@ -21,6 +21,7 @@ import {
   Home,
   HelpCircle,
   Compass,
+  CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -134,6 +135,10 @@ export const Navbar = ({ user }) => {
                 <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer text-gray-700 focus:bg-gray-50">
                   <User className="w-4 h-4 mr-2" />
                   Profile Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/billing")} className="cursor-pointer text-gray-700 focus:bg-gray-50">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Billing
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-gray-100" />
                 <DropdownMenuItem data-testid="logout-btn" onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
