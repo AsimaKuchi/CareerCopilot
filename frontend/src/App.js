@@ -15,6 +15,13 @@ import Support from "@/pages/Support";
 import Auth from "@/pages/Auth";
 import Pricing from "@/pages/Pricing";
 import Billing from "@/pages/Billing";
+import AdminLayout from "@/pages/admin/AdminLayout";
+import AdminOverview from "@/pages/admin/AdminOverview";
+import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminUserDetail from "@/pages/admin/AdminUserDetail";
+import AdminSecurity from "@/pages/admin/AdminSecurity";
+import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
+import AdminSupport from "@/pages/admin/AdminSupport";
 import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
 
@@ -195,6 +202,15 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+      {/* Admin Dashboard */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminOverview />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="users/:userId" element={<AdminUserDetail />} />
+        <Route path="security" element={<AdminSecurity />} />
+        <Route path="audit-logs" element={<AdminAuditLogs />} />
+        <Route path="support" element={<AdminSupport />} />
+      </Route>
     </Routes>
   );
 };

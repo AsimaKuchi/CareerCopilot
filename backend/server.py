@@ -55,6 +55,9 @@ from ats_scrapers import (
 # Stripe subscription routes
 from stripe_routes import stripe_router, init_stripe_routes, check_usage_limit, increment_usage
 
+# Admin dashboard routes
+from admin_routes import admin_router, init_admin_routes, log_event
+
 # Location parsing utilities
 from location_utils import (
     parse_location,
@@ -152,6 +155,9 @@ RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY')
 
 # Initialize Stripe routes with database
 init_stripe_routes(db, None)  # get_current_user set after definition
+
+# Initialize Admin routes with database
+init_admin_routes(db, None)  # get_admin_user set after definition
 
 # VERIFIED Greenhouse company boards (tested and working - no 404s)
 # These companies have active Greenhouse job boards as of Jan 2025
@@ -1042,6 +1048,10 @@ async def get_admin_user(request: Request) -> User:
 import stripe_routes as _sr
 _sr.get_current_user = get_current_user
 
+# Wire get_admin_user into admin routes
+import admin_routes as _ar
+_ar.get_admin_user = get_admin_user
+
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
     """Exchange session_id for session_token after Google OAuth."""
@@ -1571,6 +1581,15 @@ async def email_login(data: EmailLoginRequest, request: Request, response: Respo
         # --- Increment failed attempts ---
         failed = user.get("failed_login_attempts", 0) + 1
         update = {"$set": {"failed_login_attempts": failed}}
+        
+        # Log failed attempt for admin security monitoring
+        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        await log_event("failed_login", data.email.lower(), f"Failed attempt #{failed}", "warning")
+        await db.audit_logs.update_one(
+            {"type": "failed_login", "user_email": data.email.lower(), "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(seconds=1)}},
+            {"$set": {"ip_address": client_ip}},
+        )
+        
         if failed >= MAX_FAILED_ATTEMPTS:
             lock_until = (datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)).isoformat()
             update["$set"]["locked_until"] = lock_until
@@ -1589,8 +1608,10 @@ async def email_login(data: EmailLoginRequest, request: Request, response: Respo
     # --- Successful login: reset failed attempts ---
     await db.users.update_one(
         {"email": data.email.lower()},
-        {"$set": {"failed_login_attempts": 0}, "$unset": {"locked_until": ""}}
+        {"$set": {"failed_login_attempts": 0, "last_login": datetime.now(timezone.utc).isoformat()}, "$unset": {"locked_until": ""}}
     )
+    
+    await log_event("login_success", data.email.lower(), "User logged in", "info")
     
     # Create session
     session_token = generate_token()
@@ -9139,6 +9160,7 @@ async def admin_unlock_user(request: Request):
 # Include the routers
 app.include_router(api_router)
 app.include_router(stripe_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 app.include_router(public_router, prefix="/api")  # Public Jobs API at /api/public/*
 
 # Custom CORS middleware to handle chrome-extension origins

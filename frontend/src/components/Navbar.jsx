@@ -21,6 +21,7 @@ import {
   Home,
   HelpCircle,
   Compass,
+  Shield,
   CreditCard,
 } from "lucide-react";
 import { useState } from "react";
@@ -140,6 +141,12 @@ export const Navbar = ({ user }) => {
                   <CreditCard className="w-4 h-4 mr-2" />
                   Billing
                 </DropdownMenuItem>
+                {user?.role === "admin" && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer text-indigo-600 focus:bg-indigo-50" data-testid="admin-panel-link">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Admin Panel
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator className="bg-gray-100" />
                 <DropdownMenuItem data-testid="logout-btn" onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
                   <LogOut className="w-4 h-4 mr-2" />
