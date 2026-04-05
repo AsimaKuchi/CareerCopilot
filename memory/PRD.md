@@ -204,10 +204,26 @@ Build a browser extension that auto-fills job application forms using a central 
 - **user_profiles**: Resume text, skills, job titles, experience years
 - **search_analytics**: Tracks company filter usage
 
+## Job Search Date Sorting (Apr 5, 2026) - COMPLETE
+
+### Problem:
+- Jobs were sorted by match_score, not by date
+- User requested strict newest-first ordering
+
+### Fix:
+- **Backend** (`server.py`): Replaced broken string-based sort with `normalize_posted_date()` to parse all date formats (ISO strings, Unix timestamps, etc.) then sort descending
+- **Frontend** (`JobSearch.jsx`): Changed all 3 sort functions (streaming, fallback, final combine) from match_score to date-based sorting
+- **Non-streaming endpoint** (`/api/jobs/search`): Also updated to sort by posted_at descending
+
+### Test Results (iteration_26.json):
+- Backend: 100% (3/3 tests passed)
+- Streaming: 100 jobs, 0 sort violations
+- Non-streaming: 17 jobs, 0 sort violations
+
 ## Prioritized Backlog
 
 ### P0: Refactor Monolithic Backend (URGENT)
-- `backend/server.py` is 8842+ lines and becoming unmanageable
+- `backend/server.py` is 9,275+ lines and becoming unmanageable
 - Must break into structured FastAPI application:
   - routes/ (API routers by domain)
   - models/ (Pydantic models)
@@ -215,13 +231,25 @@ Build a browser extension that auto-fills job application forms using a central 
   - utils/ (helpers)
 - Critical for maintainability and scalability
 
-### P2: Enhance Extension Dropdown Matching
+### P1: Speed up "Find Jobs" load times
+- Instantly load cached DB results while streaming live results in the background
+
+### P2: Audit Logging
+- Log login attempts, password changes, etc. (Security Baseline)
+
+### P3: Session Revocation UI
+- Allow users to "logout all devices"
+
+### P4: Enhance Extension Dropdown Matching
 - Improve universal extension logic for complex dropdown scenarios
 
-### P3: Fine-tune Extension for Lever/Ashby
+### P5: Fine-tune Extension for Lever/Ashby
 - Add platform-specific logic for better reliability
 
 ### Future
+- Stripe Integration (payment tiers)
+- Analytics Dashboard (admin)
+- Maintenance Mode toggle
 - "Follow Company" feature
 - Store company filter in user preferences
 - Persist last-used company filter
