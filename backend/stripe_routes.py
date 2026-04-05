@@ -58,10 +58,13 @@ def init_stripe_routes(database, get_current_user_func):
 
 
 async def get_user_plan(user_id: str) -> str:
-    """Get user's current plan: 'free' or 'pro'."""
-    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "subscription_status": 1})
-    status = (user or {}).get("subscription_status", "free")
-    return "pro" if status == "active" else "free"
+    """Get user's current plan: 'free' or 'pro'. Admins always get 'pro'."""
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "subscription_status": 1, "role": 1})
+    if not user:
+        return "free"
+    if user.get("role") == "admin":
+        return "pro"
+    return "pro" if user.get("subscription_status") == "active" else "free"
 
 
 async def get_monthly_usage(user_id: str) -> dict:
@@ -324,7 +327,7 @@ async def get_subscription(request: Request):
     user = await get_current_user(request)
     user_doc = await db.users.find_one({"user_id": user.user_id}, {"_id": 0})
 
-    plan = "pro" if (user_doc or {}).get("subscription_status") == "active" else "free"
+    plan = await get_user_plan(user.user_id)
     usage = await get_monthly_usage(user.user_id)
 
     # Build limits with usage
