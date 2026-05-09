@@ -37,6 +37,13 @@ Build a browser extension that auto-fills job application forms using a central 
   - Audit Logs: Filterable event log of all admin actions and critical user events
   - Support Tools: User search, send notifications, quick action links
   - Access restricted to admin-role users only (403 for non-admin)
+- **Backend Modular Architecture**: Refactored 9446-line monolith into 11 route modules (COMPLETE - Feb 9, 2026, branch `refactor/backend-split`)
+  - `core.py` (shared infra), `models.py` (Pydantic schemas), `routes/*.py` (per-feature routers)
+  - Thin `server.py` (~330 lines) handles app, middleware, scheduler, router includes
+  - `server_old.py` retained as rollback backup
+  - Validated by testing agent: 26/27 endpoint tests pass (96%)
+- **CSRF Hardening**: Closed CSRF bypass — middleware now requires X-CSRF-Token header on all authenticated state-changing requests (COMPLETE - Feb 9, 2026)
+
 
 ## Tech Stack
 - **Backend**: Python (FastAPI), MongoDB, passlib[bcrypt], Resend, python-docx, python-dateutil, BeautifulSoup4, stripe
