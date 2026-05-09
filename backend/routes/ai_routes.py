@@ -26,7 +26,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 import httpx
 
-from core import db, logger, EMERGENT_LLM_KEY, get_current_user
+from core import db, logger, EMERGENT_LLM_KEY, RAPIDAPI_KEY, get_current_user
 from models import (
     OptimizeResumeRequest,
     DetailedMatchRequest,
@@ -34,7 +34,10 @@ from models import (
     DocxDownloadRequest,
     InterviewPrepRequest,
 )
+from profile_schema import get_skill_names
+from encryption import decrypt_sensitive_data
 from stripe_routes import check_usage_limit, increment_usage
+from routes.job_routes import evaluate_job_match
 
 router = APIRouter()
 

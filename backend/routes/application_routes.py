@@ -45,7 +45,7 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 
 from docx import Document
 
-from core import db, logger, EMERGENT_LLM_KEY, FRONTEND_URL, STATIC_DOWNLOADS_DIR, get_current_user
+from core import db, logger, EMERGENT_LLM_KEY, FRONTEND_URL, STATIC_DOWNLOADS_DIR, format_salary_range, get_current_user
 from models import (
     ApplyRequest,
     NextStepUpdate,
@@ -53,9 +53,10 @@ from models import (
     AutoFillRequest,
     JobApplication,
 )
-from profile_schema import get_autofill_data
-from encryption import decrypt_sensitive_data
+from profile_schema import get_autofill_data, migrate_profile_to_v2
+from encryption import decrypt_field, decrypt_sensitive_data
 from stripe_routes import check_usage_limit, increment_usage
+from routes.job_routes import calculate_match_score
 
 router = APIRouter()
 

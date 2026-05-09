@@ -12,7 +12,16 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
-from core import db, logger, get_current_user, get_admin_user
+from core import (
+    db,
+    logger,
+    GREENHOUSE_COMPANIES,
+    LEVER_COMPANIES,
+    CUSTOM_CAREER_COMPANIES,
+    get_current_user,
+    get_admin_user,
+)
+from ats_scrapers import SMARTRECRUITERS_COMPANIES, PINPOINT_COMPANIES
 
 router = APIRouter()
 

@@ -19,6 +19,7 @@ import io
 import base64
 import json
 import re
+import uuid
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
@@ -29,6 +30,7 @@ from PyPDF2 import PdfReader
 
 from core import db, logger, EMERGENT_LLM_KEY, get_current_user
 from profile_schema import migrate_profile_to_v2
+from encryption import encrypt_field, decrypt_field, decrypt_sensitive_data
 
 router = APIRouter()
 

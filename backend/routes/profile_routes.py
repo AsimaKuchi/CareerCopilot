@@ -19,7 +19,8 @@ from profile_schema import (
     normalize_skills,
     get_skill_names,
 )
-from encryption import encrypt_field, decrypt_sensitive_data
+from encryption import encrypt_field, encrypt_sensitive_data, decrypt_sensitive_data
+from admin_routes import log_event
 
 router = APIRouter()
 

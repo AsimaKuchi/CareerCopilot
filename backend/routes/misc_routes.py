@@ -18,11 +18,12 @@ Refactored from monolithic server.py (Feb 2026).
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import os
+import uuid
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from core import db, logger, get_current_user, get_admin_user
+from core import db, logger, STATIC_DOWNLOADS_DIR, get_current_user, get_admin_user
 
 router = APIRouter()
 

@@ -15,8 +15,10 @@ Refactored from monolithic server.py (Feb 2026).
 """
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
+import base64
 import hashlib
 import json
+import re
 
 from fastapi import APIRouter, HTTPException, Request
 import httpx
@@ -29,6 +31,11 @@ from models import (
 )
 from profile_schema import get_autofill_data, get_normalized_value
 from encryption import decrypt_sensitive_data
+from stripe_routes import check_usage_limit, increment_usage
+from routes.application_routes import create_docx_from_text
+
+# Backward-compat alias for code paths that reference EMERGENT_API_KEY (legacy name).
+EMERGENT_API_KEY = EMERGENT_LLM_KEY
 
 router = APIRouter()
 

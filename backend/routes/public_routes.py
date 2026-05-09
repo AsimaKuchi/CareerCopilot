@@ -25,11 +25,13 @@ from fastapi import APIRouter, HTTPException, Request
 import httpx
 import resend
 
-from core import db, logger, SENDER_EMAIL, SUPPORT_EMAIL
+from core import db, logger, SENDER_EMAIL, SUPPORT_EMAIL, normalize_posted_date
 from models import SupportRequest
 
-# Imported lazily inside handlers to avoid circular imports:
-#   - search_greenhouse_jobs, fetch_lever_company_jobs etc. (job_routes helpers)
+# These are imported lazily inside ``ingest_all_jobs`` to avoid a circular
+# import with routes.job_routes (which also imports from public_routes
+# in the scheduler path of server.py).
+from bs4 import BeautifulSoup
 
 router = APIRouter(prefix="/public", tags=["Public Jobs API"])
 
@@ -345,7 +347,17 @@ async def ingest_all_jobs():
     logger.info("Starting job ingestion...")
     total_ingested = 0
     errors = []
-    
+
+    # Lazy imports avoid circular dependency with routes.job_routes
+    from core import GREENHOUSE_COMPANIES, LEVER_COMPANIES
+    from routes.job_routes import (
+        cleanup_expired_jobs,
+        fetch_greenhouse_company_jobs,
+        fetch_lever_company_jobs,
+        fetch_amazon_jobs,
+        fetch_company_jobs_via_jsearch,
+    )
+
     # Cleanup expired jobs first
     await cleanup_expired_jobs(days_old=30)
     
