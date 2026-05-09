@@ -207,27 +207,36 @@ CSRF_EXEMPT_PREFIXES = (
 
 @app.middleware("http")
 async def csrf_protection_middleware(request: Request, call_next):
-    """Validate the X-CSRF-Token header for state-changing requests with a session."""
+    """Validate the X-CSRF-Token header for state-changing requests with a session.
+
+    Hardened (Feb 2026): if a session_token cookie is present and the path is
+    not in CSRF_EXEMPT_PREFIXES, the X-CSRF-Token header is REQUIRED and must
+    match the session's stored csrf_token. Previously this middleware only
+    validated when the header was provided, allowing a CSRF bypass by simply
+    omitting the header.
+    """
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         path = request.url.path
         if not any(path.startswith(prefix) for prefix in CSRF_EXEMPT_PREFIXES):
             session_token = request.cookies.get("session_token")
             if session_token:
                 csrf_header = request.headers.get("x-csrf-token", "")
-                csrf_cookie = request.cookies.get("csrf_token", "")
-                if not csrf_header and not csrf_cookie:
-                    pass  # unauthenticated requests are OK
-                elif csrf_header:
-                    session = await db.user_sessions.find_one(
-                        {"session_token": session_token},
-                        {"_id": 0, "csrf_token": 1},
+                if not csrf_header:
+                    return Response(
+                        content='{"detail":"CSRF token missing"}',
+                        status_code=403,
+                        media_type="application/json",
                     )
-                    if session and session.get("csrf_token") != csrf_header:
-                        return Response(
-                            content='{"detail":"CSRF token invalid"}',
-                            status_code=403,
-                            media_type="application/json",
-                        )
+                session = await db.user_sessions.find_one(
+                    {"session_token": session_token},
+                    {"_id": 0, "csrf_token": 1},
+                )
+                if not session or session.get("csrf_token") != csrf_header:
+                    return Response(
+                        content='{"detail":"CSRF token invalid"}',
+                        status_code=403,
+                        media_type="application/json",
+                    )
     return await call_next(request)
 
 
