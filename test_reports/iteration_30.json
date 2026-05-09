@@ -1,0 +1,62 @@
+{
+  "summary": "Post-refactor backend split (9446-line monolith -> core.py + models.py + 11 route modules). Wrote /app/backend/tests/test_refactor_smoke.py covering every endpoint family in the review request: public, auth (login/signup/verify/forgot/reset/me/sessions/revoke/logout), CSRF middleware, security headers, profile + resume upload, jobs/search streaming, greenhouse, saved-jobs, applications CRUD, dashboard/stats, admin/ats-stats, admin RBAC gate, extension/autofill, screening-questions, stripe/subscription, stripe/checkout, AI (optimize-resume/cover-letter/interview-prep/detailed-match-analysis). 26/27 pytest cases pass (96%). Routing, model wiring, scheduler, CORS, OAuth-only paths, and security headers are all preserved by the refactor.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "CSRF middleware (server.py csrf_protection_middleware)",
+        "issue": "CSRF bypass: when an authenticated request (session_token cookie present) sends a state-changing PUT/POST/DELETE WITHOUT an X-CSRF-Token header, the middleware silently allows the request. Manually verified: PUT /api/profile with session+csrf cookies but no X-CSRF-Token header returns 200; with WRONG header returns 403; with correct header returns 200. Logic flaw: `if not csrf_header and not csrf_cookie: pass` falls through to next() because csrf_cookie is always set after login. Spec in review explicitly requires 403 for missing header on authenticated requests. This is a pre-existing bug copied from the monolith but materially weakens CSRF protection.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "GET /api/stripe/usage",
+        "issue": "Listed in review request as an endpoint to test but is NOT defined anywhere in stripe_routes.py or any router (returns 404). Either implement it or remove from spec."
+      },
+      {
+        "endpoint": "POST /api/extension/answer-questions",
+        "issue": "Pre-existing bug acknowledged in review request (undefined Model name). Not retested here. Should be fixed in a follow-up."
+      },
+      {
+        "endpoint": "POST /api/applications validation",
+        "issue": "Field naming: model requires `job_title` (not `position`). Confirm intentional vs alignment with extension/track-submission which uses `position`."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_refactor_smoke.py",
+    "/app/test_reports/pytest/refactor_smoke_results.xml"
+  ],
+  "action_items": [
+    "Fix CSRF middleware: require X-CSRF-Token header (not just cookie match) for authenticated state-changing requests. Replace the `if not csrf_header and not csrf_cookie: pass` branch with explicit deny when session_token present and csrf_header missing.",
+    "Either implement /api/stripe/usage or update product spec to remove it.",
+    "Resolve pre-existing /api/extension/answer-questions undefined Model bug (already flagged)."
+  ],
+  "critical_code_review_comments": [
+    "server.py CSRF middleware logic is unsafe by design: it only validates when an X-CSRF-Token header is present, allowing trivial CSRF bypass by simply omitting the header. The check should ALWAYS require csrf_header == session.csrf_token whenever session_token cookie is present and the path is not in CSRF_EXEMPT_PREFIXES.",
+    "core.py / route modules: 11 route files keep monolith concerns separated cleanly; no circular import surfaced during pytest. Good.",
+    "/api/stripe/usage missing: indicates incomplete spec-to-impl mapping. Add a usage endpoint backed by stripe_subscription/usage counters, or trim from review_request.",
+    "Resume upload (POST /api/profile/resume) did not accept malformed PDF (returned 400) which is correct, but consider returning structured error JSON (currently raw detail).",
+    "AI endpoints return 400/422 quickly on missing inputs - validation is in place; LLM happy path not exercised here to keep suite under 60s."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_refactor_smoke.py"
+  ],
+  "success_rate": {
+    "backend": "96% (26/27 pytest); 1 failure is a confirmed CSRF middleware bug",
+    "frontend": "skipped per review request"
+  },
+  "test_credentials": {
+    "test_user": {"email": "refactor_test@example.com", "password": "TestPass123!"}
+  },
+  "seed_data_creation": "Signup flow test creates a TEST_refactor_<ts>@example.com user each run and verifies it; not cleaned up (intentional for audit trail).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Refactor is functionally sound: all 11 routers mount under /api correctly, scheduler starts, CORS+security headers OK, scheduler+startup hooks run, login returns flat shape {user_id,email,name,role,csrf_token} (NOT nested user.{id}). The CSRF middleware has a bypass when X-CSRF-Token header is omitted but csrf cookie is present — fixing this should be regressed against test_refactor_smoke.py::TestCSRF::test_post_without_csrf_returns_403. /api/stripe/usage truly does not exist in the codebase (grep stripe_routes.py).",
+  "rca of the issue": "CSRF bypass RCA: in /app/backend/server.py:208-231 the middleware reads csrf_header and csrf_cookie. The branching `if not csrf_header and not csrf_cookie: pass / elif csrf_header: <validate>` has no `else` — so the case where csrf_cookie is set but csrf_header is empty (the exact CSRF attack vector) falls through unprotected. After the login response sets a csrf_token cookie, every subsequent same-origin authenticated PUT/POST/DELETE without the header passes. Mitigation: replace the elif with `if not csrf_header: return 403` whenever session_token cookie is present and path is not exempt; only validate match if header is provided. Reproduction: login -> copy session cookies -> PUT /api/profile with NO X-CSRF-Token header -> observe 200 instead of 403."
+}
