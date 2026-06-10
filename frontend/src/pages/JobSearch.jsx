@@ -622,10 +622,9 @@ export default function JobSearch({ user }) {
     if (!selectedJob) return;
     setApplyLoading(true);
     try {
-      const response = await fetch(`${API}/applications`, {
+      const response = await apiFetch(`${API}/applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           job_id: selectedJob.job_id,
           job_title: selectedJob.title,
