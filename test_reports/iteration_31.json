@@ -1,0 +1,43 @@
+{
+  "summary": "Tested the Career-Path Guidance Triplet (skill-gap checklist + 30-day game plan + Ask the Coach) plus the previously requested Stripe bypass, /api/stripe/usage endpoint, and CSRF middleware hardening. Backend: 17/17 pytest cases pass (test_guidance_triplet.py). Frontend: full UI flow verified via Playwright on /career-paths against refactor_test@example.com - all three subsections render under 'Your Roadmap', skill checkbox persists across reload, 30-day plan generates with W1-W4 + headline + success_signal + Regenerate button, Ask the Coach shows optimistic 'thinking' state and persists Q&A across reload. CSRF hardening is now correctly enforced (PUT /api/profile without X-CSRF-Token returns 403, with header returns 200). /api/stripe/usage exists and returns {plan:'pro', usage:{...}}.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CareerPaths - PathGuidance", "issues": ["Minor: in the 30-day plan the weeks are rendered with badge labels 'W1/W2/W3/W4' rather than 'Week 1/2/3/4'. Visually fine, just noting in case spec preferred 'Week N'."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_guidance_triplet.py",
+    "/app/test_reports/pytest/guidance_triplet_results.xml"
+  ],
+  "action_items": [
+    "None blocking. All 11 review-request bullets pass. Optional cosmetic: switch plan-week badge from 'W1' -> 'Week 1' if matching the spec text exactly is required."
+  ],
+  "critical_code_review_comments": [
+    "coach_routes.py guidance endpoints (lines 561-813) are clean: single mongo collection (path_guidance) keyed on (user_id, path_title), idempotent $addToSet/$pull semantics, server-side plan caching with explicit ?force=true override, qna log capped at last 6 for prompt threading.",
+    "PathGuidance.jsx properly uses apiFetch (sends X-CSRF-Token), persists state on the server, and renders optimistic UI for the ask-coach flow.",
+    "CSRF middleware (server.py:210-242) is now correctly hardened: any state-changing request with a session_token cookie and not in exempt list requires X-CSRF-Token. Verified with both /api/profile and /api/paths/guidance/skills (both return 403 without header).",
+    "Stripe pre-launch bypass (stripe_routes.py:60-68) returns 'pro' for everyone — confirmed via /api/subscription (all limits=-1) and /api/stripe/usage. Make sure to flip this back to real plan resolution before public launch.",
+    "Pre-existing console noise: PostHog recorder logs 'Failed to fetch saved jobs' when its wrapped fetch is invoked during recording teardown — not a real app bug but worth a guard in the PostHog integration."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_guidance_triplet.py"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17 pytest in test_guidance_triplet.py)",
+    "frontend": "100% (all 4 review-request UI flows verified: render, skill toggle persistence, plan generation, ask-coach persistence)"
+  },
+  "test_credentials": {
+    "user": {"email": "refactor_test@example.com", "password": "TestPass123!"}
+  },
+  "seed_data_creation": "Used a per-run unique path_title (TEST_Path_<uuid8>) for backend tests so plans/qna do not collide with the real cached career_analyses paths. Frontend test reused the real 'Data Analyst with Python Focus' path - one skill checkbox is now marked 1/2 and one Q&A entry was added under it (intentional for audit trail).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Guidance Triplet is fully functional end-to-end. The path_guidance MongoDB collection now holds at least one doc for refactor_test@example.com for path_title='Data Analyst with Python Focus' with skills_checked=['data visualization tools'], a generated plan_30d, and 1 qna entry. Backend test file /app/backend/tests/test_guidance_triplet.py is the canonical regression suite. Two LLM-backed tests (plan + ask) take ~25s combined - keep timeout=60s on those.",
+  "rca of the issue": "N/A - no failing scenarios in this iteration."
+}

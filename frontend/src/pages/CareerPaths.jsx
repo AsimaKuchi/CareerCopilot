@@ -29,6 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import PathGuidance from "@/components/PathGuidance";
 
 const DIFFICULTY_STYLE = {
   easy: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -228,9 +229,9 @@ export default function CareerPaths({ user }) {
                 <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
                   <Zap className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">I'm not sure where to go</h3>
+                <h3 className="text-xl font-bold text-foreground">I&apos;m not sure where to go</h3>
                 <p className="text-sm text-muted-foreground">
-                  Talk to a direct, no-fluff mentor. They'll ask sharp questions and propose 3 paths based on your answers. Best if you feel stuck or burned out.
+                  Talk to a direct, no-fluff mentor. They&apos;ll ask sharp questions and propose 3 paths based on your answers. Best if you feel stuck or burned out.
                 </p>
                 <Button
                   className="w-full mt-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
@@ -481,6 +482,9 @@ export default function CareerPaths({ user }) {
                         <Briefcase className="w-4 h-4 mr-2" />View Matching Jobs
                       </Button>
                     </div>
+
+                    {/* Guidance Triplet: skills checklist + 30-day plan + ask the coach */}
+                    <PathGuidance path={path} idx={i} />
                   </CardContent>
                 )}
               </Card>
