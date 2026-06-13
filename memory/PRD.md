@@ -48,6 +48,9 @@ Build a browser extension that auto-fills job application forms using a central 
 - **Canonical job-URL matching**: Browser extension now matches optimized resume across variant ATS URLs (Greenhouse gh_jid, Lever uuid, LinkedIn id, etc.); 54 existing apps backfilled (COMPLETE - Feb 9, 2026)
 - **Interview Prep**: Streaming responses (40ms to first content), gpt-5.2 -> gpt-4o-mini, regeneration with `excluded_questions` + 4 theme variations, parser fix that supports statement-style questions (COMPLETE - Feb 9, 2026)
 - **Interview Prep autocomplete**: Generic dropdown of ~130 job titles + ~200 popular companies on both inputs (COMPLETE - Feb 9, 2026)
+- **Pre-launch usage bypass** (TEMPORARY): `get_user_plan()` and `check_usage_limit()` in `stripe_routes.py` force `plan="pro"` for all users so preview-link testers don't hit paywalls. Original Free Tier logic preserved as commented code for easy revert. (COMPLETE - Feb 13, 2026)
+- **`/api/stripe/usage` endpoint**: New GET endpoint returns `{plan, usage}` mirroring `/api/subscription` usage portion — resolves spec drift flagged in iteration_30 test report. (COMPLETE - Feb 13, 2026)
+- **bcrypt warning fix**: Pinned `bcrypt==4.0.1` to silence passlib `bcrypt.__about__` warning spam. (COMPLETE - Feb 13, 2026)
 - **Personal Career Coach (Brutal Mentor)**: Multi-turn AI coach with discovery flow for users who don't know where to go next. Dual-entry on `/career-paths`: 'I know what I want' vs 'I'm not sure where to go'. After ~6-8 messages, synthesizes the conversation into 3 personalized paths that render in the existing analysis view (COMPLETE - Feb 9, 2026)
 
 

@@ -58,13 +58,21 @@ def init_stripe_routes(database, get_current_user_func):
 
 
 async def get_user_plan(user_id: str) -> str:
-    """Get user's current plan: 'free' or 'pro'. Admins always get 'pro'."""
-    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "subscription_status": 1, "role": 1})
-    if not user:
-        return "free"
-    if user.get("role") == "admin":
-        return "pro"
-    return "pro" if user.get("subscription_status") == "active" else "free"
+    """Get user's current plan: 'free' or 'pro'. Admins always get 'pro'.
+
+    NOTE (pre-launch bypass): All users are temporarily returned as 'pro' so that
+    pricing/usage limits are disabled while sharing the preview link. To re-enable
+    Free Tier limits later, restore the commented logic below.
+    """
+    # --- PRE-LAUNCH BYPASS: everyone gets pro ---
+    return "pro"
+    # --- Original logic (restore to re-enable Free Tier limits) ---
+    # user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "subscription_status": 1, "role": 1})
+    # if not user:
+    #     return "free"
+    # if user.get("role") == "admin":
+    #     return "pro"
+    # return "pro" if user.get("subscription_status") == "active" else "free"
 
 
 async def get_monthly_usage(user_id: str) -> dict:
@@ -86,6 +94,8 @@ async def check_usage_limit(user_id: str, feature: str) -> dict:
     - current: int (current usage)
     - limit: int (max allowed, -1 for unlimited)
     - plan: str
+
+    NOTE (pre-launch bypass): always allows since get_user_plan() returns 'pro'.
     """
     plan = await get_user_plan(user_id)
     if plan == "pro":
@@ -128,6 +138,28 @@ async def increment_usage(user_id: str, feature: str):
 async def get_stripe_config():
     """Return Stripe publishable key for frontend."""
     return {"publishable_key": STRIPE_PUBLISHABLE_KEY}
+
+
+@stripe_router.get("/stripe/usage")
+async def get_stripe_usage(request: Request):
+    """Return current month usage and limits for the authenticated user.
+
+    Mirrors the `usage` portion of /api/subscription so clients can poll a
+    lightweight endpoint without fetching full Stripe state.
+    """
+    user = await get_current_user(request)
+    plan = await get_user_plan(user.user_id)
+    usage = await get_monthly_usage(user.user_id)
+
+    limits = {}
+    for feature, limit in FREE_LIMITS.items():
+        current = usage.get(feature, 0)
+        limits[feature] = {
+            "current": current,
+            "limit": limit if plan == "free" else -1,
+            "remaining": max(0, limit - current) if plan == "free" else -1,
+        }
+    return {"plan": plan, "usage": limits}
 
 
 @stripe_router.post("/stripe/create-checkout")
