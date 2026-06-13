@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { API } from "@/App";
 import { apiFetch } from "@/utils/apiFetch";
+import InterviewPrepRenderer from "@/components/InterviewPrepRenderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1981,138 +1982,8 @@ export default function Applications({ user }) {
             </div>
           ) : interviewPrepMaterials ? (
             <div className="flex-1 overflow-y-auto bg-white">
-              <div className="p-6 space-y-6">
-                {(() => {
-                  const cleanText = interviewPrepMaterials
-                    .replace(/\*\*/g, '')
-                    .replace(/\*/g, '')
-                    .replace(/#{1,4}\s*/g, '')
-                    .replace(/---/g, '')
-                    .replace(/___/g, '');
-                  
-                  const lines = cleanText.split('\n').filter(line => line.trim());
-                  const sections = [];
-                  let currentSection = null;
-                  let currentQA = null;
-                  
-                  for (const line of lines) {
-                    const trimmed = line.trim();
-                    
-                    if (trimmed.match(/^\d+\.\s+[A-Z\s]+$/) || 
-                        (trimmed === trimmed.toUpperCase() && trimmed.length > 10 && !trimmed.includes('?'))) {
-                      if (currentSection) sections.push(currentSection);
-                      currentSection = {
-                        title: trimmed.replace(/^\d+\.\s*/, ''),
-                        items: []
-                      };
-                      currentQA = null;
-                    }
-                    else if (trimmed.endsWith('?')) {
-                      if (currentQA && currentSection) {
-                        currentSection.items.push(currentQA);
-                      }
-                      currentQA = {
-                        question: trimmed,
-                        answer: []
-                      };
-                    }
-                    else if (currentQA && trimmed) {
-                      const cleanLine = trimmed
-                        .replace(/^[-•*]\s*/, '')
-                        .replace(/^>\s*/, '')
-                        .replace(/^\d+\.\s*/, '');
-                      if (cleanLine) {
-                        currentQA.answer.push(cleanLine);
-                      }
-                    }
-                    else if (!currentQA && currentSection && trimmed) {
-                      const cleanLine = trimmed.replace(/^[-•*]\s*/, '').replace(/^>\s*/, '');
-                      if (cleanLine && !cleanLine.match(/^\d+\.\s*$/)) {
-                        currentSection.items.push({ tip: cleanLine });
-                      }
-                    }
-                  }
-                  
-                  if (currentQA && currentSection) {
-                    currentSection.items.push(currentQA);
-                  }
-                  if (currentSection) sections.push(currentSection);
-                  
-                  if (sections.length === 0) {
-                    return (
-                      <div className="bg-white rounded-xl p-6 border border-gray-200">
-                        <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
-                          {cleanText}
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  return sections.map((section, sIdx) => (
-                    <div key={sIdx} className="space-y-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">{sIdx + 1}</span>
-                        </div>
-                        <h2 className="text-xl font-bold text-indigo-600 uppercase tracking-wide">
-                          {section.title}
-                        </h2>
-                      </div>
-                      
-                      <div className="space-y-4 ml-2">
-                        {section.items.map((item, qIdx) => (
-                          item.question ? (
-                            <div 
-                              key={qIdx} 
-                              className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
-                            >
-                              <div className="bg-indigo-100 px-5 py-4 border-b border-indigo-200">
-                                <div className="flex items-start gap-3">
-                                  <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1.5 rounded mt-0.5 uppercase tracking-wide">
-                                    Q
-                                  </span>
-                                  <p className="text-gray-900 font-bold text-base leading-relaxed">
-                                    {item.question}
-                                  </p>
-                                </div>
-                              </div>
-                              
-                              <div className="px-5 py-4 bg-emerald-50">
-                                <div className="flex items-start gap-3">
-                                  <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded mt-0.5 uppercase tracking-wide">
-                                    A
-                                  </span>
-                                  <div className="space-y-2 flex-1">
-                                    {item.answer.map((line, lIdx) => (
-                                      <p key={lIdx} className="text-gray-700 leading-relaxed">
-                                        {line}
-                                      </p>
-                                    ))}
-                                    {item.answer.length === 0 && (
-                                      <p className="text-gray-500 italic">
-                                        Prepare your own answer based on your experience.
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : item.tip ? (
-                            <div 
-                              key={qIdx}
-                              className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200"
-                            >
-                              <div className="flex items-start gap-3">
-                                <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                                <p className="text-gray-800 leading-relaxed">{item.tip}</p>
-                              </div>
-                            </div>
-                          ) : null
-                        ))}
-                      </div>
-                    </div>
-                  ));
-                })()}
+              <div className="p-6">
+                <InterviewPrepRenderer markdown={interviewPrepMaterials} />
               </div>
             </div>
           ) : (
