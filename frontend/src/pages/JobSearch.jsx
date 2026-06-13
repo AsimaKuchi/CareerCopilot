@@ -1165,7 +1165,7 @@ export default function JobSearch({ user }) {
                               rel="noopener noreferrer"
                               className="text-indigo-400 hover:text-indigo-300"
                             >
-                              View Original →
+                              Open Job Posting →
                             </a>
                           )}
                         </p>
@@ -1230,7 +1230,7 @@ export default function JobSearch({ user }) {
                               }}
                             >
                               <ExternalLink className="w-4 h-4 mr-2" />
-                              View Original
+                              Open Job Posting
                             </Button>
                             <Button
                               variant="outline"
