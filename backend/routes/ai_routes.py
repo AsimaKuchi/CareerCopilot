@@ -42,67 +42,6 @@ from routes.job_routes import evaluate_job_match
 router = APIRouter()
 
 
-@router.get("/ai/interview-prep/suggestions")
-async def interview_prep_suggestions(request: Request):
-    """Return the user's saved applications + recently-saved jobs as
-    autocomplete suggestions for the Interview Prep form.
-
-    Combines (and de-dupes by company+title) jobs the user has shown intent
-    to interview for. Falls back to popular cached jobs when the user has no
-    applications yet so first-time users still get useful suggestions.
-    """
-    user = await get_current_user(request)
-
-    seen = set()
-    items = []
-
-    def add(title, company, job_description=None, source="application"):
-        if not title or not company:
-            return
-        key = f"{title.strip().lower()}|{company.strip().lower()}"
-        if key in seen:
-            return
-        seen.add(key)
-        items.append({
-            "job_title": title.strip(),
-            "company": company.strip(),
-            "job_description": job_description,
-            "source": source,
-        })
-
-    # 1. The user's saved applications (highest priority)
-    cursor = db.applications.find(
-        {"user_id": user.user_id},
-        {"_id": 0, "job_title": 1, "company": 1, "job_description": 1, "created_at": 1},
-    ).sort("created_at", -1).limit(50)
-    async for app in cursor:
-        add(app.get("job_title"), app.get("company"), app.get("job_description"), "application")
-
-    # 2. Jobs the user has saved/bookmarked (if any)
-    cursor = db.user_saved_jobs.find(
-        {"user_id": user.user_id},
-        {"_id": 0, "job_title": 1, "company": 1, "title": 1, "employer_name": 1, "description": 1},
-    ).limit(30)
-    async for j in cursor:
-        add(
-            j.get("job_title") or j.get("title"),
-            j.get("company") or j.get("employer_name"),
-            j.get("description"),
-            "saved",
-        )
-
-    # 3. If we still have no suggestions, pull a handful of popular recent ATS jobs
-    if not items:
-        cursor = db.stored_jobs.find(
-            {},
-            {"_id": 0, "title": 1, "company": 1, "description": 1},
-        ).sort("posted_at_dt", -1).limit(25)
-        async for j in cursor:
-            add(j.get("title"), j.get("company"), (j.get("description") or "")[:1500], "trending")
-
-    return {"suggestions": items}
-
-
 @router.post("/ai/optimize-resume")
 async def optimize_resume(request: Request, req: OptimizeResumeRequest):
     """Optimize resume for ATS based on job description while preserving original format."""

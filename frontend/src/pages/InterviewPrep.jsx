@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { API } from "@/App";
 import { apiFetch } from "@/utils/apiFetch";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Navbar from "@/components/Navbar";
 import InterviewPrepRenderer from "@/components/InterviewPrepRenderer";
-import JobAutocompleteInput from "@/components/JobAutocompleteInput";
+import SimpleAutocompleteInput from "@/components/SimpleAutocompleteInput";
+import { JOB_TITLES, COMPANIES } from "@/data/jobOptions";
 import {
   Sparkles,
   Briefcase,
@@ -41,35 +42,6 @@ export default function InterviewPrep({ user }) {
   // Accumulate all questions the user has already seen so the AI gives
   // fresh ones on every regenerate.
   const [seenQuestions, setSeenQuestions] = useState([]);
-  // Suggestions for the job-title / company autocomplete dropdown.
-  const [suggestions, setSuggestions] = useState([]);
-
-  // Fetch saved-applications + saved-jobs so the dropdown is pre-populated
-  // the moment the page mounts.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await apiFetch(`${API}/ai/interview-prep/suggestions`);
-        if (!r.ok) return;
-        const data = await r.json();
-        if (!cancelled) setSuggestions(data.suggestions || []);
-      } catch {
-        /* non-fatal - user can still type manually */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleSuggestionPick = (s) => {
-    if (s?.job_title) setJobTitle(s.job_title);
-    if (s?.company) setCompany(s.company);
-    if (s?.job_description && !jobDescription.trim()) {
-      setJobDescription(s.job_description);
-    }
-  };
 
   const extractQuestions = (markdown) => {
     if (!markdown) return [];
@@ -220,31 +192,27 @@ export default function InterviewPrep({ user }) {
               <CardContent className="space-y-4">
                 <div>
                   <Label className="text-gray-900 mb-2 block">Job Title *</Label>
-                  <JobAutocompleteInput
+                  <SimpleAutocompleteInput
                     value={jobTitle}
                     onChange={setJobTitle}
-                    onSelect={handleSuggestionPick}
-                    suggestions={suggestions}
-                    field="job_title"
-                    otherField="company"
+                    options={JOB_TITLES}
                     placeholder="e.g., Software Engineer"
                     icon={Briefcase}
                     testId="job-title-input"
+                    groupHeading="Common roles"
                   />
                 </div>
 
                 <div>
                   <Label className="text-gray-900 mb-2 block">Company *</Label>
-                  <JobAutocompleteInput
+                  <SimpleAutocompleteInput
                     value={company}
                     onChange={setCompany}
-                    onSelect={handleSuggestionPick}
-                    suggestions={suggestions}
-                    field="company"
-                    otherField="job_title"
+                    options={COMPANIES}
                     placeholder="e.g., Google"
                     icon={Building}
                     testId="company-input"
+                    groupHeading="Popular companies"
                   />
                 </div>
 
