@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { API } from "@/App";
 import { apiFetch } from "@/utils/apiFetch";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Navbar from "@/components/Navbar";
 import InterviewPrepRenderer from "@/components/InterviewPrepRenderer";
+import JobAutocompleteInput from "@/components/JobAutocompleteInput";
 import {
   Sparkles,
   Briefcase,
@@ -40,6 +41,35 @@ export default function InterviewPrep({ user }) {
   // Accumulate all questions the user has already seen so the AI gives
   // fresh ones on every regenerate.
   const [seenQuestions, setSeenQuestions] = useState([]);
+  // Suggestions for the job-title / company autocomplete dropdown.
+  const [suggestions, setSuggestions] = useState([]);
+
+  // Fetch saved-applications + saved-jobs so the dropdown is pre-populated
+  // the moment the page mounts.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await apiFetch(`${API}/ai/interview-prep/suggestions`);
+        if (!r.ok) return;
+        const data = await r.json();
+        if (!cancelled) setSuggestions(data.suggestions || []);
+      } catch {
+        /* non-fatal - user can still type manually */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSuggestionPick = (s) => {
+    if (s?.job_title) setJobTitle(s.job_title);
+    if (s?.company) setCompany(s.company);
+    if (s?.job_description && !jobDescription.trim()) {
+      setJobDescription(s.job_description);
+    }
+  };
 
   const extractQuestions = (markdown) => {
     if (!markdown) return [];
@@ -190,30 +220,32 @@ export default function InterviewPrep({ user }) {
               <CardContent className="space-y-4">
                 <div>
                   <Label className="text-gray-900 mb-2 block">Job Title *</Label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      data-testid="job-title-input"
-                      placeholder="e.g., Software Engineer"
-                      value={jobTitle}
-                      onChange={(e) => setJobTitle(e.target.value)}
-                      className="pl-10 bg-white border-gray-200"
-                    />
-                  </div>
+                  <JobAutocompleteInput
+                    value={jobTitle}
+                    onChange={setJobTitle}
+                    onSelect={handleSuggestionPick}
+                    suggestions={suggestions}
+                    field="job_title"
+                    otherField="company"
+                    placeholder="e.g., Software Engineer"
+                    icon={Briefcase}
+                    testId="job-title-input"
+                  />
                 </div>
 
                 <div>
                   <Label className="text-gray-900 mb-2 block">Company *</Label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      data-testid="company-input"
-                      placeholder="e.g., Google"
-                      value={company}
-                      onChange={(e) => setCompany(e.target.value)}
-                      className="pl-10 bg-white border-gray-200"
-                    />
-                  </div>
+                  <JobAutocompleteInput
+                    value={company}
+                    onChange={setCompany}
+                    onSelect={handleSuggestionPick}
+                    suggestions={suggestions}
+                    field="company"
+                    otherField="job_title"
+                    placeholder="e.g., Google"
+                    icon={Building}
+                    testId="company-input"
+                  />
                 </div>
 
                 <div>
