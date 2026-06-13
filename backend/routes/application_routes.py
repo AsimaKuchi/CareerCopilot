@@ -57,6 +57,7 @@ from profile_schema import get_autofill_data, migrate_profile_to_v2
 from encryption import decrypt_field, decrypt_sensitive_data
 from stripe_routes import check_usage_limit, increment_usage
 from routes.job_routes import calculate_match_score
+from job_url_match import canonical_job_key, normalize_url_for_match
 
 router = APIRouter()
 
@@ -96,6 +97,11 @@ async def create_application(request: Request, req: ApplyRequest):
     # Format salary range
     salary_range = format_salary_range(req.salary_min, req.salary_max, req.job_description)
     
+    # Canonicalize the apply link so the extension can match it against
+    # variant URLs the user may land on (e.g. company-branded ATS pages).
+    apply_link_key = canonical_job_key(req.apply_link)
+    apply_link_norm = normalize_url_for_match(req.apply_link)
+
     application = {
         "application_id": f"app_{uuid.uuid4().hex[:12]}",
         "user_id": user.user_id,
@@ -106,6 +112,8 @@ async def create_application(request: Request, req: ApplyRequest):
         "job_description": req.job_description,
         "salary_range": salary_range,
         "apply_link": req.apply_link,
+        "apply_link_key": apply_link_key,
+        "apply_link_norm": apply_link_norm,
         "optimized_resume": req.optimized_resume,
         "cover_letter": req.cover_letter,
         "status": "pending",

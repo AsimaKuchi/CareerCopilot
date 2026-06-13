@@ -33,6 +33,7 @@ from profile_schema import get_autofill_data, get_normalized_value
 from encryption import decrypt_sensitive_data
 from stripe_routes import check_usage_limit, increment_usage
 from routes.application_routes import create_docx_from_text
+from job_url_match import canonical_job_key, normalize_url_for_match
 
 # Backward-compat alias for code paths that reference EMERGENT_API_KEY (legacy name).
 EMERGENT_API_KEY = EMERGENT_LLM_KEY
@@ -244,22 +245,45 @@ async def get_extension_autofill_data(request: Request, job_url: str = None):
     matched_application = None
     
     if job_url:
-        # Try to find a matching application
-        matched_application = await db.applications.find_one(
-            {
-                "user_id": user.user_id,
-                "$or": [
-                    {"apply_link": {"$regex": job_url.split("?")[0], "$options": "i"}},
-                    {"job_url": {"$regex": job_url.split("?")[0], "$options": "i"}}
-                ]
-            },
-            {"_id": 0}
-        )
-        
+        # 1. Canonical-key match (Greenhouse gh_jid, Lever uuid, LinkedIn id, etc.)
+        incoming_key = canonical_job_key(job_url)
+        incoming_norm = normalize_url_for_match(job_url)
+        base_url = job_url.split("?")[0]
+        if incoming_key:
+            matched_application = await db.applications.find_one(
+                {"user_id": user.user_id, "apply_link_key": incoming_key},
+                {"_id": 0}
+            )
+            if matched_application:
+                logger.info(f"Autofill match via canonical key={incoming_key}")
+        # 2. Normalized-URL match (strip query/fragment/trailing slash)
+        if not matched_application and incoming_norm:
+            matched_application = await db.applications.find_one(
+                {"user_id": user.user_id, "apply_link_norm": incoming_norm},
+                {"_id": 0}
+            )
+            if matched_application:
+                logger.info(f"Autofill match via normalized URL={incoming_norm}")
+        # 3. Legacy regex match (covers older applications that pre-date canonical_key)
+        if not matched_application:
+            matched_application = await db.applications.find_one(
+                {
+                    "user_id": user.user_id,
+                    "$or": [
+                        {"apply_link": {"$regex": base_url, "$options": "i"}},
+                        {"job_url": {"$regex": base_url, "$options": "i"}}
+                    ]
+                },
+                {"_id": 0}
+            )
+            if matched_application:
+                logger.info(f"Autofill match via legacy substring URL={base_url}")
+
         if matched_application:
             optimized_resume = matched_application.get("optimized_resume")
             optimized_cover_letter = matched_application.get("cover_letter")
-            logger.info(f"Found matching application for URL: {job_url}")
+        else:
+            logger.info(f"No autofill application match for URL: {job_url}")
     
     # Get structured autofill data from v2 schema
     autofill = get_autofill_data(profile) if profile else {}
@@ -435,19 +459,31 @@ async def track_extension_submission(request: Request):
     if not job_url:
         raise HTTPException(status_code=400, detail="job_url is required")
     
-    # Try to find the matching application by URL
-    # Strip query params for matching
+    # Try to find the matching application by URL using the same multi-stage
+    # strategy as /extension/autofill-data so users get consistent matches.
+    incoming_key = canonical_job_key(job_url)
+    incoming_norm = normalize_url_for_match(job_url)
     base_url = job_url.split("?")[0]
-    
-    matched_application = await db.applications.find_one(
-        {
-            "user_id": user.user_id,
-            "$or": [
-                {"apply_link": {"$regex": base_url, "$options": "i"}},
-                {"job_url": {"$regex": base_url, "$options": "i"}}
-            ]
-        }
-    )
+
+    matched_application = None
+    if incoming_key:
+        matched_application = await db.applications.find_one(
+            {"user_id": user.user_id, "apply_link_key": incoming_key}
+        )
+    if not matched_application and incoming_norm:
+        matched_application = await db.applications.find_one(
+            {"user_id": user.user_id, "apply_link_norm": incoming_norm}
+        )
+    if not matched_application:
+        matched_application = await db.applications.find_one(
+            {
+                "user_id": user.user_id,
+                "$or": [
+                    {"apply_link": {"$regex": base_url, "$options": "i"}},
+                    {"job_url": {"$regex": base_url, "$options": "i"}}
+                ]
+            }
+        )
     
     if matched_application:
         # Update the existing application to "applied" status
