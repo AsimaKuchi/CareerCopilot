@@ -549,7 +549,6 @@ export default function JobSearch({ user }) {
       const response = await apiFetch(`${API}/ai/interview-prep`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           job_title: job.job_title || job.title,
           company: job.employer_name || job.company,
@@ -558,13 +557,27 @@ export default function JobSearch({ user }) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         const detail = error.detail;
         throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to generate prep materials");
       }
 
-      const data = await response.json();
-      setInterviewPrepMaterials(data.prep_materials);
+      // Backend streams text/plain - read incrementally so user sees content
+      // as it arrives instead of waiting for the whole doc.
+      const reader = response.body?.getReader();
+      if (!reader) {
+        const text = await response.text();
+        setInterviewPrepMaterials(text);
+      } else {
+        const decoder = new TextDecoder();
+        let full = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          full += decoder.decode(value, { stream: true });
+          setInterviewPrepMaterials(full);
+        }
+      }
       toast.success("Interview prep materials ready!");
     } catch (error) {
       toast.error(error.message || "Failed to generate prep materials");
