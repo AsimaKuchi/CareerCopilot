@@ -651,7 +651,7 @@ export default function Dashboard({ user }) {
                             className="text-indigo-400 hover:text-indigo-300"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            View Original →
+                            Open Job Posting →
                           </a>
                         </div>
                       ) : null}

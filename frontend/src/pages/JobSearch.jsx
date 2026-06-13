@@ -622,10 +622,9 @@ export default function JobSearch({ user }) {
     if (!selectedJob) return;
     setApplyLoading(true);
     try {
-      const response = await fetch(`${API}/applications`, {
+      const response = await apiFetch(`${API}/applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           job_id: selectedJob.job_id,
           job_title: selectedJob.title,
@@ -1166,7 +1165,7 @@ export default function JobSearch({ user }) {
                               rel="noopener noreferrer"
                               className="text-indigo-400 hover:text-indigo-300"
                             >
-                              View Original →
+                              Open Job Posting →
                             </a>
                           )}
                         </p>
@@ -1231,7 +1230,7 @@ export default function JobSearch({ user }) {
                               }}
                             >
                               <ExternalLink className="w-4 h-4 mr-2" />
-                              View Original
+                              Open Job Posting
                             </Button>
                             <Button
                               variant="outline"

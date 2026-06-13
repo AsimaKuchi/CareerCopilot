@@ -1018,28 +1018,15 @@ export default function Applications({ user }) {
 
                             {isAutoFillSupported(app.apply_link) && (
                               <Button
-                                data-testid={`auto-fill-submit-btn-${i}`}
+                                data-testid={`open-apply-link-btn-${i}`}
                                 size="sm"
-                                onClick={() =>
-                                  handleAutoApplyClick(
-                                    app.application_id,
-                                    app.job_title,
-                                    app.company,
-                                    app.apply_link
-                                  )
-                                }
-                                disabled={actionLoading === app.application_id || loadingPreview}
-                                className="bg-purple-500 hover:bg-purple-600"
-                                title="Auto-fill and submit the application form"
+                                variant="outline"
+                                onClick={() => window.open(app.apply_link, "_blank")}
+                                className="border-white/10"
+                                title="Open application page in a new tab"
                               >
-                                {actionLoading === app.application_id || loadingPreview ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Rocket className="w-4 h-4 mr-1" />
-                                    Auto-Apply
-                                  </>
-                                )}
+                                <ExternalLink className="w-4 h-4 mr-1" />
+                                Open Application
                               </Button>
                             )}
 
@@ -1086,31 +1073,6 @@ export default function Applications({ user }) {
 
                         {app.status === "approved" && (
                           <>
-                            {isAutoFillSupported(app.apply_link) && (
-                              <Button
-                                data-testid={`auto-fill-approved-btn-${i}`}
-                                size="sm"
-                                onClick={() =>
-                                  handleAutoApplyClick(
-                                    app.application_id,
-                                    app.job_title,
-                                    app.company,
-                                    app.apply_link
-                                  )
-                                }
-                                disabled={actionLoading === app.application_id || loadingPreview}
-                                className="bg-purple-500 hover:bg-purple-600"
-                              >
-                                {actionLoading === app.application_id || loadingPreview ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Rocket className="w-4 h-4 mr-1" />
-                                    Auto-Apply
-                                  </>
-                                )}
-                              </Button>
-                            )}
                             <Button
                               data-testid={`submit-now-btn-${i}`}
                               size="sm"
