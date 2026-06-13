@@ -35,9 +35,6 @@ from stripe_routes import check_usage_limit, increment_usage
 from routes.application_routes import create_docx_from_text
 from job_url_match import canonical_job_key, normalize_url_for_match
 
-# Backward-compat alias for code paths that reference EMERGENT_API_KEY (legacy name).
-EMERGENT_API_KEY = EMERGENT_LLM_KEY
-
 router = APIRouter()
 
 
@@ -813,7 +810,7 @@ User Profile:
 - Skills: {', '.join(profile.get('skills', [])) if profile else 'Not specified'}
 
 Resume Summary:
-{profile.get('resume_text', 'No resume available')[:3000] if profile else 'No resume available'}
+{(profile.get('resume_text') or 'No resume available')[:3000] if profile else 'No resume available'}
 """
 
     # Format questions for AI
@@ -843,17 +840,24 @@ Respond in JSON format:
 """
 
     try:
-        from emergentintegrations.llm.chat import chat, Message
+        # NOTE: this is a short, JSON-structured one-shot - not user-facing
+        # streaming - so we use send_message() instead of stream_message().
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import uuid
 
-        response = await chat(
-            api_key=EMERGENT_API_KEY,
-            model=Model.OPENAI_GPT4O,
-            messages=[Message(role="user", content=prompt)]
-        )
-        
-        # Parse JSON response
-        response_text = response.message
-        
+        chat_session = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"screening_{user.user_id}_{uuid.uuid4().hex[:8]}",
+            system_message=(
+                "You answer job application screening questions accurately "
+                "based on the user's profile and resume. Always reply in the "
+                "requested JSON format and never invent facts not present in "
+                "the provided profile."
+            ),
+        ).with_model("openai", "gpt-4o")
+
+        response_text = await chat_session.send_message(UserMessage(text=prompt))
+
         # Extract JSON from response
         import re
         json_match = re.search(r'\{[\s\S]*\}', response_text)
@@ -862,7 +866,7 @@ Respond in JSON format:
             return result
         else:
             return {"answers": [], "error": "Could not parse AI response"}
-            
+
     except Exception as e:
         logger.error(f"Error answering questions: {str(e)}")
         return {"answers": [], "error": str(e)}
