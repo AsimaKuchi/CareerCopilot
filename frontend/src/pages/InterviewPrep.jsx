@@ -7,6 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Navbar from "@/components/Navbar";
 import {
   Sparkles,
@@ -18,6 +24,8 @@ import {
   Lightbulb,
   CheckCircle,
   ChevronRight,
+  RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,39 +35,107 @@ export default function InterviewPrep({ user }) {
   const [jobDescription, setJobDescription] = useState("");
   const [prepMaterials, setPrepMaterials] = useState("");
   const [loading, setLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  // Accumulate all questions the user has already seen so the AI gives
+  // fresh ones on every regenerate.
+  const [seenQuestions, setSeenQuestions] = useState([]);
+
+  const extractQuestions = (markdown) => {
+    if (!markdown) return [];
+    // Pull every #### header line (questions) + any line ending in ?
+    const lines = markdown.split("\n");
+    const questions = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (line.startsWith("####")) {
+        const q = line.replace(/^#+\s*/, "").trim();
+        if (q) questions.push(q);
+      } else if (line.endsWith("?") && line.length > 15 && line.length < 250) {
+        questions.push(line);
+      }
+    }
+    return questions;
+  };
+
+  const callPrepEndpoint = async ({ excluded = [], variation = null } = {}, onChunk) => {
+    const response = await apiFetch(`${API}/ai/interview-prep`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        job_title: jobTitle.trim(),
+        company: company.trim(),
+        job_description: jobDescription.trim() || `${jobTitle} position at ${company}`,
+        excluded_questions: excluded,
+        variation: variation,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      const detail = error.detail;
+      throw new Error(typeof detail === "object" ? detail?.message : detail || "Failed to generate prep materials");
+    }
+    // The backend now streams text/plain. Read incrementally so the user
+    // sees content within ~1s instead of waiting for the full 8000-char doc.
+    const reader = response.body?.getReader();
+    if (!reader) {
+      // No streaming available (e.g. polyfill) - fall back to text()
+      const text = await response.text();
+      onChunk?.(text);
+      return { prep_materials: text };
+    }
+    const decoder = new TextDecoder();
+    let full = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      full += chunk;
+      onChunk?.(full);
+    }
+    return { prep_materials: full };
+  };
 
   const generatePrep = async () => {
     if (!jobTitle.trim() || !company.trim()) {
       toast.error("Please enter job title and company");
       return;
     }
-
     setLoading(true);
+    setPrepMaterials(""); // clear previous so the streaming pane fills from scratch
     try {
-      const response = await apiFetch(`${API}/ai/interview-prep`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          job_title: jobTitle.trim(),
-          company: company.trim(),
-          job_description: jobDescription.trim() || `${jobTitle} position at ${company}`,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        const detail = error.detail;
-        throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to generate prep materials");
-      }
-
-      const data = await response.json();
-      setPrepMaterials(data.prep_materials);
+      const data = await callPrepEndpoint({}, (partial) => setPrepMaterials(partial));
+      setSeenQuestions(extractQuestions(data.prep_materials));
       toast.success("Interview prep materials generated!");
     } catch (error) {
       toast.error(error.message || "Failed to generate prep materials");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const regeneratePrep = async (variation = null) => {
+    if (!jobTitle.trim() || !company.trim()) {
+      toast.error("Please enter job title and company");
+      return;
+    }
+    setRegenerating(true);
+    setPrepMaterials(""); // clear previous so user sees the new batch stream in
+    try {
+      const data = await callPrepEndpoint(
+        { excluded: seenQuestions, variation },
+        (partial) => setPrepMaterials(partial)
+      );
+      const newQuestions = extractQuestions(data.prep_materials);
+      setSeenQuestions((prev) => [...prev, ...newQuestions]);
+      toast.success(
+        variation
+          ? `New ${variation.replace("_", " ")} questions generated!`
+          : "Fresh batch of questions generated!"
+      );
+    } catch (error) {
+      toast.error(error.message || "Failed to regenerate");
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -200,10 +276,78 @@ export default function InterviewPrep({ user }) {
           <div className="lg:col-span-2">
             <Card className="glass-light h-full animate-fade-in-delay-2" data-testid="prep-results">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-emerald-400" />
-                  Interview Preparation Guide
-                </CardTitle>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-emerald-400" />
+                    Interview Preparation Guide
+                  </CardTitle>
+                  {prepMaterials && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        data-testid="regenerate-prep-btn"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => regeneratePrep(null)}
+                        disabled={regenerating || loading}
+                        className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                        title="Get a fresh batch of different questions"
+                      >
+                        {regenerating ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-1.5" />
+                        )}
+                        New Questions
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            data-testid="variation-dropdown-btn"
+                            size="sm"
+                            variant="outline"
+                            disabled={regenerating || loading}
+                            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                          >
+                            By Theme
+                            <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem
+                            data-testid="variation-behavioral"
+                            onClick={() => regeneratePrep("behavioral")}
+                          >
+                            Behavioral & Situational
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            data-testid="variation-technical"
+                            onClick={() => regeneratePrep("technical")}
+                          >
+                            Deep Technical
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            data-testid="variation-leadership"
+                            onClick={() => regeneratePrep("leadership")}
+                          >
+                            Leadership & Strategy
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            data-testid="variation-edge-cases"
+                            onClick={() => regeneratePrep("edge_cases")}
+                          >
+                            Tough / Curveball
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+                </div>
+                {seenQuestions.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    You've reviewed {seenQuestions.length} unique question
+                    {seenQuestions.length === 1 ? "" : "s"} so far
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 {prepMaterials ? (

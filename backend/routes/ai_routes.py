@@ -539,46 +539,84 @@ def _build_cover_letter_docx(doc, lines, job_title="", company=""):
 
 @router.post("/ai/interview-prep")
 async def get_interview_prep(request: Request, req: InterviewPrepRequest):
-    """Generate interview preparation materials."""
+    """Generate interview preparation materials.
+
+    Supports regeneration: if ``excluded_questions`` is provided, the model
+    is told to avoid those exact questions so subsequent calls give the user
+    a fresh batch. Optional ``variation`` biases the new batch toward a
+    theme (behavioral / technical / leadership / edge_cases).
+    """
     user = await get_current_user(request)
     
-    # Check usage limits
-    usage_check = await check_usage_limit(user.user_id, "interview_prep")
-    if not usage_check["allowed"]:
-        raise HTTPException(status_code=402, detail={
-            "error": "usage_limit_reached",
-            "feature": "interview_prep",
-            "current": usage_check["current"],
-            "limit": usage_check["limit"],
-            "message": f"You've used your {usage_check['limit']} interview prep session this month. Upgrade to Pro for unlimited access."
-        })
+    # Regenerations (when client passes excluded_questions) are NOT counted
+    # against the monthly usage limit - the user already paid for this
+    # session. Only enforce the limit on the FIRST generation per session.
+    is_regeneration = bool(req.excluded_questions)
+
+    if not is_regeneration:
+        usage_check = await check_usage_limit(user.user_id, "interview_prep")
+        if not usage_check["allowed"]:
+            raise HTTPException(status_code=402, detail={
+                "error": "usage_limit_reached",
+                "feature": "interview_prep",
+                "current": usage_check["current"],
+                "limit": usage_check["limit"],
+                "message": f"You've used your {usage_check['limit']} interview prep session this month. Upgrade to Pro for unlimited access."
+            })
     
     profile = await db.user_profiles.find_one(
         {"user_id": user.user_id},
         {"_id": 0}
     )
     
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
     
+    # gpt-4o-mini is ~3-5x faster than gpt-5.2 for structured templated
+    # output like this prompt - perfect for interview prep.
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"interview_{user.user_id}_{uuid.uuid4().hex[:8]}",
         system_message="""You are an expert career coach and interview preparation specialist.
 Provide comprehensive interview preparation including common questions, 
 STAR method examples, company research tips, and confidence-building advice."""
-    ).with_model("openai", "gpt-5.2")
+    ).with_model("openai", "gpt-4o-mini")
     
     # Handle v2 skills format (list of dicts with name, years, level)
     raw_skills = profile.get("skills", []) if profile else []
     skill_names = get_skill_names(raw_skills)
     skills = ", ".join(skill_names) if skill_names else "Not specified"
-    
+
+    # Build the exclusion + variation hints for regeneration
+    extra_constraints = []
+    if req.excluded_questions:
+        # Keep prompt size sane - take the first 30 prior questions
+        excluded_sample = req.excluded_questions[:30]
+        excluded_block = "\n".join(f"- {q.strip()}" for q in excluded_sample if q.strip())
+        extra_constraints.append(
+            "DO NOT repeat any of these questions (paraphrase if a concept is similar, "
+            "but generate FRESH wording with new angles):\n" + excluded_block
+        )
+    if req.variation:
+        variation_hints = {
+            "behavioral": "Lean heavily into BEHAVIORAL and SITUATIONAL questions. Cover conflict, leadership, failure recovery, peer disagreements, prioritization under pressure.",
+            "technical": "Lean heavily into TECHNICAL DEEP-DIVES. Cover system design tradeoffs, debugging methodology, and role-specific tooling questions.",
+            "leadership": "Lean heavily into LEADERSHIP & STRATEGIC questions. Cover team building, stakeholder management, cross-functional alignment, and executive presence.",
+            "edge_cases": "Lean heavily into TOUGH and CURVEBALL questions. Cover salary negotiation, gap explanations, why-leaving-current-job, biggest-weakness, and unexpected ethical dilemmas.",
+        }
+        hint = variation_hints.get(req.variation)
+        if hint:
+            extra_constraints.append(hint)
+
+    constraints_block = ""
+    if extra_constraints:
+        constraints_block = "\n\nADDITIONAL CONSTRAINTS FOR THIS REGENERATION:\n" + "\n\n".join(extra_constraints)
+
     prompt = f"""You are an expert interview coach creating a professional interview preparation document for a FAANG / enterprise role.
 
 POSITION: {req.job_title} at {req.company}
 JOB DESCRIPTION:
 {req.job_description}
-CANDIDATE SKILLS: {skills}
+CANDIDATE SKILLS: {skills}{constraints_block}
 
 FORMATTING RULES (must follow exactly):
 
@@ -589,7 +627,7 @@ FORMATTING RULES (must follow exactly):
    - Question as a level-4 header (####)
    - Suggested approach on one line (NO asterisks, NO italics)
    - Sample answer as a blockquote (>)
-5. Keep sample answers concise: 4–6 sentences max
+5. Keep sample answers concise: 3-4 sentences max
 6. Use clear whitespace between questions
 7. Do NOT use asterisks or italics
 8. Do NOT use emojis or casual language
@@ -633,13 +671,33 @@ ANSWER STYLE:
 
 Generate interview prep for {req.job_title} at {req.company} following this structure exactly."""
     
-    try:
-        response = await chat.send_message(UserMessage(text=prompt))
-        await increment_usage(user.user_id, "interview_prep")
-        return {"prep_materials": response}
-    except Exception as e:
-        logger.error(f"Interview prep error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate interview prep")
+    # Stream the response so the frontend can render tokens as they arrive
+    # (perceived latency ~1s instead of waiting 20-40s for the full doc).
+    from fastapi.responses import StreamingResponse
+
+    async def token_stream():
+        try:
+            async for event in chat.stream_message(UserMessage(text=prompt)):
+                if isinstance(event, TextDelta):
+                    yield event.content
+                elif isinstance(event, StreamDone):
+                    break
+            # After streaming completes successfully, increment monthly
+            # usage (only for the FIRST generation, not regenerations).
+            if not is_regeneration:
+                await increment_usage(user.user_id, "interview_prep")
+        except Exception as e:
+            logger.error(f"Interview prep stream error: {e}")
+            yield f"\n\n[ERROR: {str(e)[:200]}]"
+
+    return StreamingResponse(
+        token_stream(),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 

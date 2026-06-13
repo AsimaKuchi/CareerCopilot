@@ -163,6 +163,12 @@ class InterviewPrepRequest(BaseModel):
     job_title: str
     company: str
     job_description: str
+    # Optional: list of previously-seen question texts so the AI can avoid
+    # repeating them when the user regenerates for more variety.
+    excluded_questions: Optional[List[str]] = None
+    # Optional variation style: "default", "behavioral", "technical", "leadership",
+    # "edge_cases" -- used to bias the regenerated batch towards a theme.
+    variation: Optional[str] = None
 
 
 class JobComparisonRequest(BaseModel):
