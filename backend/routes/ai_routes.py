@@ -705,9 +705,26 @@ Generate interview prep for {req.job_title} at {req.company} following this stru
 # CAREER PATH ANALYSIS
 # ========================
 
+@router.get("/ai/career-paths/cached")
+async def get_cached_career_paths(request: Request):
+    """Return the user's most recent cached career analysis (no credit cost).
+
+    Used by the Career Paths page to decide whether to show the dual-entry
+    'know what you want / not sure where to go' choice screen or skip
+    straight to rendering existing analysis. Returns 404 when nothing exists.
+    """
+    user = await get_current_user(request)
+    cached = await db.career_analyses.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0},
+    )
+    if not cached or not cached.get("analysis"):
+        raise HTTPException(status_code=404, detail="No cached analysis")
+    return cached["analysis"]
+
+
 @router.post("/ai/career-paths")
 async def analyze_career_paths(request: Request):
-    """Analyze user's resume and profile to suggest realistic career paths."""
     user = await get_current_user(request)
 
     # Check usage limits

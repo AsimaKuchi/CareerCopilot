@@ -11,6 +11,7 @@ import JobSearch from "@/pages/JobSearch";
 import Applications from "@/pages/Applications";
 import InterviewPrep from "@/pages/InterviewPrep";
 import CareerPaths from "@/pages/CareerPaths";
+import CareerCoach from "@/pages/CareerCoach";
 import Support from "@/pages/Support";
 import Auth from "@/pages/Auth";
 import Pricing from "@/pages/Pricing";
@@ -191,6 +192,22 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             {({ user }) => <CareerPaths user={user} />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coach"
+        element={
+          <ProtectedRoute>
+            {() => <CareerCoach />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coach/:id"
+        element={
+          <ProtectedRoute>
+            {() => <CareerCoach />}
           </ProtectedRoute>
         }
       />

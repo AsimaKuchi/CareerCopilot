@@ -71,7 +71,21 @@ export default function CareerPaths({ user }) {
   const [jobsPathTitle, setJobsPathTitle] = useState("");
 
   useEffect(() => {
-    fetchAnalysis();
+    // On mount: try to load cached analysis (free). If none exists, the page
+    // renders the dual-entry choice screen instead of auto-generating.
+    (async () => {
+      try {
+        const r = await apiFetch(`${API}/ai/career-paths/cached`);
+        if (r.ok) {
+          setAnalysis(await r.json());
+        }
+        // 404 = no cache yet -> fall through to choice screen
+      } catch {
+        /* network hiccup is fine - user can still pick from the choice screen */
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const fetchAnalysis = async (force = false) => {
@@ -83,13 +97,11 @@ export default function CareerPaths({ user }) {
       if (force) {
         await apiFetch(`${API}/ai/career-paths`, {
           method: "DELETE",
-          credentials: "include",
         });
       }
 
       const res = await apiFetch(`${API}/ai/career-paths`, {
         method: "POST",
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -157,8 +169,85 @@ export default function CareerPaths({ user }) {
         <Navbar user={user} />
         <div className="flex flex-col items-center justify-center py-32 gap-4">
           <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-          <p className="text-muted-foreground text-sm">Analyzing your career potential…</p>
-          <p className="text-xs text-muted-foreground/60">This may take 15-30 seconds</p>
+          <p className="text-muted-foreground text-sm">Loading your career analysis…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No analysis on file yet -> show the dual-entry choice screen
+  if (!analysis && !error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar user={user} />
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <div className="text-center mb-10">
+            <Compass className="w-12 h-12 text-indigo-500 mx-auto mb-4" />
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
+              Where do you want to go next?
+            </h1>
+            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
+              Pick the path that fits where you are right now. You can always switch later.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5">
+            {/* Path A: Knows where they want to go */}
+            <Card
+              data-testid="entry-tailored-btn"
+              className="cursor-pointer hover:border-indigo-400 hover:shadow-lg transition-all border-2"
+              onClick={() => fetchAnalysis(false)}
+            >
+              <CardContent className="pt-7 pb-6 space-y-3 text-center">
+                <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
+                  <Target className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">I know what I want next</h3>
+                <p className="text-sm text-muted-foreground">
+                  Get 3-5 tailored paths from your resume + a 30-day game plan for each. Best if you already have a direction in mind.
+                </p>
+                <Button
+                  className="w-full mt-3 bg-indigo-500 hover:bg-indigo-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fetchAnalysis(false);
+                  }}
+                >
+                  Show my paths <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Path B: Not sure - talk to the coach */}
+            <Card
+              data-testid="entry-coach-btn"
+              className="cursor-pointer hover:border-amber-400 hover:shadow-lg transition-all border-2"
+              onClick={() => navigate("/coach")}
+            >
+              <CardContent className="pt-7 pb-6 space-y-3 text-center">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">I'm not sure where to go</h3>
+                <p className="text-sm text-muted-foreground">
+                  Talk to a direct, no-fluff mentor. They'll ask sharp questions and propose 3 paths based on your answers. Best if you feel stuck or burned out.
+                </p>
+                <Button
+                  className="w-full mt-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/coach");
+                  }}
+                >
+                  Talk to the coach <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center mt-8">
+            Either choice uses 1 of your monthly career analysis credits.
+          </p>
         </div>
       </div>
     );
@@ -208,16 +297,28 @@ export default function CareerPaths({ user }) {
               Based on your resume, skills &amp; {analysis?.experience_years ?? "?"} years of experience
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={regenerating}
-            onClick={() => fetchAnalysis(true)}
-            data-testid="regenerate-btn"
-          >
-            {regenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-            Regenerate
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/coach")}
+              data-testid="open-coach-btn"
+              className="border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Talk to Coach
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={regenerating}
+              onClick={() => fetchAnalysis(true)}
+              data-testid="regenerate-btn"
+            >
+              {regenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+              Regenerate
+            </Button>
+          </div>
         </div>
 
         {/* ---- Current Path Banner ---- */}
