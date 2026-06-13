@@ -220,8 +220,23 @@ export default function LandingPage() {
               {[0, 1].map((set) => (
                 <div key={set} className="flex items-center gap-14 px-8 shrink-0">
                   {logos.map((c, i) => (
-                    <div key={`logo-${set}-${i}`} className="flex items-center justify-center h-8 opacity-70 hover:opacity-100 transition-opacity duration-300 text-slate-500">
-                      <img src={c.logo} alt={c.name} className="h-7 w-24 object-contain" loading="lazy" />
+                    <div key={`logo-${set}-${i}`} className="flex items-center justify-center h-8 opacity-70 hover:opacity-100 transition-opacity duration-300">
+                      <img
+                        src={c.logo}
+                        alt={c.name}
+                        className="h-8 w-auto object-contain max-w-[100px]"
+                        loading="lazy"
+                        onError={(e) => {
+                          // Graceful fallback: if the logo CDN ever fails,
+                          // replace the broken image with a styled wordmark
+                          // so the row never shows a broken-image icon.
+                          const span = document.createElement("span");
+                          span.textContent = c.name;
+                          span.className =
+                            "text-slate-500 font-bold text-sm tracking-wide";
+                          e.currentTarget.replaceWith(span);
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
