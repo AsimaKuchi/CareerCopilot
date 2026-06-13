@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { API } from "@/App";
+import { COMPANY_LOGOS } from "@/data/companyLogos";
 
 const handleGoogleLogin = () => {
   const redirectUrl = window.location.origin + "/dashboard";
@@ -97,20 +98,7 @@ export default function LandingPage() {
     { text: "I love that it tracks my applications automatically. No more spreadsheets! Plus the 'What to do next' feature reminds me to follow up.", name: "Priya Sharma", role: "Data Analyst", loc: "Mississauga, ON" },
   ];
 
-  const logos = [
-    { name: "Google", logo: "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" },
-    { name: "Microsoft", logo: "https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" },
-    { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/200px-Amazon_logo.svg.png" },
-    { name: "Apple", logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-62.1 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z'/%3E%3C/svg%3E" },
-    { name: "Netflix", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/200px-Netflix_2015_logo.svg.png" },
-    { name: "Uber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Uber_logo_2018.svg/200px-Uber_logo_2018.svg.png" },
-    { name: "Airbnb", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Airbnb_Logo_B%C3%A9lo.svg/200px-Airbnb_Logo_B%C3%A9lo.svg.png" },
-    { name: "Shopify", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shopify_logo_2018.svg/200px-Shopify_logo_2018.svg.png" },
-    { name: "Stripe", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/200px-Stripe_Logo%2C_revised_2016.svg.png" },
-    { name: "Slack", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Slack_icon_2019.svg/100px-Slack_icon_2019.svg.png" },
-    { name: "Salesforce", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Salesforce.com_logo.svg/200px-Salesforce.com_logo.svg.png" },
-    { name: "Adobe", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Adobe_Corporate_Logo.svg/150px-Adobe_Corporate_Logo.svg.png" },
-  ];
+  const logos = COMPANY_LOGOS;
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
@@ -232,8 +220,8 @@ export default function LandingPage() {
               {[0, 1].map((set) => (
                 <div key={set} className="flex items-center gap-14 px-8 shrink-0">
                   {logos.map((c, i) => (
-                    <div key={`logo-${set}-${i}`} className="flex items-center justify-center h-8 opacity-70 hover:opacity-100 transition-opacity duration-300">
-                      <img src={c.logo} alt={c.name} className="h-6 w-auto object-contain" loading="lazy" />
+                    <div key={`logo-${set}-${i}`} className="flex items-center justify-center h-8 opacity-70 hover:opacity-100 transition-opacity duration-300 text-slate-500">
+                      <img src={c.logo} alt={c.name} className="h-7 w-24 object-contain" loading="lazy" />
                     </div>
                   ))}
                 </div>
