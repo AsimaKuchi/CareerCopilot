@@ -248,12 +248,40 @@ scheduler = AsyncIOScheduler()
 
 async def scheduled_job_ingestion():
     """Background task to refresh jobs every 2 hours."""
+    from datetime import datetime, timezone
     logger.info("Starting scheduled job ingestion...")
     try:
         result = await ingest_all_jobs()
+        await db.scheduler_meta.update_one(
+            {"_id": "ingestion_state"},
+            {"$set": {
+                "last_ingest_at": datetime.now(timezone.utc),
+                "last_ingest_count": result.get("jobs_ingested", 0),
+            }},
+            upsert=True,
+        )
         logger.info(f"Scheduled ingestion complete: {result.get('jobs_ingested', 0)} jobs")
     except Exception as e:
         logger.error(f"Scheduled ingestion failed: {e}")
+
+
+async def scheduled_cleanup():
+    """Background task to remove expired job listings (wraps cleanup_expired_jobs
+    so we can record the last-cleanup timestamp for admin observability)."""
+    from datetime import datetime, timezone
+    try:
+        deleted = await cleanup_expired_jobs()
+        await db.scheduler_meta.update_one(
+            {"_id": "ingestion_state"},
+            {"$set": {
+                "last_cleanup_at": datetime.now(timezone.utc),
+                "last_cleanup_deleted": deleted,
+            }},
+            upsert=True,
+        )
+        logger.info(f"Scheduled cleanup complete: removed {deleted} expired jobs")
+    except Exception as e:
+        logger.error(f"Scheduled cleanup failed: {e}")
 
 
 async def ensure_playwright_browsers():
@@ -292,7 +320,14 @@ async def ensure_playwright_browsers():
 
 @app.on_event("startup")
 async def start_scheduler():
-    """Start the job scheduler on app startup."""
+    """Start the job scheduler on app startup.
+
+    Hardening (Feb 2026): APScheduler timers are reset on every container
+    restart. To protect against scenarios where the container restarts
+    faster than the 2-hour ingestion interval (leaving the cache to grow
+    stale indefinitely), we also do an opportunistic cleanup + ingestion
+    on every startup if those operations haven't run recently.
+    """
     await ensure_playwright_browsers()
 
     scheduler.add_job(
@@ -304,7 +339,7 @@ async def start_scheduler():
     )
 
     scheduler.add_job(
-        cleanup_expired_jobs,
+        scheduled_cleanup,
         trigger=IntervalTrigger(hours=24),
         id="job_cleanup",
         name="Remove expired job listings",
@@ -314,11 +349,56 @@ async def start_scheduler():
     scheduler.start()
     logger.info("Job scheduler started - ingestion every 2h, cleanup every 24h")
 
-    # Run initial ingestion if database is empty
+    # ---- Opportunistic catch-up: run cleanup + ingestion if we missed a window ----
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    meta = await db.scheduler_meta.find_one({"_id": "ingestion_state"}) or {}
+
+    def _tz_aware(ts):
+        """Mongo returns naive UTC datetimes; promote to tz-aware for math."""
+        if ts is None:
+            return None
+        return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+
+    last_cleanup = _tz_aware(meta.get("last_cleanup_at"))
+    last_ingest = _tz_aware(meta.get("last_ingest_at"))
+
+    # Cleanup catch-up: if last cleanup > 25h ago, run now
+    if not last_cleanup or (now - last_cleanup) > timedelta(hours=25):
+        logger.info("Catch-up: running cleanup_expired_jobs on startup")
+        try:
+            deleted = await cleanup_expired_jobs()
+            await db.scheduler_meta.update_one(
+                {"_id": "ingestion_state"},
+                {"$set": {"last_cleanup_at": now, "last_cleanup_deleted": deleted}},
+                upsert=True,
+            )
+        except Exception as e:
+            logger.error(f"Startup cleanup catch-up failed: {e}")
+
+    # Ingestion catch-up: if last ingest > 2h ago OR DB empty, run async
     job_count = await db.stored_jobs.count_documents({})
-    if job_count == 0:
-        logger.info("Database empty - running initial job ingestion...")
-        asyncio.create_task(ingest_all_jobs())
+    if job_count == 0 or not last_ingest or (now - last_ingest) > timedelta(hours=2):
+        logger.info(f"Catch-up: scheduling background ingestion (job_count={job_count})")
+        asyncio.create_task(_run_ingestion_with_tracking())
+
+
+async def _run_ingestion_with_tracking():
+    """Background ingestion that also updates scheduler_meta on success."""
+    from datetime import datetime, timezone
+    try:
+        result = await ingest_all_jobs()
+        await db.scheduler_meta.update_one(
+            {"_id": "ingestion_state"},
+            {"$set": {
+                "last_ingest_at": datetime.now(timezone.utc),
+                "last_ingest_count": result.get("jobs_ingested", 0),
+            }},
+            upsert=True,
+        )
+        logger.info(f"Catch-up ingestion done: {result.get('jobs_ingested', 0)} jobs")
+    except Exception as e:
+        logger.error(f"Catch-up ingestion failed: {e}")
 
 
 @app.on_event("shutdown")

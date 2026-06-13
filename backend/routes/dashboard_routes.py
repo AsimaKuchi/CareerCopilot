@@ -148,6 +148,48 @@ async def get_ats_stats(request: Request):
         "total_companies": len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES) + len(SMARTRECRUITERS_COMPANIES) + len(PINPOINT_COMPANIES) + len(CUSTOM_CAREER_COMPANIES)
     }
 
+
+@router.get("/admin/scheduler-health")
+async def get_scheduler_health(request: Request):
+    """Admin: monitor background-ingestion + cleanup freshness.
+
+    Returns the timestamp of the last successful ingestion and cleanup,
+    plus age-in-minutes so admins can detect a dead scheduler.
+    """
+    await get_admin_user(request)
+    now = datetime.now(timezone.utc)
+
+    meta = await db.scheduler_meta.find_one({"_id": "ingestion_state"}, {"_id": 0}) or {}
+
+    def age_min(ts):
+        if not isinstance(ts, datetime):
+            return None
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        return round((now - ts).total_seconds() / 60.0, 1)
+
+    last_ingest_at = meta.get("last_ingest_at")
+    last_cleanup_at = meta.get("last_cleanup_at")
+
+    stored_total = await db.stored_jobs.count_documents({})
+    last_24h = await db.stored_jobs.count_documents(
+        {"ingested_at": {"$gte": now - timedelta(hours=24)}}
+    )
+
+    return {
+        "last_ingest_at": last_ingest_at.isoformat() if last_ingest_at else None,
+        "last_ingest_age_minutes": age_min(last_ingest_at),
+        "last_ingest_count": meta.get("last_ingest_count"),
+        "last_cleanup_at": last_cleanup_at.isoformat() if last_cleanup_at else None,
+        "last_cleanup_age_minutes": age_min(last_cleanup_at),
+        "last_cleanup_deleted": meta.get("last_cleanup_deleted"),
+        "stored_jobs_total": stored_total,
+        "stored_jobs_ingested_last_24h": last_24h,
+        "healthy": (
+            age_min(last_ingest_at) is not None and age_min(last_ingest_at) < 180
+        ),
+    }
+
 # ========================
 # HEALTH CHECK
 # ========================
