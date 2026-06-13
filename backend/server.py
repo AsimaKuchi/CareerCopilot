@@ -63,6 +63,7 @@ from routes.extension_routes import router as extension_router
 from routes.dashboard_routes import router as dashboard_router
 from routes.misc_routes import router as misc_router
 from routes.public_routes import router as public_router
+from routes.coach_routes import router as coach_router
 
 # Helpers used by the scheduler
 from routes.public_routes import ingest_all_jobs
@@ -107,6 +108,7 @@ api_router.include_router(application_router)
 api_router.include_router(extension_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(misc_router)
+api_router.include_router(coach_router)
 app.include_router(api_router)
 
 # Public Jobs API: router has its own ``/public`` prefix; final paths
