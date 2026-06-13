@@ -596,6 +596,35 @@ STAR method examples, company research tips, and confidence-building advice."""
             "DO NOT repeat any of these questions (paraphrase if a concept is similar, "
             "but generate FRESH wording with new angles):\n" + excluded_block
         )
+
+    # Pull the user's MOST RECENT coaching session so the interview-prep
+    # AI knows what the user is worried about, what energizes them, and
+    # any imposter-syndrome or salary-fear cues from the conversation.
+    # This makes the generated questions feel like a continuation of the
+    # coaching conversation instead of a generic template.
+    coach_session = await db.coach_sessions.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0, "messages": 1},
+        sort=[("updated_at", -1)],
+    )
+    if coach_session and coach_session.get("messages"):
+        # Use only the user's own answers (assistant questions are noise here)
+        user_turns = [m["content"] for m in coach_session["messages"] if m.get("role") == "user"]
+        if user_turns:
+            # Trim to the most recent 8 user messages (~2000 chars) so the
+            # context doesn't dominate the prompt.
+            joined = "\n- ".join(user_turns[-8:])
+            if len(joined) > 2200:
+                joined = joined[:2200] + "..."
+            extra_constraints.append(
+                "COACHING CONTEXT - the candidate recently shared the following in a "
+                "career-coaching conversation. Use this to tailor the interview prep:\n- "
+                + joined
+                + "\n\nGuidance: if the candidate expressed fear/uncertainty about a "
+                "specific topic, include 1-2 questions that test that area honestly so "
+                "they can practice. If they expressed confidence in a strength, include "
+                "1 behavioral question that lets them showcase it."
+            )
     if req.variation:
         variation_hints = {
             "behavioral": "Lean heavily into BEHAVIORAL and SITUATIONAL questions. Cover conflict, leadership, failure recovery, peer disagreements, prioritization under pressure.",

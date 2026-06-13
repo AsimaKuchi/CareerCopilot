@@ -89,31 +89,83 @@ class CoachMessageRequest(BaseModel):
 # HELPERS
 # ============================================================
 async def _profile_context_block(user_id: str) -> str:
-    """Build a compact 'what we know about the user' block for the system prompt."""
+    """Build a 'what we know about the user' block for the system prompt.
+
+    The coach gets the user's FULL profile + a chunk of their resume so it
+    can refer to specific experience, skip questions the user already
+    answered in onboarding, and ground its advice in their actual situation.
+    """
     profile = await db.user_profiles.find_one({"user_id": user_id}, {"_id": 0})
     if not profile:
         return "No profile on file yet - ask discovery questions to fill in gaps."
 
     profile = decrypt_sensitive_data(profile)
-    skills = get_skill_names(profile.get("skills", []))[:15]
-    titles = profile.get("job_titles", [])[:3]
+    skills = get_skill_names(profile.get("skills", []))
+    titles = profile.get("job_titles", [])
+    locations = profile.get("preferred_locations", [])
+    job_types = profile.get("job_type", [])
+    industries = profile.get("industries", [])
 
     bits = []
     if titles:
-        bits.append(f"Recent titles: {', '.join(titles)}")
+        bits.append(f"Recent titles: {', '.join(titles[:5])}")
+    if profile.get("current_company"):
+        bits.append(f"Current company: {profile['current_company']}")
     if profile.get("experience_years"):
-        bits.append(f"Years of experience: {profile['experience_years']}")
-    if skills:
-        bits.append(f"Top skills: {', '.join(skills)}")
+        bits.append(f"Total years of experience: {profile['experience_years']}")
+    if profile.get("seniority_level"):
+        bits.append(f"Seniority: {profile['seniority_level']}")
     if profile.get("highest_education"):
-        bits.append(f"Education: {profile['highest_education']}")
+        bits.append(f"Highest education: {profile['highest_education']}")
+    if skills:
+        bits.append(f"Skills ({len(skills)}): {', '.join(skills[:30])}")
+    if industries:
+        bits.append(f"Industries: {', '.join(industries[:5])}")
+    if locations:
+        bits.append(f"Preferred locations: {', '.join(locations[:5])}")
     if profile.get("address_city") or profile.get("address_country"):
-        loc = profile.get("address_city") or profile.get("address_country")
-        bits.append(f"Location: {loc}")
+        loc_parts = [profile.get("address_city"), profile.get("address_state"), profile.get("address_country")]
+        bits.append(f"Lives in: {', '.join([p for p in loc_parts if p])}")
+    if job_types:
+        bits.append(f"Open to: {', '.join(job_types)}")
+    if profile.get("salary_min") or profile.get("salary_max"):
+        sal_lo, sal_hi = profile.get("salary_min"), profile.get("salary_max")
+        bits.append(
+            f"Target salary: "
+            + (f"${sal_lo:,}-${sal_hi:,}" if sal_lo and sal_hi else f"${sal_lo or sal_hi:,}+")
+        )
+    if profile.get("work_authorization"):
+        bits.append(f"Work authorization: {profile['work_authorization']}")
+    if profile.get("willing_to_relocate"):
+        bits.append(f"Willing to relocate: {profile['willing_to_relocate']}")
+    if profile.get("notice_period"):
+        bits.append(f"Notice period: {profile['notice_period']}")
+    if profile.get("application_intensity"):
+        bits.append(f"Job-search intensity: {profile['application_intensity']}")
 
-    if not bits:
-        return "Profile exists but is mostly empty - ask discovery questions."
-    return "WHAT WE ALREADY KNOW (don't ask about these unless going deeper):\n- " + "\n- ".join(bits)
+    profile_block = (
+        "WHAT WE ALREADY KNOW (do NOT ask about these unless going deeper or "
+        "you have a specific reason to verify):\n- " + "\n- ".join(bits)
+        if bits else
+        "Profile exists but is mostly empty - feel free to ask the basics."
+    )
+
+    # Include a chunk of the actual resume so the coach can reference real
+    # accomplishments and specific phrasing from the user's experience.
+    resume_block = ""
+    resume_text = profile.get("resume_text") or ""
+    if resume_text:
+        # Use up to ~3500 chars (~1200 tokens) of resume. Truncate to first
+        # half + last 1500 chars so we keep both the summary at the top and
+        # the most recent role at the bottom even on long resumes.
+        if len(resume_text) > 3500:
+            resume_text = resume_text[:2000].strip() + "\n\n[...resume trimmed...]\n\n" + resume_text[-1500:].strip()
+        resume_block = (
+            "\n\nRESUME CONTENT (use to cite specific experience, projects, "
+            "or accomplishments when relevant):\n---\n" + resume_text + "\n---"
+        )
+
+    return profile_block + resume_block
 
 
 def _llm_chat(session_id: str, system: str):
@@ -154,13 +206,38 @@ async def create_coach_session(request: Request):
     profile_context = await _profile_context_block(user.user_id)
     system_prompt = COACH_SYSTEM_PROMPT + "\n\n" + profile_context
 
-    # Opening message - hard-coded so it's instant (no LLM round trip).
-    opening = (
-        "I'm not here to validate your feelings - I'm here to help you get unstuck. "
-        "We have maybe 6-8 messages before I have enough signal to propose 3 real paths. "
-        "Start with this: in one or two sentences, what's actually broken about your current situation? "
-        "Not what's missing - what's broken."
-    )
+    # Opening message - tailored to whether we have profile data or not.
+    profile_doc = await db.user_profiles.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0, "job_titles": 1, "experience_years": 1, "resume_text": 1},
+    ) or {}
+    titles = profile_doc.get("job_titles") or []
+    years = profile_doc.get("experience_years")
+    has_resume = bool(profile_doc.get("resume_text"))
+
+    if titles and years:
+        title_str = titles[0]
+        opening = (
+            f"I've already pulled your profile and resume - {title_str} with {years} years of "
+            f"experience. I won't waste time on basics I can read for myself. "
+            "We have maybe 6-8 messages before I have enough signal to propose 3 real paths. "
+            "Start with this: in one or two sentences, what's actually broken about your current situation? "
+            "Not what's missing - what's broken."
+        )
+    elif has_resume:
+        opening = (
+            "I've read your resume so I'll skip the small talk. "
+            "We have maybe 6-8 messages before I have enough signal to propose 3 real paths. "
+            "Start with this: in one or two sentences, what's actually broken about your current situation? "
+            "Not what's missing - what's broken."
+        )
+    else:
+        opening = (
+            "Heads up - your profile is mostly empty, so I'll need to ask a few basics along the way. "
+            "We have maybe 6-8 messages before I have enough signal to propose 3 real paths. "
+            "Start with this: in one or two sentences, what's actually broken about your current situation? "
+            "Not what's missing - what's broken."
+        )
 
     session_doc = {
         "session_id": session_id,
