@@ -43,6 +43,12 @@ Build a browser extension that auto-fills job application forms using a central 
   - `server_old.py` retained as rollback backup
   - Validated by testing agent: 26/27 endpoint tests pass (96%)
 - **CSRF Hardening**: Closed CSRF bypass — middleware now requires X-CSRF-Token header on all authenticated state-changing requests (COMPLETE - Feb 9, 2026)
+- **Job-search performance**: 58× speedup via cache-first hybrid (29s -> 0.5s); auto-refresh when cache > 15 min stale (COMPLETE - Feb 9, 2026)
+- **Scheduler hardening**: Startup catch-up + `scheduler_meta` tracking; admin health endpoint at `/api/admin/scheduler-health` (COMPLETE - Feb 9, 2026)
+- **Canonical job-URL matching**: Browser extension now matches optimized resume across variant ATS URLs (Greenhouse gh_jid, Lever uuid, LinkedIn id, etc.); 54 existing apps backfilled (COMPLETE - Feb 9, 2026)
+- **Interview Prep**: Streaming responses (40ms to first content), gpt-5.2 -> gpt-4o-mini, regeneration with `excluded_questions` + 4 theme variations, parser fix that supports statement-style questions (COMPLETE - Feb 9, 2026)
+- **Interview Prep autocomplete**: Generic dropdown of ~130 job titles + ~200 popular companies on both inputs (COMPLETE - Feb 9, 2026)
+- **Personal Career Coach (Brutal Mentor)**: Multi-turn AI coach with discovery flow for users who don't know where to go next. Dual-entry on `/career-paths`: 'I know what I want' vs 'I'm not sure where to go'. After ~6-8 messages, synthesizes the conversation into 3 personalized paths that render in the existing analysis view (COMPLETE - Feb 9, 2026)
 
 
 ## Tech Stack
