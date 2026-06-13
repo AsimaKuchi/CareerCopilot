@@ -438,6 +438,75 @@ async def cleanup_expired_jobs(days_old: int = 30):
 # PARALLEL BATCH FETCHING & CACHING
 # ========================
 
+# How long to trust the stored_jobs cache before triggering a live refresh
+# during an interactive search. The background scheduler still refreshes
+# every 2 hours regardless; this just controls whether a user search
+# *additionally* triggers a fresh live fetch.
+SEARCH_CACHE_FRESHNESS_MINUTES = 15
+
+
+async def _get_last_ingestion_time() -> Optional[datetime]:
+    """Return the timestamp of the most-recently-ingested job in stored_jobs."""
+    doc = await db.stored_jobs.find_one(
+        {},
+        {"_id": 0, "ingested_at": 1},
+        sort=[("ingested_at", -1)],
+    )
+    if not doc:
+        return None
+    ts = doc.get("ingested_at")
+    if isinstance(ts, datetime):
+        return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+    return None
+
+
+async def get_cached_raw_jobs() -> List[Dict]:
+    """Read the full pool of cached jobs from ``stored_jobs`` ordered by
+    posting date (newest first). Each document already has the same shape
+    that ``fetch_all_jobs_parallel`` produces, so callers can treat them
+    interchangeably."""
+    jobs = []
+    cursor = db.stored_jobs.find({}, {"_id": 0}).sort("posted_at_dt", -1)
+    async for j in cursor:
+        # posted_at_dt is a datetime; make sure posted_at remains an ISO string
+        if isinstance(j.get("posted_at_dt"), datetime) and not j.get("posted_at"):
+            j["posted_at"] = j["posted_at_dt"].isoformat()
+        # Strip non-JSON-serializable bookkeeping fields used only by Mongo;
+        # the streaming search will compute its own _sort_dt from posted_at.
+        for k in ("posted_at_dt", "ingested_at", "last_updated"):
+            j.pop(k, None)
+        jobs.append(j)
+    return jobs
+
+
+async def upsert_jobs_to_cache(jobs: List[Dict]) -> int:
+    """Upsert a batch of freshly-fetched jobs into ``stored_jobs``. Returns
+    number of jobs touched. Safe to call with the raw output of
+    ``fetch_all_jobs_parallel``."""
+    if not jobs:
+        return 0
+    now = datetime.now(timezone.utc)
+    from pymongo import UpdateOne
+    ops = []
+    for j in jobs:
+        if not j.get("job_id"):
+            continue
+        doc = dict(j)
+        doc["ingested_at"] = now
+        doc["last_updated"] = now
+        doc["is_remote"] = "remote" in (doc.get("location") or "").lower()
+        doc["posted_at_dt"] = normalize_posted_date(doc.get("posted_at"))
+        ops.append(UpdateOne({"job_id": doc["job_id"]}, {"$set": doc}, upsert=True))
+    if not ops:
+        return 0
+    try:
+        result = await db.stored_jobs.bulk_write(ops, ordered=False)
+        return (result.upserted_count or 0) + (result.modified_count or 0)
+    except Exception as e:
+        logger.error(f"upsert_jobs_to_cache failed: {e}")
+        return 0
+
+
 async def fetch_all_jobs_parallel() -> List[Dict]:
     """Fetch jobs from all platforms in parallel batches for speed."""
     all_jobs = []
@@ -692,12 +761,44 @@ async def search_greenhouse(request: Request):
         skipped_applied = 0
         skipped_non_english = 0
         
-        # PARALLEL FETCH: Get all jobs at once (much faster than sequential)
+        # CACHE-FIRST: try stored_jobs (instant), fall back to live fetch when
+        # the cache is empty or older than SEARCH_CACHE_FRESHNESS_MINUTES.
         total_companies = len(GREENHOUSE_COMPANIES) + len(LEVER_COMPANIES)
-        yield f"data: {json.dumps({'progress': True, 'message': f'Scanning {total_companies} companies...', 'checked': 0, 'found': 0})}\n\n"
-        
-        # Fetch all jobs in parallel batches
-        all_raw_jobs = await fetch_all_jobs_parallel()
+        last_ingest = await _get_last_ingestion_time()
+        cache_age_min = None
+        if last_ingest:
+            cache_age_min = (datetime.now(timezone.utc) - last_ingest).total_seconds() / 60.0
+
+        yield f"data: {json.dumps({'progress': True, 'message': 'Loading cached jobs...', 'checked': 0, 'found': 0})}\n\n"
+        cached_jobs = await get_cached_raw_jobs()
+        cached_ids = {j.get('job_id') for j in cached_jobs if j.get('job_id')}
+
+        # Decide whether to refresh live
+        needs_refresh = (
+            not cached_jobs
+            or cache_age_min is None
+            or cache_age_min > SEARCH_CACHE_FRESHNESS_MINUTES
+        )
+
+        new_live_jobs: List[Dict] = []
+        if needs_refresh:
+            age_str = f"{cache_age_min:.0f} min" if cache_age_min is not None else "empty"
+            logger.info(f"Cache stale ({age_str}); running live fetch in addition to cache")
+            yield f"data: {json.dumps({'progress': True, 'message': f'Cache age {age_str}, refreshing from {total_companies} companies in background...', 'checked': 0, 'found': len(cached_jobs)})}\n\n"
+            try:
+                live_raw = await fetch_all_jobs_parallel()
+            except Exception as e:
+                logger.error(f"Live fetch failed during search; serving cache only: {e}")
+                live_raw = []
+            # Persist everything live returned, then surface only the truly-new ones
+            if live_raw:
+                upserted = await upsert_jobs_to_cache(live_raw)
+                logger.info(f"Refreshed {upserted} jobs into stored_jobs from live fetch")
+            new_live_jobs = [j for j in live_raw if j.get("job_id") and j.get("job_id") not in cached_ids]
+        else:
+            logger.info(f"Cache fresh ({cache_age_min:.1f}m old), skipping live fetch")
+
+        all_raw_jobs = cached_jobs + new_live_jobs
         
         yield f"data: {json.dumps({'progress': True, 'message': f'Found {len(all_raw_jobs)} total jobs, filtering...', 'checked': total_companies, 'found': len(all_raw_jobs)})}\n\n"
         
