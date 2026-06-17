@@ -25,6 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -69,6 +75,7 @@ import {
   GraduationCap,
   Lightbulb,
   Download,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -105,6 +112,8 @@ export default function JobSearch({ user }) {
   const [interviewPrepJob, setInterviewPrepJob] = useState(null);
   const [interviewPrepLoading, setInterviewPrepLoading] = useState(false);
   const [interviewPrepMaterials, setInterviewPrepMaterials] = useState("");
+  const [interviewPrepRegenerating, setInterviewPrepRegenerating] = useState(false);
+  const [interviewSeenQuestions, setInterviewSeenQuestions] = useState([]);
 
   // Update URL params when filters change
   const updateUrlParams = (q, loc, type, company) => {
@@ -540,51 +549,96 @@ export default function JobSearch({ user }) {
   };
 
   // Interview Prep Handler
+  // Extracts question lines from the streamed markdown (#### headers + ?-terminated lines).
+  // Used so subsequent regenerations can ask the AI for *different* questions.
+  const extractPrepQuestions = (markdown) => {
+    if (!markdown) return [];
+    const out = [];
+    for (const raw of markdown.split("\n")) {
+      const line = raw.trim();
+      if (line.startsWith("####")) {
+        const q = line.replace(/^#+\s*/, "").trim();
+        if (q) out.push(q);
+      } else if (line.endsWith("?") && line.length > 15 && line.length < 250) {
+        out.push(line);
+      }
+    }
+    return out;
+  };
+
+  const callPrepEndpointForJob = async (job, { excluded = [], variation = null } = {}) => {
+    const response = await apiFetch(`${API}/ai/interview-prep`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        job_title: job.job_title || job.title,
+        company: job.employer_name || job.company,
+        job_description: job.full_description || job.description || `${job.job_title} position at ${job.employer_name}`,
+        excluded_questions: excluded,
+        variation: variation,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      const detail = error.detail;
+      throw new Error(typeof detail === "object" ? detail?.message : detail || "Failed to generate prep materials");
+    }
+    const reader = response.body?.getReader();
+    if (!reader) {
+      const text = await response.text();
+      setInterviewPrepMaterials(text);
+      return text;
+    }
+    const decoder = new TextDecoder();
+    let full = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      full += decoder.decode(value, { stream: true });
+      setInterviewPrepMaterials(full);
+    }
+    return full;
+  };
+
   const handleInterviewPrep = async (job) => {
     setInterviewPrepJob(job);
     setInterviewPrepMaterials("");
+    setInterviewSeenQuestions([]); // reset per-job
     setShowInterviewPrep(true);
     setInterviewPrepLoading(true);
 
     try {
-      const response = await apiFetch(`${API}/ai/interview-prep`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          job_title: job.job_title || job.title,
-          company: job.employer_name || job.company,
-          job_description: job.full_description || job.description || `${job.job_title} position at ${job.employer_name}`,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        const detail = error.detail;
-        throw new Error(typeof detail === 'object' ? detail?.message : detail || "Failed to generate prep materials");
-      }
-
-      // Backend streams text/plain - read incrementally so user sees content
-      // as it arrives instead of waiting for the whole doc.
-      const reader = response.body?.getReader();
-      if (!reader) {
-        const text = await response.text();
-        setInterviewPrepMaterials(text);
-      } else {
-        const decoder = new TextDecoder();
-        let full = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          full += decoder.decode(value, { stream: true });
-          setInterviewPrepMaterials(full);
-        }
-      }
+      const full = await callPrepEndpointForJob(job);
+      setInterviewSeenQuestions(extractPrepQuestions(full));
       toast.success("Interview prep materials ready!");
     } catch (error) {
       toast.error(error.message || "Failed to generate prep materials");
       setInterviewPrepMaterials("");
     } finally {
       setInterviewPrepLoading(false);
+    }
+  };
+
+  const regenerateInterviewPrep = async (variation = null) => {
+    if (!interviewPrepJob) return;
+    setInterviewPrepRegenerating(true);
+    setInterviewPrepMaterials("");
+    try {
+      const full = await callPrepEndpointForJob(interviewPrepJob, {
+        excluded: interviewSeenQuestions,
+        variation,
+      });
+      const newQs = extractPrepQuestions(full);
+      setInterviewSeenQuestions((prev) => [...prev, ...newQs]);
+      toast.success(
+        variation
+          ? `New ${variation.replace("_", " ")} questions generated!`
+          : "Fresh batch of questions generated!"
+      );
+    } catch (error) {
+      toast.error(error.message || "Failed to regenerate");
+    } finally {
+      setInterviewPrepRegenerating(false);
     }
   };
 
@@ -1567,22 +1621,94 @@ export default function JobSearch({ user }) {
         onOpenChange={setShowAnalyzeDialog}
       />
 
-      {/* Interview Prep Dialog */}
+      {/* Interview Prep Dialog - mirrors /interview-prep page layout */}
       <Dialog open={showInterviewPrep} onOpenChange={setShowInterviewPrep}>
         <DialogContent className="max-w-4xl h-[85vh] overflow-hidden flex flex-col bg-gray-50 p-0">
           <DialogHeader className="bg-white px-6 py-4 border-b flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-indigo-600">
-              <GraduationCap className="w-5 h-5" />
-              Interview Preparation
-            </DialogTitle>
-            <DialogDescription>
-              {interviewPrepJob && (
-                <span className="text-gray-600">
-                  Tailored prep for <strong className="text-gray-900">{interviewPrepJob.job_title || interviewPrepJob.title}</strong> at{" "}
-                  <strong className="text-gray-900">{interviewPrepJob.employer_name || interviewPrepJob.company}</strong>
-                </span>
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="flex items-center gap-2 text-indigo-600">
+                  <GraduationCap className="w-5 h-5" />
+                  Interview Preparation Guide
+                </DialogTitle>
+                <DialogDescription>
+                  {interviewPrepJob && (
+                    <span className="text-gray-600">
+                      Tailored prep for <strong className="text-gray-900">{interviewPrepJob.job_title || interviewPrepJob.title}</strong> at{" "}
+                      <strong className="text-gray-900">{interviewPrepJob.employer_name || interviewPrepJob.company}</strong>
+                    </span>
+                  )}
+                </DialogDescription>
+                {interviewSeenQuestions.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    You&apos;ve reviewed {interviewSeenQuestions.length} unique question
+                    {interviewSeenQuestions.length === 1 ? "" : "s"} so far
+                  </p>
+                )}
+              </div>
+
+              {/* Right-aligned regenerate controls - only show after first generation */}
+              {interviewPrepMaterials && (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    data-testid="dialog-regenerate-prep-btn"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => regenerateInterviewPrep(null)}
+                    disabled={interviewPrepRegenerating || interviewPrepLoading}
+                    className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                    title="Get a fresh batch of different questions"
+                  >
+                    {interviewPrepRegenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-1.5" />
+                    )}
+                    New Questions
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        data-testid="dialog-variation-dropdown-btn"
+                        size="sm"
+                        variant="outline"
+                        disabled={interviewPrepRegenerating || interviewPrepLoading}
+                        className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                      >
+                        By Theme
+                        <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem
+                        data-testid="dialog-variation-behavioral"
+                        onClick={() => regenerateInterviewPrep("behavioral")}
+                      >
+                        Behavioral & Situational
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        data-testid="dialog-variation-technical"
+                        onClick={() => regenerateInterviewPrep("technical")}
+                      >
+                        Deep Technical
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        data-testid="dialog-variation-leadership"
+                        onClick={() => regenerateInterviewPrep("leadership")}
+                      >
+                        Leadership & Strategy
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        data-testid="dialog-variation-edge-cases"
+                        onClick={() => regenerateInterviewPrep("edge_cases")}
+                      >
+                        Tough / Curveball
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           {interviewPrepLoading ? (
@@ -1592,10 +1718,12 @@ export default function JobSearch({ user }) {
               <p className="text-sm text-gray-400 mt-2">This may take 15-30 seconds</p>
             </div>
           ) : interviewPrepMaterials ? (
-            <div className="flex-1 overflow-y-auto bg-white">
-              <div className="p-6">
-                <InterviewPrepRenderer markdown={interviewPrepMaterials} />
-              </div>
+            <div className="flex-1 overflow-hidden bg-white">
+              <ScrollArea className="h-full">
+                <div className="p-6">
+                  <InterviewPrepRenderer markdown={interviewPrepMaterials} />
+                </div>
+              </ScrollArea>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center flex-1 text-gray-500 bg-white">
@@ -1615,21 +1743,10 @@ export default function JobSearch({ user }) {
               }}
               disabled={!interviewPrepMaterials}
               className="border-gray-300 text-gray-700 hover:bg-gray-100"
+              data-testid="dialog-copy-prep-btn"
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy All
-            </Button>
-            <Button
-              onClick={() => handleInterviewPrep(interviewPrepJob)}
-              disabled={interviewPrepLoading}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white"
-            >
-              {interviewPrepLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Wand2 className="w-4 h-4 mr-2" />
-              )}
-              Regenerate
             </Button>
           </div>
         </DialogContent>
