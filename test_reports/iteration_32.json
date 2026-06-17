@@ -1,0 +1,37 @@
+{
+  "summary": "Pre-launch frontend smoke test on MyCareerCopilot. Logged in as refactor_test@example.com via /auth and verified all major pages render without crashes. Landing, Dashboard, Profile, Applications, Saved Jobs, Job Search, Career Paths (with Guidance Triplet), Career Coach, Interview Prep, Billing, and Pricing all load successfully (HTTP 200, no React/console errors). Career Paths guidance triplet works: all three data-testids (guidance-section-skills-0, guidance-section-plan-0, guidance-section-ask-0) are present, clickable, and reveal Skill Gap Checklist, 30-Day Game Plan and cached 'Ask the Coach' Q/A content. Logout via avatar menu works and protected routes correctly redirect to landing after sign-out. Navigation (Dashboard/Find Jobs/Applications/Interview Prep/Career Paths/Profile/Support/Home + avatar menu) all functional.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Applications -> NextStepsCard",
+        "issue": "Could NOT verify the 'What to Do Next' / NextStepsCard inline panel because the test user (refactor_test@example.com) has ZERO applications. /api/applications returned {\"applications\":[]} so the UI correctly shows the 'No Applications Yet' empty state. The review request stated ~5+ applications expected for this user; this is a SEED DATA mismatch, not a frontend bug. Main agent must either (a) re-seed applications for refactor_test or (b) provide a different test user that already has Applied status records before NextStepsCard can be validated.",
+        "affected_selectors": ["[data-testid*='application']", "text=Applied"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Re-seed ~5 applications (including at least one 'Applied' status) for refactor_test@example.com so the NextStepsCard inline expansion on /applications can be smoke-tested before share.",
+    "Optional: suppress the harmless 401 console error from the initial /api/auth/me probe on the public landing page (it fires before login and after logout). Not a bug, just visible noise."
+  ],
+  "critical_code_review_comments": [
+    "All page-level routes in App.js are wrapped in ProtectedRoute and correctly redirect to '/' when unauthenticated - verified by post-logout navigation to /dashboard.",
+    "Pre-launch Stripe bypass is working: Billing page loads without paywalls/upgrade modals for the regular user.",
+    "Career Paths Guidance Triplet (PathGuidance.jsx) renders cached AI content correctly with proper expand/collapse and stable data-testids.",
+    "Coach route automatically redirects /coach -> /coach/{conversation_id} which is intended behavior."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100% (12/12 pages render; logout/protected-route gating works)"},
+  "test_credentials": "User: refactor_test@example.com / TestPass123! (login route is /auth, NOT /login)",
+  "seed_data_creation": "None created. Note: refactor_test has saved_jobs populated but applications array is empty - mismatch with review request expectation of 5+ applications.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Frontend smoke test passed. Only outstanding item is verifying the NextStepsCard inline panel on /applications, which requires seeding at least one 'Applied' status application for refactor_test@example.com (or using a different user with apps). Login flow: go to /auth, fill email+password, click button with exact name 'Sign In' (NOT 'Continue with Google'). Career Paths triplet testids: guidance-section-{skills|plan|ask}-{idx}. Avatar dropdown shows 'Refactor' (top right) and contains 'Log out' menu item.",
+  "rca of the issue": "Applications NextStepsCard could not be verified due to data, not code. Backend /api/applications returns empty list for refactor_test@example.com. Reproduction: login -> GET /api/applications -> {\"applications\": []}. Mitigation: seed applications via /api/applications POST or a one-off script for refactor_test before next smoke run."
+}
