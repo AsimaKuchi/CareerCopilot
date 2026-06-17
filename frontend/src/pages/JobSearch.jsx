@@ -1212,7 +1212,7 @@ export default function JobSearch({ user }) {
                           disabled={isNotRecommended}
                         >
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Quick Apply
+                          Tailor & Apply
                         </Button>
                         {job.apply_link && (
                           <>
