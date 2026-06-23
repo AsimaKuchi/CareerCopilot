@@ -187,8 +187,36 @@ export default function CareerPaths({ user }) {
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
               Where do you want to go next?
             </h1>
-            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-              Pick the path that fits where you are right now. You can always switch later.
+            <p className="text-muted-foreground mt-4 max-w-2xl mx-auto leading-relaxed">
+              Wondering if you&apos;re in the right career? Curious what else you could do with your skills?
+            </p>
+            <div className="mt-5 max-w-2xl mx-auto text-left bg-indigo-50/60 border border-indigo-100 rounded-xl px-5 py-4">
+              <p className="text-sm text-foreground mb-3">
+                This page maps your resume against real career paths in the market. You&apos;ll get:
+              </p>
+              <ul className="space-y-2 text-sm text-foreground/90">
+                <li className="flex gap-2.5">
+                  <span className="text-indigo-500 mt-0.5">›</span>
+                  <span>
+                    <strong className="font-semibold">3-5 best-fit career paths</strong> — with match scores, salary ranges, and difficulty
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="text-indigo-500 mt-0.5">›</span>
+                  <span>
+                    <strong className="font-semibold">A 30-day game plan</strong> for each path — concrete weekly tasks to start moving today
+                  </span>
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="text-indigo-500 mt-0.5">›</span>
+                  <span>
+                    <strong className="font-semibold">An AI coach</strong> that answers your questions and pressure-tests your thinking
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <p className="text-muted-foreground mt-5 text-sm">
+              Pick a starting point below.
             </p>
           </div>
 
