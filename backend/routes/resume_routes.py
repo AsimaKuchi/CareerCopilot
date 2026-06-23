@@ -27,6 +27,8 @@ import httpx
 
 from docx import Document
 from PyPDF2 import PdfReader
+import pdfplumber
+import pypdf
 
 from core import db, logger, EMERGENT_LLM_KEY, get_current_user
 from profile_schema import migrate_profile_to_v2
@@ -80,21 +82,92 @@ def extract_text_from_docx(content: bytes) -> str:
         logger.error(f"Error extracting DOCX text: {str(e)}")
         return ""
 
-def extract_text_from_pdf(content: bytes) -> str:
-    """Extract text from PDF file."""
-    try:
-        reader = PdfReader(io.BytesIO(content))
-        text_parts = []
-        
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                text_parts.append(text)
-        
-        return '\n\n'.join(text_parts)
-    except Exception as e:
-        logger.error(f"Error extracting PDF text: {str(e)}")
+def _normalize_extracted_text(text: str) -> str:
+    """Light cleanup: collapse 3+ blank lines, strip trailing whitespace per line."""
+    if not text:
         return ""
+    lines = [ln.rstrip() for ln in text.splitlines()]
+    out: list[str] = []
+    blank = 0
+    for ln in lines:
+        if not ln.strip():
+            blank += 1
+            if blank <= 2:
+                out.append("")
+        else:
+            blank = 0
+            out.append(ln)
+    return "\n".join(out).strip()
+
+
+def _extract_with_pdfplumber(content: bytes) -> str:
+    """Layout-aware extraction. Best quality for multi-column resumes and
+    resumes with tables (skills grids, two-column education/experience).
+
+    Uses `layout=True` so reading order respects visual position.
+    """
+    parts: list[str] = []
+    with pdfplumber.open(io.BytesIO(content)) as pdf:
+        for page in pdf.pages:
+            txt = page.extract_text(
+                layout=False,           # natural reading order, not coordinate dump
+                x_tolerance=2,          # tighter so words don't run together
+                y_tolerance=3,
+            ) or ""
+            parts.append(txt)
+    return _normalize_extracted_text("\n\n".join(parts))
+
+
+def _extract_with_pypdf(content: bytes) -> str:
+    """Modern fork of PyPDF2. Fast, handles standard single-column resumes well."""
+    reader = pypdf.PdfReader(io.BytesIO(content))
+    parts = [page.extract_text() or "" for page in reader.pages]
+    return _normalize_extracted_text("\n\n".join(parts))
+
+
+def _extract_with_pypdf2(content: bytes) -> str:
+    """Legacy fallback - kept as last resort for edge-case PDFs the others choke on."""
+    reader = PdfReader(io.BytesIO(content))
+    parts = [(page.extract_text() or "") for page in reader.pages]
+    return _normalize_extracted_text("\n\n".join(parts))
+
+
+def extract_text_from_pdf(content: bytes) -> str:
+    """Extract text from a PDF resume.
+
+    Strategy (best-quality first, fastest last):
+      1. pdfplumber  -> handles columns, tables, complex layouts
+      2. pypdf       -> modern, fast, good for simple resumes
+      3. PyPDF2      -> legacy fallback
+
+    Each extractor is wrapped so a single bad extractor never blocks the others.
+    Returns the FIRST result with >= 200 characters; otherwise returns the
+    longest result we got. Empty string only if every extractor failed.
+    """
+    candidates: list[tuple[str, str]] = []
+    for name, fn in (
+        ("pdfplumber", _extract_with_pdfplumber),
+        ("pypdf", _extract_with_pypdf),
+        ("PyPDF2", _extract_with_pypdf2),
+    ):
+        try:
+            text = fn(content)
+        except Exception as e:
+            logger.warning(f"PDF extractor {name} failed: {e}")
+            continue
+        if text and len(text) >= 200:
+            logger.info(f"PDF extracted via {name}: {len(text)} chars")
+            return text
+        if text:
+            candidates.append((name, text))
+
+    if candidates:
+        name, text = max(candidates, key=lambda t: len(t[1]))
+        logger.info(f"PDF extracted (fallback, low yield) via {name}: {len(text)} chars")
+        return text
+
+    logger.error("All PDF extractors failed or returned empty text")
+    return ""
 
 # ========================
 # GREENHOUSE JOB SCRAPER
