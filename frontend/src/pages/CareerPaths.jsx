@@ -231,9 +231,9 @@ export default function CareerPaths({ user }) {
                 <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
                   <Target className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">I know what I want next</h3>
+                <h3 className="text-xl font-bold text-foreground">What could I actually do?</h3>
                 <p className="text-sm text-muted-foreground">
-                  Get 3-5 tailored paths from your resume + a 30-day game plan for each. Best if you already have a direction in mind.
+                  We&apos;ll analyze your resume and show you the careers that fit — including ones you probably haven&apos;t considered. Browse, compare, see what catches your eye.
                 </p>
                 <Button
                   className="w-full mt-3 bg-indigo-500 hover:bg-indigo-600"
@@ -242,7 +242,7 @@ export default function CareerPaths({ user }) {
                     fetchAnalysis(false);
                   }}
                 >
-                  Show my paths <ArrowRight className="w-4 h-4 ml-2" />
+                  Show me what fits <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </CardContent>
             </Card>
@@ -257,9 +257,9 @@ export default function CareerPaths({ user }) {
                 <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
                   <Zap className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">I&apos;m not sure where to go</h3>
+                <h3 className="text-xl font-bold text-foreground">Help me figure it out</h3>
                 <p className="text-sm text-muted-foreground">
-                  Talk to a direct, no-fluff mentor. They&apos;ll ask sharp questions and propose 3 paths based on your answers. Best if you feel stuck or burned out.
+                  Talk to an AI coach that asks sharp questions instead of giving you a list. They&apos;ll shape 3 paths around how you actually answer.
                 </p>
                 <Button
                   className="w-full mt-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
