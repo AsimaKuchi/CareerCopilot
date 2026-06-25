@@ -326,7 +326,27 @@ export default function CareerPaths({ user }) {
               Based on your resume, skills &amp; {analysis?.experience_years ?? "?"} years of experience
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                if (!window.confirm("Clear your current analysis and return to the start screen? You'll be asked again how you'd like to explore.")) return;
+                try {
+                  await apiFetch(`${API}/ai/career-paths`, { method: "DELETE" });
+                  setAnalysis(null);
+                  setExpandedIdx(0);
+                  toast.success("Analysis cleared - pick a new starting point");
+                } catch {
+                  toast.error("Couldn't reset - try again");
+                }
+              }}
+              data-testid="start-over-btn"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Start over
+            </Button>
             <Button
               variant="outline"
               size="sm"
