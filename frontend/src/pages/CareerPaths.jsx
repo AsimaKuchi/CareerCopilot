@@ -161,6 +161,25 @@ export default function CareerPaths({ user }) {
     }
   };
 
+  const [resetConfirming, setResetConfirming] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const handleStartOver = async () => {
+    setResetting(true);
+    try {
+      const res = await apiFetch(`${API}/ai/career-paths`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+      setAnalysis(null);
+      setExpandedIdx(0);
+      setResetConfirming(false);
+      toast.success("Analysis cleared — pick a new starting point");
+    } catch {
+      toast.error("Couldn't reset — try again");
+    } finally {
+      setResetting(false);
+    }
+  };
+
   /* ---- render helpers ---- */
   const toggle = (i) => setExpandedIdx(expandedIdx === i ? -1 : i);
 
@@ -326,27 +345,43 @@ export default function CareerPaths({ user }) {
               Based on your resume, skills &amp; {analysis?.experience_years ?? "?"} years of experience
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
-                if (!window.confirm("Clear your current analysis and return to the start screen? You'll be asked again how you'd like to explore.")) return;
-                try {
-                  await apiFetch(`${API}/ai/career-paths`, { method: "DELETE" });
-                  setAnalysis(null);
-                  setExpandedIdx(0);
-                  toast.success("Analysis cleared - pick a new starting point");
-                } catch {
-                  toast.error("Couldn't reset - try again");
-                }
-              }}
-              data-testid="start-over-btn"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Start over
-            </Button>
+          <div className="flex gap-2 flex-wrap items-center">
+            {resetConfirming ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-200 rounded-md">
+                <span className="text-xs text-rose-700 font-medium">Clear analysis?</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setResetConfirming(false)}
+                  disabled={resetting}
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                  data-testid="start-over-cancel-btn"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleStartOver}
+                  disabled={resetting}
+                  className="h-7 px-2 text-xs bg-rose-500 hover:bg-rose-600 text-white"
+                  data-testid="start-over-confirm-btn"
+                >
+                  {resetting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                  Yes, clear
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setResetConfirming(true)}
+                data-testid="start-over-btn"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Start over
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
