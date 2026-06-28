@@ -33,13 +33,16 @@ STRIPE_PRO_PRICE_ID = None
 STRIPE_WEBHOOK_SECRET = None
 
 # Free tier monthly limits
+# Free tier monthly limits
+# Job search and profile/resume upload are intentionally NOT in this dict —
+# they are unlimited for both free and pro tiers.
 FREE_LIMITS = {
-    "job_applications": 3,
-    "resume_optimizations": 2,
-    "interview_prep": 1,
-    "career_paths": 1,
-    "cover_letters": 2,
-    "extension_uses": 3,
+    "job_applications": 5,
+    "resume_optimizations": 5,
+    "interview_prep": 3,
+    "career_paths": 2,
+    "cover_letters": 5,
+    "extension_uses": 5,
 }
 
 # DB reference - set by init_stripe_routes
@@ -66,21 +69,16 @@ def init_stripe_routes(database, get_current_user_func):
 
 
 async def get_user_plan(user_id: str) -> str:
-    """Get user's current plan: 'free' or 'pro'. Admins always get 'pro'.
-
-    NOTE (pre-launch bypass): All users are temporarily returned as 'pro' so that
-    pricing/usage limits are disabled while sharing the preview link. To re-enable
-    Free Tier limits later, restore the commented logic below.
-    """
-    # --- PRE-LAUNCH BYPASS: everyone gets pro ---
-    return "pro"
-    # --- Original logic (restore to re-enable Free Tier limits) ---
-    # user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "subscription_status": 1, "role": 1})
-    # if not user:
-    #     return "free"
-    # if user.get("role") == "admin":
-    #     return "pro"
-    # return "pro" if user.get("subscription_status") == "active" else "free"
+    """Get user's current plan: 'free' or 'pro'. Admins always get 'pro'."""
+    user = await db.users.find_one(
+        {"user_id": user_id},
+        {"_id": 0, "subscription_status": 1, "role": 1},
+    )
+    if not user:
+        return "free"
+    if user.get("role") == "admin":
+        return "pro"
+    return "pro" if user.get("subscription_status") == "active" else "free"
 
 
 async def get_monthly_usage(user_id: str) -> dict:
@@ -97,13 +95,14 @@ async def get_monthly_usage(user_id: str) -> dict:
 
 async def check_usage_limit(user_id: str, feature: str) -> dict:
     """
-    Check if user can use a feature. Returns dict with:
-    - allowed: bool
-    - current: int (current usage)
-    - limit: int (max allowed, -1 for unlimited)
-    - plan: str
+    Check if a user is allowed to use a feature. Returns dict with:
+      - allowed: bool
+      - current: int (current usage this month)
+      - limit:   int (max allowed, -1 for unlimited)
+      - plan:    'free' or 'pro'
 
-    NOTE (pre-launch bypass): always allows since get_user_plan() returns 'pro'.
+    Pro subscribers (and admins) get unlimited use. Free users get the per-feature
+    monthly limits defined in FREE_LIMITS.
     """
     plan = await get_user_plan(user_id)
     if plan == "pro":
