@@ -30,6 +30,7 @@ async def _log_event(event_type, user_email="", details="", severity="info"):
 STRIPE_SECRET_KEY = None
 STRIPE_PUBLISHABLE_KEY = None
 STRIPE_PRO_PRICE_ID = None
+STRIPE_WEBHOOK_SECRET = None
 
 # Free tier monthly limits
 FREE_LIMITS = {
@@ -46,15 +47,22 @@ db = None
 
 def init_stripe_routes(database, get_current_user_func):
     """Initialize the stripe routes with database and auth dependencies."""
-    global db, get_current_user, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRO_PRICE_ID
+    global db, get_current_user, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRO_PRICE_ID, STRIPE_WEBHOOK_SECRET
     db = database
     get_current_user = get_current_user_func
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
     STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
     STRIPE_PRO_PRICE_ID = os.environ.get("STRIPE_PRO_PRICE_ID")
+    STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
     if STRIPE_SECRET_KEY:
         stripe.api_key = STRIPE_SECRET_KEY
         logger.info("Stripe initialized successfully")
+        if not STRIPE_WEBHOOK_SECRET:
+            logger.warning(
+                "STRIPE_WEBHOOK_SECRET is not set. The /api/webhook/stripe "
+                "endpoint will REJECT all events until a secret is configured. "
+                "Get the secret from Stripe Dashboard -> Developers -> Webhooks."
+            )
 
 
 async def get_user_plan(user_id: str) -> str:
@@ -274,25 +282,48 @@ async def get_checkout_status(session_id: str, request: Request):
 
 @stripe_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    """Handle Stripe webhook events."""
+    """Handle Stripe webhook events.
+
+    Verifies the `Stripe-Signature` header against `STRIPE_WEBHOOK_SECRET`
+    using stripe.Webhook.construct_event(). This rejects:
+      - Requests without a signature header
+      - Requests with an invalid signature (wrong secret or tampered payload)
+      - Requests older than Stripe's tolerance window (replay attacks)
+      - Webhooks when no secret is configured (fail-safe)
+
+    Without this verification, anyone who finds the public webhook URL could
+    POST fake "subscription.created" events to upgrade arbitrary users to Pro.
+    """
+    if not STRIPE_WEBHOOK_SECRET:
+        # Hard fail when secret is missing - never trust unsigned webhooks in any env
+        logger.error("Stripe webhook called but STRIPE_WEBHOOK_SECRET is not configured")
+        raise HTTPException(503, "Webhook handler not configured")
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
+    if not sig_header:
+        logger.warning("Stripe webhook called without signature header")
+        raise HTTPException(400, "Missing signature")
 
     try:
-        # For test mode, we may not have webhook secret, so parse directly
-        event = stripe.Event.construct_from(
-            stripe.util.convert_to_stripe_object(
-                __import__("json").loads(payload),
-                stripe.api_key,
-            ),
-            stripe.api_key,
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=sig_header,
+            secret=STRIPE_WEBHOOK_SECRET,
         )
+    except ValueError as e:
+        # Invalid JSON payload
+        logger.warning(f"Stripe webhook invalid payload: {e}")
+        raise HTTPException(400, "Invalid payload")
+    except stripe.error.SignatureVerificationError as e:
+        logger.warning(f"Stripe webhook signature verification failed: {e}")
+        raise HTTPException(400, "Invalid signature")
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         raise HTTPException(400, f"Webhook error: {str(e)}")
 
-    event_type = event.type
-    data = event.data.object
+    event_type = event["type"]
+    data = event["data"]["object"]
 
     logger.info(f"Stripe webhook: {event_type}")
 
