@@ -304,7 +304,7 @@ export default function LandingPage() {
               <Download className="w-4 h-4 mr-2" />
               Download Chrome Extension
             </Button>
-            <p className="text-xs text-gray-400 mt-2">Free forever. No credit card required.</p>
+            <p className="text-xs text-gray-400 mt-2">Free to install. No credit card required.</p>
           </div>
         </section>
 
