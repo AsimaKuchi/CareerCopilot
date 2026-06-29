@@ -310,9 +310,9 @@ export default function HowItWorks() {
             <span className="text-sm text-muted-foreground">© 2025 MyCareerCoPilot. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+            <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+            <a href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+            <a href="mailto:support@mycareercopilot.ca" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
           </div>
         </div>
       </footer>

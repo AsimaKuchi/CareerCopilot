@@ -440,8 +440,9 @@ export default function LandingPage() {
             <span className="text-xs text-gray-400">&copy; 2025 MyCareerCoPilot. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Privacy</a>
-            <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Terms</a>
+            <a href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200" data-testid="footer-privacy-link">Privacy</a>
+            <a href="/terms" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200" data-testid="footer-terms-link">Terms</a>
+            <a href="/refunds" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200" data-testid="footer-refunds-link">Refunds</a>
             <Link to="/pricing" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Pricing</Link>
             <Link to="/support" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">Support</Link>
           </div>
