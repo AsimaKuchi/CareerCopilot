@@ -195,7 +195,7 @@ export default function LandingPage() {
               <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
                 <div className="shrink-0">
                   <p
-                    className="text-6xl sm:text-7xl font-extrabold tracking-tight leading-none"
+                    className="text-5xl sm:text-[52px] font-extrabold tracking-tight leading-none"
                     style={{ color: "#6366F1" }}
                   >
                     3-5x
