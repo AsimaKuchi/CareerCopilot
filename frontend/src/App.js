@@ -25,6 +25,9 @@ import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
 import AdminSupport from "@/pages/admin/AdminSupport";
 import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import RefundPolicy from "@/pages/legal/RefundPolicy";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -144,6 +147,9 @@ const AppRouter = () => {
       <Route path="/auth" element={<Auth />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/refunds" element={<RefundPolicy />} />
       <Route path="/how-it-works" element={<HowItWorks />} />
       <Route path="/support" element={<Support />} />
       <Route path="/pricing" element={<Pricing />} />

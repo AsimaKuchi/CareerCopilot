@@ -510,7 +510,12 @@ export default function Auth() {
 
       {/* Footer */}
       <footer className="p-4 text-center text-sm text-gray-500">
-        <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+        <p>
+          By continuing, you agree to our{" "}
+          <a href="/terms" className="text-indigo-600 hover:text-indigo-700 underline">Terms of Service</a>
+          {" "}and{" "}
+          <a href="/privacy" className="text-indigo-600 hover:text-indigo-700 underline">Privacy Policy</a>
+        </p>
       </footer>
     </div>
   );
