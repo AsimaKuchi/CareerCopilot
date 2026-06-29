@@ -8,12 +8,12 @@ import Navbar from "../components/Navbar";
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const FREE_FEATURES = [
-  { name: "Job Applications", limit: "3 / month" },
-  { name: "Resume Optimizations", limit: "2 / month" },
-  { name: "Cover Letters", limit: "2 / month" },
-  { name: "Interview Prep", limit: "1 / month" },
-  { name: "Career Path Analysis", limit: "1 / month" },
-  { name: "Chrome Extension Uses", limit: "3 / month" },
+  { name: "Job Applications", limit: "5 / month" },
+  { name: "Resume Optimizations", limit: "5 / month" },
+  { name: "Cover Letters", limit: "5 / month" },
+  { name: "Interview Prep", limit: "3 / month" },
+  { name: "Career Path Analysis", limit: "2 / month" },
+  { name: "Chrome Extension Uses", limit: "5 / month" },
   { name: "Job Search", limit: "Unlimited" },
   { name: "Profile & Resume Upload", limit: "Unlimited" },
 ];
