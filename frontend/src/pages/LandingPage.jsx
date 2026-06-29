@@ -78,13 +78,6 @@ export default function LandingPage() {
     "Let you decide when to proceed",
   ];
 
-  const metrics = [
-    { icon: Clock, value: "25+ min", label: "Average time saved per application" },
-    { icon: Zap, value: "3-5x faster", label: "From job page to ready to submit" },
-    { icon: Target, value: "Quality-first", label: "Strong-fit roles only" },
-    { icon: Shield, value: "100% human", label: "You approve every submission" },
-  ];
-
   const steps = [
     { num: "1", title: "Install Extension", desc: "Add our Chrome extension in one click. Takes 10 seconds.", color: "bg-indigo-50 text-indigo-600" },
     { num: "2", title: "Build Your Profile", desc: "Enter your info once. We'll use it to fill every application.", color: "bg-emerald-50 text-emerald-600" },
@@ -167,44 +160,81 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
-              A quality-first job application platform that finds strong matches, explains why they fit,
-              and lets you approve every application before it's sent.
+              Stop wasting 50 applications for 1 interview.
+              <br className="hidden sm:block" />
+              Get 3x more callbacks with AI-matched roles.
             </p>
 
             <p className="text-sm font-medium text-gray-900">
-              No resume spam. No blind auto-apply. No burned opportunities.
+              Every application is tailored. Every submission is approved by you.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-2">
               <Button
                 data-testid="get-started-btn"
                 onClick={() => navigate(isLoggedIn ? '/dashboard' : '/auth')}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-11 px-6 text-sm font-medium rounded-lg transition-all duration-200"
+                className="bg-indigo-500 hover:bg-indigo-600 text-white btn-glow group h-12 px-7 text-base font-semibold rounded-lg shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all duration-200"
               >
-                {isLoggedIn ? "Go to Dashboard" : "Find jobs that actually fit me"}
+                {isLoggedIn ? "Go to Dashboard" : "Start Free & Get More Interviews"}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform duration-200" />
               </Button>
-              <button
-                data-testid="learn-more-btn"
-                className="text-sm font-medium text-gray-500 hover:text-indigo-600 px-4 py-2 transition-colors duration-200"
-                onClick={() => navigate('/how-it-works')}
-              >
-                See how it works →
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Metrics */}
-        <section className="max-w-4xl mx-auto px-6 pb-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {metrics.map((m, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 text-center transition-all duration-200 hover:border-gray-300 hover:shadow-sm">
-                <m.icon className="w-5 h-5 text-indigo-500 mx-auto mb-2" />
-                <p className="text-lg font-bold text-gray-900">{m.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{m.label}</p>
+        {/* Metrics — bento grid with lead stat */}
+        <section className="max-w-5xl mx-auto px-6 pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* LEAD STAT — 2x width on desktop */}
+            <div
+              className="md:col-span-2 relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-white p-8 sm:p-10 transition-all duration-300 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/10"
+              data-testid="lead-stat-card"
+            >
+              {/* decorative glow */}
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+                <div className="shrink-0">
+                  <p
+                    className="text-6xl sm:text-7xl font-extrabold tracking-tight leading-none"
+                    style={{ color: "#6366F1" }}
+                  >
+                    3-5x
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+                    More Callbacks
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+                    From job page to interview-ready application
+                  </p>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* SECONDARY STAT — time saved */}
+            <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6 transition-all duration-300 hover:border-gray-300 hover:shadow-sm flex flex-col justify-center">
+              <Clock className="w-5 h-5 text-gray-400 mb-3" />
+              <p className="text-2xl font-bold text-gray-900 leading-tight">25+ min</p>
+              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                Saved per application
+              </p>
+            </div>
+
+            {/* SECONDARY STAT — full row beneath, control */}
+            <div className="md:col-span-3 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 transition-all duration-300 hover:border-gray-300 hover:shadow-sm flex items-center gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">
+                  100% Your Control
+                </p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                  You approve every submission — nothing sent without your sign-off
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
