@@ -15,6 +15,21 @@ import { toast } from "sonner";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
+// Format an ISO timestamp as human-friendly relative time.
+// Examples: "just now", "5 min ago", "3 hr ago", "2 days ago", "Feb 13".
+function formatRelative(iso) {
+  if (!iso) return "—";
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return "—";
+  const diffMs = Date.now() - then;
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 30) return "just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} hr ago`;
+  if (sec < 86400 * 7) return `${Math.floor(sec / 86400)} days ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 export default function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -24,13 +39,15 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
   const [actionMenu, setActionMenu] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page, limit: 20 });
+      const params = new URLSearchParams({ page, limit: 20, sort_by: sortBy, sort_order: sortOrder });
       if (search) params.set("search", search);
       if (planFilter) params.set("plan", planFilter);
       if (statusFilter) params.set("status", statusFilter);
@@ -47,7 +64,7 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, planFilter, statusFilter]);
+  }, [page, search, planFilter, statusFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchUsers();
@@ -173,6 +190,27 @@ export default function AdminUsers() {
           <option value="banned">Banned</option>
           <option value="locked">Locked</option>
         </select>
+        <select
+          value={`${sortBy}:${sortOrder}`}
+          onChange={(e) => {
+            const [by, order] = e.target.value.split(":");
+            setSortBy(by);
+            setSortOrder(order);
+            setPage(1);
+          }}
+          className="px-3 py-2.5 bg-gray-900 border border-gray-800 rounded-lg text-sm text-white focus:outline-none"
+          data-testid="sort-select"
+          title="Sort users"
+        >
+          <option value="created_at:desc">Newest signups first</option>
+          <option value="created_at:asc">Oldest signups first</option>
+          <option value="last_login:desc">Most recent login</option>
+          <option value="last_login:asc">Least recent login</option>
+          <option value="email:asc">Email A → Z</option>
+          <option value="email:desc">Email Z → A</option>
+          <option value="name:asc">Name A → Z</option>
+          <option value="name:desc">Name Z → A</option>
+        </select>
       </div>
 
       {/* Users Table */}
@@ -184,19 +222,20 @@ export default function AdminUsers() {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Plan</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Last Login</th>
               <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                   No users found
                 </td>
               </tr>
@@ -244,6 +283,9 @@ export default function AdminUsers() {
                       {user.created_at
                         ? new Date(user.created_at).toLocaleDateString()
                         : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500" data-testid={`last-login-${user.user_id}`}>
+                      {user.last_login ? formatRelative(user.last_login) : <span className="text-gray-600 italic">never</span>}
                     </td>
                     <td className="px-4 py-3 text-right relative">
                       <button
