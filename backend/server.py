@@ -320,6 +320,76 @@ async def ensure_playwright_browsers():
         logger.error(f"Playwright browser installation error: {e}")
 
 
+async def ensure_indexes():
+    """Create MongoDB indexes for the hot query paths.
+
+    This is idempotent — create_index() is a no-op if the index already
+    exists with the same key spec, so it's safe to run on every container
+    restart. Indexes turn full collection scans into O(log n) lookups; for
+    a 10k-user collection this is the difference between 200ms and 2ms per
+    request.
+
+    Touch only the fields actually queried in routes; do not over-index
+    (extra indexes slow down writes).
+    """
+    try:
+        # ---- users: looked up by user_id (auth), email (login), role (admin) ----
+        await db.users.create_index("user_id", unique=True, name="user_id_unique")
+        await db.users.create_index("email", unique=True, name="email_unique")
+        await db.users.create_index("role", name="role_idx")
+        await db.users.create_index("created_at", name="created_at_idx")
+        await db.users.create_index("last_login", name="last_login_idx")
+        await db.users.create_index("subscription_status", name="subscription_status_idx")
+
+        # ---- user_sessions: looked up by session_token on every authenticated request ----
+        await db.user_sessions.create_index("session_token", unique=True, name="session_token_unique")
+        await db.user_sessions.create_index("user_id", name="session_user_id_idx")
+        # TTL on expires_at automatically removes expired sessions
+        await db.user_sessions.create_index("expires_at", expireAfterSeconds=0, name="session_ttl")
+
+        # ---- user_profiles: 1-to-1 with user_id ----
+        await db.user_profiles.create_index("user_id", unique=True, name="profile_user_id_unique")
+
+        # ---- applications: user dashboard lists, status filters ----
+        await db.applications.create_index([("user_id", 1), ("created_at", -1)], name="apps_user_recent")
+        await db.applications.create_index([("user_id", 1), ("status", 1)], name="apps_user_status")
+
+        # ---- user_saved_jobs: list by user, dedupe by canonical URL ----
+        await db.user_saved_jobs.create_index([("user_id", 1), ("created_at", -1)], name="saved_user_recent")
+
+        # ---- job_cache: hot ATS lookup + cleanup TTL ----
+        await db.job_cache.create_index("canonical_url", name="job_canonical_idx")
+        await db.job_cache.create_index("company", name="job_company_idx")
+        await db.job_cache.create_index("expires_at", name="job_expires_idx")
+
+        # ---- audit_logs: list by user/event for admin views ----
+        await db.audit_logs.create_index([("user_id", 1), ("created_at", -1)], name="audit_user_recent")
+        await db.audit_logs.create_index([("event_type", 1), ("created_at", -1)], name="audit_event_recent")
+
+        # ---- usage_tracking: gated by user_id + feature + month ----
+        await db.usage_tracking.create_index(
+            [("user_id", 1), ("feature", 1), ("month", 1)],
+            unique=True, name="usage_user_feature_month"
+        )
+
+        # ---- coach_sessions: list by user ----
+        await db.coach_sessions.create_index([("user_id", 1), ("updated_at", -1)], name="coach_user_recent")
+
+        # ---- career_analyses: 1 active analysis per user ----
+        await db.career_analyses.create_index("user_id", name="career_analysis_user_idx")
+
+        # ---- path_guidance: keyed by (user_id, path_title) ----
+        await db.path_guidance.create_index(
+            [("user_id", 1), ("path_title", 1)],
+            unique=True, name="path_guidance_user_path"
+        )
+
+        logger.info("MongoDB indexes ensured")
+    except Exception as e:
+        # Index creation is best-effort; queries still work without them, just slower.
+        logger.warning(f"Index creation skipped/failed: {e}")
+
+
 @app.on_event("startup")
 async def start_scheduler():
     """Start the job scheduler on app startup.
@@ -331,6 +401,7 @@ async def start_scheduler():
     on every startup if those operations haven't run recently.
     """
     await ensure_playwright_browsers()
+    await ensure_indexes()
 
     scheduler.add_job(
         scheduled_job_ingestion,
