@@ -1,0 +1,36 @@
+{
+  "summary": "Interview Prep crash-on-scroll bug fix VERIFIED. Logged in as refactor_test@example.com, navigated to /interview-prep, filled the form (Senior Product Manager @ Stripe + JD), clicked Generate, waited ~47s for the streaming AI response (~14,956 chars) to complete, and then aggressively wheel-scrolled the ScrollArea viewport (scrollTop reached 4000px). NO crash, no white-screen, no 'Cannot read properties of undefined' errors, no React error boundary triggered. The rewritten /app/frontend/src/components/InterviewPrepRenderer.jsx correctly parses the new structured markdown and renders visual hierarchy with bold labels as requested.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Interview Prep - Section 7 (Questions To Ask The Interviewer)",
+        "issues": ["The ListBlock rendered an EMPTY <ol> for section 7 in this run (the visible card was blank). Section header parsed correctly and box container rendered, but no list items appeared. Root cause is likely AI output format for section 7 not matching the '/^(\\d+)\\.\\s+(.*)/' numbered-list regex in InterviewPrepRenderer.jsx line 145 (e.g., model may emit '- ' bullets instead of '1. '). Section 6 (Interview Tips) rendered 8 numbered items correctly, so the ListBlock itself works. Consider extending the LIST section parser to also accept '- ' / '* ' bullets, OR tighten the AI prompt to force '1./2./3.' format for section 7."]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL: Make the ListBlock parser (InterviewPrepRenderer.jsx, SECTION_KIND.LIST branch, ~line 143-155) accept '-' / '*' bulleted lines as list items so section 7 (Questions To Ask The Interviewer) never renders as an empty <ol> if the AI emits dashes instead of numbers."
+  ],
+  "critical_code_review_comments": [
+    "parsePrepDocument() is resilient to partial mid-stream markdown — verified during a 47s streaming render, no crashes at any intermediate token count.",
+    "All required data-testids present: interview-prep-content (1), prep-section-1 through prep-section-7 (7/7), difficulty-badge (16), prep-testing (16), prep-followups (16), prep-traps (16), prep-approach (16).",
+    "Visual hierarchy is correct: numbered indigo section badges, gradient question header cards with bold Q text + colored difficulty badge, bold uppercase field labels ('WHAT THEY'RE TESTING', 'LIKELY FOLLOW-UPS', etc.), and green left-border 'Sample answer' blockquote. Matches P0 bolding request.",
+    "lucide-react icons (AlertTriangle, ListChecks, Target, MessageCircle) all imported and rendering without errors.",
+    "Only console errors observed are unrelated PostHog session-recorder 'Failed to fetch saved jobs' noise from the recording script, NOT from the app code."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only test)", "frontend": "100% on P0 crash bug — 7/7 sections, all testids, scroll safe, no undefined errors"},
+  "test_credentials": "refactor_test@example.com / TestPass123! (login at /auth)",
+  "seed_data_creation": "None. This user had already reviewed 37 questions from prior sessions (counter shown in UI).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Interview Prep P0 crash-on-scroll is FIXED. Renderer correctly handles the new structured markdown. Only remaining nit is section 7 sometimes rendering an empty <ol> when the AI emits '-' instead of '1.' bullets — a robustness enhancement, not a blocker. Streaming takes ~40-50s to complete. ScrollArea viewport selector: [data-radix-scroll-area-viewport]. Use page.mouse.wheel() over the element, or el.scrollTo(0, el.scrollHeight) to test scrolling.",
+  "rca of the issue": "Original crash: the previous renderer parsed sections >=4 as list-only, but the new AI prompt puts Q&A structure (with .difficulty, .followups[], .approach[], .sample[]) in sections 4 & 5. Accessing .map on undefined arrays during mid-stream renders caused 'Cannot read properties of undefined' inside ScrollArea's virtualized re-render on scroll. Fix (already applied by main agent): new parsePrepDocument returns fully-initialized QAItem objects (all arrays default to []) and sectionKindFor(number) routes 2-5 to QA and 6-7 to LIST. Verified: no undefined errors during aggressive scrolling of a 15k-char rendered document."
+}
