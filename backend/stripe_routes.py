@@ -103,7 +103,14 @@ async def check_usage_limit(user_id: str, feature: str) -> dict:
 
     Pro subscribers (and admins) get unlimited use. Free users get the per-feature
     monthly limits defined in FREE_LIMITS.
+
+    Also enforces a per-user-per-minute and per-hour rate limit so even Pro
+    users can't accidentally (or maliciously) hammer LLM endpoints faster than
+    a human could possibly need them — protects the LLM budget.
     """
+    from core import enforce_ai_rate_limit
+    enforce_ai_rate_limit(user_id)  # raises 429 if too fast — runs for all plans
+
     plan = await get_user_plan(user_id)
     if plan == "pro":
         return {"allowed": True, "current": 0, "limit": -1, "plan": "pro"}

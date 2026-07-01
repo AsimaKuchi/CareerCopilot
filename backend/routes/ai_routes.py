@@ -640,7 +640,9 @@ STAR method examples, company research tips, and confidence-building advice."""
     if extra_constraints:
         constraints_block = "\n\nADDITIONAL CONSTRAINTS FOR THIS REGENERATION:\n" + "\n\n".join(extra_constraints)
 
-    prompt = f"""You are an expert interview coach creating a professional interview preparation document for a FAANG / enterprise role.
+    prompt = f"""You are a senior interview coach producing a REALISTIC interview prep guide.
+This is not a list of surface questions — it is a flight plan the candidate will
+use to prepare for a serious conversation.
 
 POSITION: {req.job_title} at {req.company}
 JOB DESCRIPTION:
@@ -654,51 +656,73 @@ FORMATTING RULES (must follow exactly):
 3. Separate major sections with a horizontal rule (---)
 4. Format each interview question using this exact structure:
    - Question as a level-4 header (####)
-   - Suggested approach on one line (NO asterisks, NO italics)
+   - "Difficulty:" line — Easy | Medium | Hard | Curveball
+   - "What they're testing:" one line — the underlying skill or judgment being assessed
+   - "Likely follow-ups:" 2-3 sub-questions the interviewer will probe with
+   - "Traps to avoid:" 1-2 sentences — the specific answers/framings that get candidates rejected
+   - "How to structure your answer:" a 3-5 bullet outline (STAR, CIRCLES, MECE, or role-appropriate framework)
    - Sample answer as a blockquote (>)
-5. Keep sample answers concise: 3-4 sentences max
-6. Use clear whitespace between questions
+5. Sample answers: 3-5 sentences that HINT at the framework's shape (not verbatim)
+6. Clear whitespace between questions
 7. Do NOT use asterisks or italics
-8. Do NOT use emojis or casual language
-9. Make everything bold and easy to read
+8. Do NOT use emojis
+9. Difficulty must ramp within each section: 1-2 Easy, then Medium, then Hard, then optionally a Curveball
 
 REQUIRED SECTIONS (in this exact order):
 
-1. COMMON INTERVIEW QUESTIONS
-- 5 common questions every interviewer asks
-- Each with: #### Question, Suggested approach, > Sample answer
+1. HOW TO STRUCTURE YOUR THINKING (framework primer)
+- Briefly (3-4 bullets each) introduce the 3 frameworks the candidate should keep in mind:
+  * STAR (Situation, Task, Action, Result) — for behavioral
+  * SBI (Situation, Behavior, Impact) — for feedback / conflict stories
+  * CIRCLES or MECE — for product / systems / analytical questions
+- End with 1 bullet: "Silence is a weapon — take 5 seconds to think before answering. Interviewers respect the pause."
 
 ---
 
-2. BEHAVIORAL QUESTIONS
-- 5 behavioral questions using STAR method
-- Each with: #### Question, STAR framework guidance, > Sample answer
+2. COMMON INTERVIEW QUESTIONS
+- 4 warm-up questions every interviewer opens with (tell me about yourself, why this company, etc.)
+- Use the full per-question structure above
 
 ---
 
-3. TECHNICAL QUESTIONS
-- 5 technical questions specific to {req.job_title}
-- Each with: #### Question, Approach guidance, > Sample answer
+3. BEHAVIORAL QUESTIONS
+- 5 behavioral scenarios progressing Easy → Hard → Curveball
+- Each MUST include likely follow-ups the interviewer will probe with
+- Traps section is critical here (behavioral is where people fail by sounding rehearsed or throwing teammates under the bus)
 
 ---
 
-4. INTERVIEW TIPS
-- 5-7 tactical tips (numbered list)
-- Focus on: preparation, body language, follow-up, negotiation
+4. TECHNICAL / ROLE-SPECIFIC QUESTIONS
+- 4-5 questions specific to {req.job_title}
+- Include at least 1 scenario or system-design-style question that requires walking through tradeoffs
+- Full per-question structure
 
 ---
 
-5. QUESTIONS TO ASK THE INTERVIEWER
-- 5 intelligent questions (numbered list)
-- Categories: role scope, team dynamics, growth, company direction
+5. CURVEBALL & JUDGMENT QUESTIONS
+- 2-3 tough questions: gap in resume, biggest weakness, "why should we hire you over X", disagreement with a decision, ethical dilemma, layoff explanation, etc.
+- These are where candidates lose offers — traps section must be strong
+
+---
+
+6. INTERVIEW TIPS
+- 6-8 tactical tips (numbered list)
+- Cover: 5-second pause rule, quantifying impact, when to ask clarifying questions, avoiding filler words, body language on video calls, closing the interview strong, follow-up email timing
+
+---
+
+7. QUESTIONS TO ASK THE INTERVIEWER
+- 5 intelligent questions the candidate should ask BACK
+- Group them: 2 about the role/team, 1 about growth, 1 about company direction, 1 about the interviewer's own experience there
+- Explain briefly (1 line) what each question SIGNALS about the candidate
 
 ANSWER STYLE:
-- Professional, direct, data-driven
-- Emphasize measurable impact and collaboration
-- Use concrete examples
-- Avoid generic phrases
+- Professional, direct, results-driven
+- Use concrete measurable impact ("reduced by 40%") not adjectives ("really improved")
+- Never suggest bad-mouthing former employers or teammates
+- Traps section must be brutally specific — not "avoid rambling" but "avoid framing your failure story as external — interviewers listen for whether you own the miss"
 
-Generate interview prep for {req.job_title} at {req.company} following this structure exactly."""
+Generate the full interview prep for {req.job_title} at {req.company} now."""
     
     # Stream the response so the frontend can render tokens as they arrive
     # (perceived latency ~1s instead of waiting 20-40s for the full doc).

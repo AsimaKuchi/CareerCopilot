@@ -28,7 +28,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from core import db, logger, EMERGENT_LLM_KEY, get_current_user
+from core import db, logger, EMERGENT_LLM_KEY, get_current_user, enforce_ai_rate_limit
 from profile_schema import get_skill_names
 from encryption import decrypt_sensitive_data
 from stripe_routes import check_usage_limit, increment_usage
@@ -301,6 +301,8 @@ async def send_coach_message(session_id: str, request: Request, body: CoachMessa
     """Send a user message to the coach. Streams the AI response and persists
     everything (both user message + assistant response + ready_to_synthesize flag)."""
     user = await get_current_user(request)
+    enforce_ai_rate_limit(user.user_id)  # per-user LLM rate limit
+
 
     session = await db.coach_sessions.find_one(
         {"session_id": session_id, "user_id": user.user_id},
@@ -611,6 +613,7 @@ async def generate_30d_plan(request: Request, body: PlanRequest):
     regenerate.
     """
     user = await get_current_user(request)
+    enforce_ai_rate_limit(user.user_id)  # per-user LLM rate limit
     force = request.query_params.get("force", "").lower() in ("1", "true", "yes")
 
     existing = await db.path_guidance.find_one(
@@ -730,6 +733,7 @@ async def ask_path_coach(request: Request, body: AskRequest):
     Non-streaming (kept simple - response is typically 1-3 short paragraphs).
     """
     user = await get_current_user(request)
+    enforce_ai_rate_limit(user.user_id)  # per-user LLM rate limit
     q = (body.question or "").strip()
     if not q:
         raise HTTPException(status_code=400, detail="Empty question")

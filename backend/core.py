@@ -112,6 +112,27 @@ RATE_LOGIN  = (10, 60)    # 10 per minute per IP
 RATE_SIGNUP = (5, 60)     # 5 per minute per IP
 RATE_RESET  = (3, 300)    # 3 per 5 minutes per IP
 
+# AI endpoint rate limits — per user, not per IP, so a single user can't
+# hammer expensive LLM calls in a tight loop. These are intentionally generous
+# enough that normal interactive use never hits them, but tight enough that
+# abuse is throttled to dollars per hour instead of dollars per second.
+RATE_AI_MINUTE = (10, 60)        # 10 LLM calls per minute per user
+RATE_AI_HOUR   = (60, 3600)      # 60 LLM calls per hour per user
+
+def enforce_ai_rate_limit(user_id: str) -> None:
+    """Raise 429 if the user is calling AI endpoints too fast.
+
+    Two checks: a tight per-minute window (catches scripts) and a per-hour
+    window (catches slow but sustained abuse).
+    """
+    from fastapi import HTTPException
+    key_min = f"ai:{user_id}:m"
+    key_hr  = f"ai:{user_id}:h"
+    if rate_limiter.is_limited(key_min, *RATE_AI_MINUTE):
+        raise HTTPException(429, "Too many AI requests — please wait a minute.")
+    if rate_limiter.is_limited(key_hr, *RATE_AI_HOUR):
+        raise HTTPException(429, "Hourly AI quota reached — please try again later.")
+
 # Account lockout
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
