@@ -143,13 +143,17 @@ function parsePrepDocument(markdown) {
     // ----- LIST SECTION (Tips, Questions to Ask) -----
     if (currentSection.kind === SECTION_KIND.LIST) {
       const numMatch = line.match(/^(\d+)\.\s+(.*)/);
+      const bulletMatch = line.match(/^[-•*]\s+(.+)/);
       if (numMatch) {
         flushItem();
         currentItem = { text: numMatch[2].trim(), continuation: [] };
+      } else if (bulletMatch) {
+        // AI sometimes emits "- " bullets instead of "1. " — treat each as a
+        // new list item so section 7 doesn't render as an empty <ol>.
+        flushItem();
+        currentItem = { text: bulletMatch[1].trim(), continuation: [] };
       } else if (currentItem) {
-        currentItem.continuation.push(
-          line.replace(/^[>\-•*]\s*/, "").trim()
-        );
+        currentItem.continuation.push(line.replace(/^[>\-•*]\s*/, "").trim());
       }
       continue;
     }
