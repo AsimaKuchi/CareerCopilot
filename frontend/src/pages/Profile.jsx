@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import SkillsCombobox from "@/components/SkillsCombobox";
+import ProfileCompletion from "@/components/ProfileCompletion";
 
 export default function Profile({ user }) {
   const [profile, setProfile] = useState(null);
@@ -73,6 +74,25 @@ export default function Profile({ user }) {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Fire a one-time celebration toast the moment the profile hits 100%.
+  const celebratedRef = useRef(false);
+  useEffect(() => {
+    if (!profile) return;
+    const isComplete =
+      Boolean(profile.resume_filename || profile.resume_text) &&
+      (profile.skills?.length ?? 0) > 0 &&
+      (profile.job_titles?.length ?? 0) > 0 &&
+      (profile.preferred_locations?.length ?? 0) > 0 &&
+      Number(profile.experience_years) > 0;
+    if (isComplete && !celebratedRef.current) {
+      celebratedRef.current = true;
+      toast.success("Profile complete! You'll now get the best job matches.", {
+        duration: 4500,
+      });
+    }
+    if (!isComplete) celebratedRef.current = false;
+  }, [profile]);
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -371,6 +391,8 @@ export default function Profile({ user }) {
             Keep your profile updated for better job matches
           </p>
         </div>
+
+        <ProfileCompletion profile={profile} />
 
         <div className="space-y-6">
           {/* User Info Card */}
