@@ -184,13 +184,75 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         logger.error(f"Auth error in resume upload: {str(e)}")
         raise HTTPException(status_code=401, detail="Authentication failed")
     
+    # Size cap: 10 MB. Reject early before reading the whole body into memory.
+    MAX_SIZE = 10 * 1024 * 1024
     try:
         content = await file.read()
-        
+
         if not content:
             raise HTTPException(status_code=400, detail="Empty file uploaded")
-        
+
+        if len(content) > MAX_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large ({len(content) // 1024 // 1024}MB). Max 10MB.",
+            )
+
         filename = file.filename.lower() if file.filename else ""
+
+        # ------------------------------------------------------------------
+        # Magic-byte validation: reject files whose actual signature does not
+        # match the extension. Prevents a malicious .exe/.zip/.html renamed
+        # to .pdf from being accepted and stored.
+        # ------------------------------------------------------------------
+        head = content[:8]
+        detected = None
+        if head.startswith(b"%PDF-"):
+            detected = "pdf"
+        elif head.startswith(b"PK\x03\x04") or head.startswith(b"PK\x05\x06"):
+            # ZIP container — DOCX is a ZIP. We still allow it here; the
+            # docx extractor below will fail cleanly if it's a non-DOCX zip.
+            detected = "docx"
+        elif head.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            # OLE compound document — legacy .doc
+            detected = "doc"
+        else:
+            # Best-effort text detection: mostly printable ASCII/UTF-8
+            try:
+                content[:4096].decode("utf-8")
+                detected = "text"
+            except UnicodeDecodeError:
+                detected = None
+
+        # Cross-check extension vs detected type
+        allowed_ext = (".pdf", ".docx", ".doc", ".txt")
+        if not filename.endswith(allowed_ext):
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported file type. Please upload a PDF, DOCX, DOC or TXT resume.",
+            )
+
+        if filename.endswith(".pdf") and detected != "pdf":
+            raise HTTPException(
+                status_code=400,
+                detail="File does not appear to be a valid PDF. Please re-export your resume as PDF.",
+            )
+        if filename.endswith(".docx") and detected != "docx":
+            raise HTTPException(
+                status_code=400,
+                detail="File does not appear to be a valid DOCX. Please re-save as .docx from Word/Google Docs.",
+            )
+        if filename.endswith(".doc") and detected not in ("doc", "docx"):
+            raise HTTPException(
+                status_code=400,
+                detail="File does not appear to be a valid Word document.",
+            )
+        if filename.endswith(".txt") and detected != "text":
+            raise HTTPException(
+                status_code=400,
+                detail="File does not appear to be plain text.",
+            )
+
         resume_text = ""
         resume_format = "text"
         

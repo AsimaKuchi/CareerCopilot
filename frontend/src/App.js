@@ -1,33 +1,49 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import IdleTimeout from "@/components/IdleTimeout";
+
+// Eager: routes users land on directly / that must show instantly for good LCP.
 import LandingPage from "@/pages/LandingPage";
-import HowItWorks from "@/pages/HowItWorks";
-import Dashboard from "@/pages/Dashboard";
-import Profile from "@/pages/Profile";
-import JobSearch from "@/pages/JobSearch";
-import Applications from "@/pages/Applications";
-import InterviewPrep from "@/pages/InterviewPrep";
-import CareerPaths from "@/pages/CareerPaths";
-import CareerCoach from "@/pages/CareerCoach";
-import Support from "@/pages/Support";
 import Auth from "@/pages/Auth";
-import Pricing from "@/pages/Pricing";
-import Billing from "@/pages/Billing";
-import AdminLayout from "@/pages/admin/AdminLayout";
-import AdminOverview from "@/pages/admin/AdminOverview";
-import AdminUsers from "@/pages/admin/AdminUsers";
-import AdminUserDetail from "@/pages/admin/AdminUserDetail";
-import AdminSecurity from "@/pages/admin/AdminSecurity";
-import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
-import AdminSupport from "@/pages/admin/AdminSupport";
-import VerifyEmail from "@/pages/VerifyEmail";
-import ResetPassword from "@/pages/ResetPassword";
-import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
-import TermsOfService from "@/pages/legal/TermsOfService";
-import RefundPolicy from "@/pages/legal/RefundPolicy";
+
+// Lazy: everything else. Splits ~500KB+ of authenticated + admin + legal
+// bundles out of the initial landing chunk, cutting first-paint time on
+// low-RAM devices significantly.
+const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const JobSearch = lazy(() => import("@/pages/JobSearch"));
+const Applications = lazy(() => import("@/pages/Applications"));
+const InterviewPrep = lazy(() => import("@/pages/InterviewPrep"));
+const CareerPaths = lazy(() => import("@/pages/CareerPaths"));
+const CareerCoach = lazy(() => import("@/pages/CareerCoach"));
+const Support = lazy(() => import("@/pages/Support"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Billing = lazy(() => import("@/pages/Billing"));
+const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
+const AdminOverview = lazy(() => import("@/pages/admin/AdminOverview"));
+const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
+const AdminUserDetail = lazy(() => import("@/pages/admin/AdminUserDetail"));
+const AdminSecurity = lazy(() => import("@/pages/admin/AdminSecurity"));
+const AdminAuditLogs = lazy(() => import("@/pages/admin/AdminAuditLogs"));
+const AdminSupport = lazy(() => import("@/pages/admin/AdminSupport"));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const PrivacyPolicy = lazy(() => import("@/pages/legal/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("@/pages/legal/TermsOfService"));
+const RefundPolicy = lazy(() => import("@/pages/legal/RefundPolicy"));
+
+// Fallback shown while a lazy chunk is downloading.
+const RouteFallback = () => (
+  <div
+    className="min-h-screen bg-background flex items-center justify-center"
+    data-testid="route-loading"
+  >
+    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -142,7 +158,8 @@ const AppRouter = () => {
   }
 
   return (
-    <Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
@@ -226,15 +243,16 @@ const AppRouter = () => {
         }
       />
       {/* Admin Dashboard */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminOverview />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="users/:userId" element={<AdminUserDetail />} />
-        <Route path="security" element={<AdminSecurity />} />
-        <Route path="audit-logs" element={<AdminAuditLogs />} />
-        <Route path="support" element={<AdminSupport />} />
-      </Route>
-    </Routes>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="users/:userId" element={<AdminUserDetail />} />
+          <Route path="security" element={<AdminSecurity />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
+          <Route path="support" element={<AdminSupport />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 };
 
