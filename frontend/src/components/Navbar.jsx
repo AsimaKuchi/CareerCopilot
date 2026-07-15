@@ -68,17 +68,17 @@ export const Navbar = ({ user }) => {
             onClick={() => navigate("/dashboard")}
           >
             <div className="relative leading-tight">
-              <div className="flex items-center">
+              <svg className="absolute inset-0 w-full h-full text-indigo-400 pointer-events-none" viewBox="0 0 100 40" preserveAspectRatio="none" fill="none">
+                <path d="M88 13 C 70 21, 35 19, 14 21 C 8 22, 5 26, 8 30" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              </svg>
+              <div className="relative flex items-center">
                 <span className="text-base font-bold text-gray-900 tracking-tight">MyCareer</span>
-                <svg className="w-3 h-3 text-gray-400 ml-0.5 -mt-0.5 -rotate-45" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-3 h-3 text-gray-400 ml-0.5 -mt-0.5 rotate-45" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2A1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                 </svg>
               </div>
-              <div className="flex items-center -mt-1">
-                <svg className="w-2.5 h-3 text-indigo-400 -mr-0.5 flex-shrink-0" viewBox="0 0 12 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M11 1C6 1 2 4 2 8C2 12 6 14 6 14" />
-                </svg>
-                <span className="text-base font-bold text-indigo-500 tracking-tight">CoPilot</span>
+              <div className="relative flex items-center -mt-1">
+                <span className="text-base font-bold text-indigo-500 tracking-tight ml-2">CoPilot</span>
               </div>
             </div>
           </div>
