@@ -27,6 +27,12 @@ Comprehensive career management application ("MyCareerCopilot") + universal brow
 - Store promo tile (440x280) generated
 - Privacy policy enhanced with Chrome permission explanations (verified via screenshot)
 - Chrome Web Store upload instructions provided to user
+- **Extension v1.2.0** (Feb 2026) — Fixed critical Lyft/Greenhouse iframe autofill bug:
+  - Root cause: manifest.json lacked `content_scripts` and `chrome.scripting.executeScript` defaulted to top-frame-only, so content script never reached the iframe where Greenhouse forms live
+  - Also fixed false-positive "✓ Resume (Optimized)" that appeared alongside "– Resume (no file input) skipped" — popup.js was unconditionally reporting optimized docs as filled
+  - Added `content_scripts` with `all_frames: true` in manifest, exposed `window.__mccHandleAutoFill` for cross-frame invocation, added `aggregateFrameResults` in popup.js to combine per-frame results and suppress duplicates, added Location (City) field support
+  - Regression tests at `/app/browser-extension/tests/` (JSDOM + aggregation) — both pass
+  - Repackaged zip at `/app/frontend/public/downloads/mycareer-copilot-extension.zip`
 
 ## Completed (earlier sessions)
 - Full app: auth (JWT sessions + Google via Emergent), profile with completion tracker, job search (JSearch hybrid cache), applications tracker, AI interview prep (streaming, fixed markdown renderer), career coach, career paths, Stripe free/pro, admin dashboard, audit logging, CSRF, per-user rate limits, resume upload with magic-byte validation, React.lazy code splitting.
