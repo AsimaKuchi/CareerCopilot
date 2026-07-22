@@ -1,5 +1,5 @@
-// MyCareerCoPilot - Content Script v4
-// Fixed for Greenhouse react-select - using keyboard navigation
+// MyCareerCoPilot - Content Script v5
+// Runs in ALL frames (including iframes) to reach embedded ATS forms (Greenhouse job-boards, etc.)
 
 (function() {
   'use strict';
@@ -19,17 +19,67 @@
     }
   });
 
+  // Expose the handler on window so popup can call it in every frame via
+  // chrome.scripting.executeScript({ allFrames: true, func: ... }).
+  // Content scripts share an isolated world per-extension, so extension-injected
+  // funcs can access this.
+  try {
+    window.__mccHandleAutoFill = handleAutoFill;
+    window.__mccHasFormFields = hasFormFields;
+  } catch (e) { /* window may be inaccessible in some contexts */ }
+
+  function hasFormFields() {
+    // Returns true only if this frame has form fields worth filling.
+    // Used to skip frames that have no relevant inputs (prevents spurious
+    // "no file input" skipped messages from top-frame when the real form
+    // lives in an iframe).
+    const selectors = [
+      'input[type="email"]',
+      'input[type="tel"]',
+      'input[type="file"]',
+      'input[name*="first" i]',
+      'input[name*="last" i]',
+      'input[name*="name" i]',
+      'input[name*="email" i]',
+      'input[name*="phone" i]',
+      'input[name*="resume" i]',
+      'input[name*="cv" i]',
+      'input[id*="first_name" i]',
+      'input[id*="last_name" i]',
+      'input[id="email"]',
+      'input[id="phone"]',
+      'input[role="combobox"]',
+      '#resume',
+      '#cover_letter'
+    ];
+    for (const sel of selectors) {
+      try {
+        if (document.querySelector(sel)) return true;
+      } catch (e) { /* invalid selector, ignore */ }
+    }
+    return false;
+  }
+
   async function handleAutoFill(data) {
     const results = {
       success: false,
       filled: [],
       failed: [],
       skipped: [],
-      filledCount: 0
+      filledCount: 0,
+      frameHadForm: false
     };
 
     try {
-      log('=== AUTO-FILL STARTED (v4) ===');
+      log('=== AUTO-FILL STARTED (v5) ===');
+
+      // Skip frames with no form fields at all — prevents duplicate/false
+      // "no file input" messages from ancillary frames.
+      if (!hasFormFields()) {
+        log('No form fields in this frame — skipping');
+        return results;
+      }
+      results.frameHadForm = true;
 
       const profile = buildProfile(data);
       log('Profile:', profile);
@@ -490,6 +540,28 @@
         profile.city
       );
       if (filled) results.filled.push('City');
+    }
+
+    // Location (City) — Greenhouse's new job-boards UI uses a Google Places
+    // autocomplete input labelled "Location (City)". Fill with best-available
+    // location string ("City, State" or just city).
+    {
+      const locationValue = [profile.city, profile.state].filter(Boolean).join(', ') || profile.city;
+      if (locationValue) {
+        const filled = await fillFieldByPatterns(
+          [
+            '#location',
+            'input[name="location"]',
+            'input[id*="location" i]:not([id*="relocat" i])',
+            'input[name*="location" i]:not([name*="relocat" i])',
+            'input[placeholder*="location" i]',
+            'input[autocomplete="address-level2"]'
+          ],
+          ['location', 'location (city)', 'current location', 'where are you located'],
+          locationValue
+        );
+        if (filled) results.filled.push('Location');
+      }
     }
     
     // Preferred name

@@ -179,8 +179,10 @@ async function checkCurrentPage() {
 
 async function checkForApplicationForm(tabId) {
   try {
+    // Check ALL frames (top + iframes). Many ATS forms (Lyft/Greenhouse
+    // job-boards) live inside an iframe on the careers page.
     const results = await chrome.scripting.executeScript({
-      target: { tabId },
+      target: { tabId, allFrames: true },
       func: () => {
         // Check for common job application form indicators
         const indicators = [
@@ -207,7 +209,8 @@ async function checkForApplicationForm(tabId) {
       }
     });
     
-    return results?.[0]?.result || false;
+    // Return true if ANY frame reports a form
+    return (results || []).some(r => r?.result === true);
   } catch (e) {
     console.log('Could not check for form:', e);
     return false;
@@ -290,48 +293,55 @@ async function handleAutoFill() {
     
     // Step 2: Fill form fields
     updateProgress(50, 'Filling form fields...');
-    
-    // First, try to inject the content script programmatically
+
+    // Inject the content script into ALL frames (top + iframes). Many ATS
+    // forms (Lyft/Greenhouse job-boards) are embedded via iframe, so filling
+    // only the top frame silently skips every field. The manifest also
+    // declares content.js at all_frames, but explicit injection ensures the
+    // handler is loaded even on pages that had it stripped or blocked.
     try {
       await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
+        target: { tabId: tab.id, allFrames: true },
         files: ['content.js']
       });
     } catch (injectError) {
       console.log('Content script may already be loaded:', injectError);
     }
-    
+
     // Small delay to let script initialize
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Send data to content script
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Execute the autofill in EVERY frame. Frames without form fields exit
+    // early inside content.js so we only get real results.
     let result;
     try {
-      result = await chrome.tabs.sendMessage(tab.id, {
-        action: 'AUTOFILL',
-        data: autofillData
+      const execResults = await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        func: async (payload) => {
+          // Runs inside each frame's isolated world.
+          if (typeof window.__mccHandleAutoFill === 'function') {
+            try {
+              return await window.__mccHandleAutoFill(payload);
+            } catch (e) {
+              return { success: false, filled: [], failed: [`Error: ${e.message}`], skipped: [], frameHadForm: false };
+            }
+          }
+          return null;
+        },
+        args: [autofillData]
       });
+
+      // Aggregate results from all frames. Only include frames that reported
+      // frameHadForm=true so we don't show spurious "skipped" from empty frames.
+      result = aggregateFrameResults(execResults);
     } catch (msgError) {
-      // If message fails, try executing autofill directly
-      console.log('Message failed, trying direct execution:', msgError);
-      
+      console.log('executeScript failed, falling back to direct exec:', msgError);
       const execResult = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: executeAutoFillDirect,
         args: [autofillData]
       });
-      
-      result = execResult[0]?.result || { success: false, filled: [], failed: ['Could not fill form'] };
-    }
-    
-    // Add info about optimized content
-    if (autofillData.documents?.resume?.is_optimized) {
-      result.filled = result.filled || [];
-      result.filled.push('Resume (Optimized for this job)');
-    }
-    if (autofillData.documents?.cover_letter?.is_optimized) {
-      result.filled = result.filled || [];
-      result.filled.push('Cover Letter (Optimized for this job)');
+      result = execResult[0]?.result || { success: false, filled: [], failed: ['Could not fill form'], skipped: [] };
     }
 
     updateProgress(100, 'Complete!');
@@ -353,6 +363,49 @@ async function handleAutoFill() {
 function updateProgress(percent, text) {
   elements.progressFill.style.width = `${percent}%`;
   elements.progressText.textContent = text;
+}
+
+// Combine autofill results returned from each frame into a single result set.
+// - Only counts frames that had a form (frameHadForm=true).
+// - De-duplicates identical filled/failed/skipped entries.
+// - Suppresses "skipped" entries whose base name matches something already
+//   filled (e.g. hides "Resume (no file input)" if resume was uploaded in
+//   another frame).
+function aggregateFrameResults(execResults) {
+  const combined = { success: false, filled: [], failed: [], skipped: [], filledCount: 0 };
+  const filledSet = new Set();
+  const failedSet = new Set();
+  const skippedSet = new Set();
+  let anyFrameHadForm = false;
+
+  for (const entry of execResults || []) {
+    const r = entry?.result;
+    if (!r || !r.frameHadForm) continue;
+    anyFrameHadForm = true;
+    (r.filled || []).forEach(f => filledSet.add(f));
+    (r.failed || []).forEach(f => failedSet.add(f));
+    (r.skipped || []).forEach(f => skippedSet.add(f));
+  }
+
+  combined.filled = Array.from(filledSet);
+  combined.failed = Array.from(failedSet);
+
+  // Suppress redundant skipped entries. If Resume was filled, don't show
+  // "Resume (no file input) (skipped)".
+  const filledBaseNames = combined.filled.map(f => f.toLowerCase().split(' (')[0]);
+  combined.skipped = Array.from(skippedSet).filter(s => {
+    const base = s.toLowerCase().split(' (')[0];
+    return !filledBaseNames.includes(base);
+  });
+
+  combined.filledCount = combined.filled.length;
+  combined.success = combined.filledCount > 0;
+
+  if (!anyFrameHadForm) {
+    combined.failed.push('No form fields detected on this page');
+  }
+
+  return combined;
 }
 
 function showResults(result) {
