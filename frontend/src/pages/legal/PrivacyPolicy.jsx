@@ -54,6 +54,17 @@ export default function PrivacyPolicy() {
         when the extension is idle. It only activates when you click the
         extension icon on a recognized job application page.
       </p>
+      <h3>2.3.1 Chrome extension permissions explained</h3>
+      <ul>
+        <li><strong>activeTab / scripting</strong> — used only to read the form fields on the job application page you are viewing and fill them with your profile data when you click &quot;Autofill&quot;.</li>
+        <li><strong>storage</strong> — stores your extension preferences locally in your browser.</li>
+        <li><strong>cookies</strong> — used solely to read your MyCareerCopilot session cookie so the extension can securely fetch your own profile. No other sites&apos; cookies are accessed.</li>
+        <li><strong>Host permissions (all sites)</strong> — job applications live on thousands of different career sites and ATS platforms (Workday, Greenhouse, Lever, etc.), so the extension must be able to run on the page you invoke it on. It never runs automatically in the background.</li>
+      </ul>
+      <p>
+        Use of information received from the extension adheres to the Chrome
+        Web Store User Data Policy, including the Limited Use requirements.
+      </p>
 
       <h3>2.4 Payment information</h3>
       <p>
