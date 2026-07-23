@@ -279,6 +279,145 @@
     .result-icon.error {
       color: #ef4444;
     }
+
+    /* Field Coverage Report */
+    .coverage-summary {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    .coverage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .coverage-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .coverage-pct {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6ee7b7, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .coverage-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .coverage-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      border-radius: 3px;
+      transition: width 0.5s ease-out;
+    }
+
+    .coverage-attention {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #fbbf24;
+    }
+
+    .fc-group {
+      margin-bottom: 14px;
+    }
+
+    .fc-group-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+      padding-left: 2px;
+    }
+
+    .fc-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .fc-row-filled {
+      border-color: rgba(16,185,129,0.25);
+      background: rgba(16,185,129,0.06);
+    }
+
+    .fc-row-failed {
+      border-color: rgba(239,68,68,0.25);
+      background: rgba(239,68,68,0.06);
+    }
+
+    .fc-row-attention {
+      border-color: rgba(251,191,36,0.25);
+      background: rgba(251,191,36,0.06);
+    }
+
+    .fc-icon {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .fc-icon.fc-filled {
+      background: #10b981;
+      color: #fff;
+    }
+
+    .fc-icon.fc-failed {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .fc-icon.fc-attention {
+      background: #fbbf24;
+      color: #1e1b4b;
+    }
+
+    .fc-row-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .fc-row-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
+      word-break: break-word;
+    }
+
+    .fc-row-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+      margin-top: 2px;
+    }
     
     /* Footer */
     .footer {
@@ -410,8 +549,8 @@
       </div>
       
       <div id="results" class="results">
-        <h4 style="font-size: 13px; margin-bottom: 12px; color: rgba(255,255,255,0.8);">Fill Results:</h4>
-        <div id="resultsList"></div>
+        <h4 style="font-size: 13px; margin-bottom: 12px; color: rgba(255,255,255,0.8);" data-testid="coverage-report-title">Field Coverage Report</h4>
+        <div id="resultsList" data-testid="coverage-report-list"></div>
       </div>
       
       <div class="footer">

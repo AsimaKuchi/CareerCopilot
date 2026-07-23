@@ -372,10 +372,11 @@ function updateProgress(percent, text) {
 //   filled (e.g. hides "Resume (no file input)" if resume was uploaded in
 //   another frame).
 function aggregateFrameResults(execResults) {
-  const combined = { success: false, filled: [], failed: [], skipped: [], filledCount: 0 };
+  const combined = { success: false, filled: [], failed: [], skipped: [], entries: [], filledCount: 0 };
   const filledSet = new Set();
   const failedSet = new Set();
   const skippedSet = new Set();
+  const entryKeys = new Set();
   let anyFrameHadForm = false;
 
   for (const entry of execResults || []) {
@@ -385,6 +386,14 @@ function aggregateFrameResults(execResults) {
     (r.filled || []).forEach(f => filledSet.add(f));
     (r.failed || []).forEach(f => failedSet.add(f));
     (r.skipped || []).forEach(f => skippedSet.add(f));
+    (r.entries || []).forEach(e => {
+      // Dedupe by (name + status) key across frames
+      const key = `${(e.name || '').toLowerCase()}|${e.status}`;
+      if (!entryKeys.has(key)) {
+        entryKeys.add(key);
+        combined.entries.push(e);
+      }
+    });
   }
 
   combined.filled = Array.from(filledSet);
@@ -398,6 +407,16 @@ function aggregateFrameResults(execResults) {
     return !filledBaseNames.includes(base);
   });
 
+  // Same for entries: if a document was filled in one frame, suppress
+  // 'attention/failed' entries for the same doc from other frames.
+  const filledEntryBaseNames = combined.entries
+    .filter(e => e.status === 'filled')
+    .map(e => baseName(e.name));
+  combined.entries = combined.entries.filter(e => {
+    if (e.status === 'filled') return true;
+    return !filledEntryBaseNames.includes(baseName(e.name));
+  });
+
   combined.filledCount = combined.filled.length;
   combined.success = combined.filledCount > 0;
 
@@ -408,53 +427,120 @@ function aggregateFrameResults(execResults) {
   return combined;
 }
 
+// Extract the base field name so "Resume (optimized for this job)" and
+// "Resume" are treated as the same field for de-dup purposes.
+function baseName(name) {
+  return String(name || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, '').trim();
+}
+
 function showResults(result) {
   elements.results.classList.add('active');
-  
-  if (result.success) {
-    showSuccess(elements.successMsg, `Successfully filled ${result.filledCount} fields!`);
+
+  // If we have structured entries, render the Field Coverage Report.
+  // Otherwise fall back to the legacy flat list (defensive).
+  if (result.entries && result.entries.length > 0) {
+    renderCoverageReport(result);
+  } else {
+    renderLegacyList(result);
   }
-  
-  let html = '';
-  
-  if (result.filled && result.filled.length > 0) {
-    result.filled.forEach(field => {
-      html += `
-        <div class="result-item">
-          <span class="result-icon success">✓</span>
-          <span>${field}</span>
-        </div>
-      `;
-    });
-  }
-  
-  if (result.failed && result.failed.length > 0) {
-    result.failed.forEach(field => {
-      html += `
-        <div class="result-item">
-          <span class="result-icon error">✗</span>
-          <span>${field}</span>
-        </div>
-      `;
-    });
-  }
-  
-  if (result.skipped && result.skipped.length > 0) {
-    result.skipped.forEach(field => {
-      html += `
-        <div class="result-item">
-          <span class="result-icon" style="color: #fbbf24;">–</span>
-          <span>${field} (skipped)</span>
-        </div>
-      `;
-    });
-  }
-  
-  elements.resultsList.innerHTML = html || '<p style="color: rgba(255,255,255,0.6); font-size: 13px;">No fields were filled.</p>';
-  
+
   // Show auto-fill button again for retry
   elements.autoFillBtn.style.display = 'flex';
   elements.autoFillBtn.innerHTML = '<span>Fill Again</span>';
+}
+
+function renderCoverageReport(result) {
+  const entries = result.entries || [];
+  const filled = entries.filter(e => e.status === 'filled');
+  const needsAttention = entries.filter(e => e.status !== 'filled');
+  const total = entries.length;
+  const pct = total > 0 ? Math.round((filled.length / total) * 100) : 0;
+
+  if (result.success) {
+    showSuccess(elements.successMsg, `Filled ${filled.length} of ${total} fields · ${pct}% coverage`);
+  } else {
+    showError(elements.errorMsg, needsAttention.length > 0
+      ? `${needsAttention.length} field${needsAttention.length === 1 ? '' : 's'} need your attention`
+      : 'No fields were filled — try clicking directly on the form first');
+  }
+
+  const groups = {
+    personal_info: { title: 'Personal Info', entries: [] },
+    documents: { title: 'Documents', entries: [] },
+    screening: { title: 'Screening Questions', entries: [] },
+    other: { title: 'Other', entries: [] }
+  };
+  for (const e of entries) {
+    const g = groups[e.category] || groups.other;
+    g.entries.push(e);
+  }
+
+  const iconFor = (status) => {
+    if (status === 'filled') return '<span class="fc-icon fc-filled" data-testid="fc-icon-filled">✓</span>';
+    if (status === 'failed') return '<span class="fc-icon fc-failed" data-testid="fc-icon-failed">!</span>';
+    return '<span class="fc-icon fc-attention" data-testid="fc-icon-attention">?</span>';
+  };
+
+  let html = `
+    <div class="coverage-summary" data-testid="coverage-summary">
+      <div class="coverage-header">
+        <span class="coverage-count" data-testid="coverage-count">${filled.length} / ${total} filled</span>
+        <span class="coverage-pct" data-testid="coverage-pct">${pct}%</span>
+      </div>
+      <div class="coverage-bar"><div class="coverage-bar-fill" style="width: ${pct}%"></div></div>
+      ${needsAttention.length > 0
+        ? `<div class="coverage-attention" data-testid="coverage-attention">${needsAttention.length} field${needsAttention.length === 1 ? ' needs' : 's need'} your attention below</div>`
+        : ''}
+    </div>
+  `;
+
+  const order = ['personal_info', 'documents', 'screening', 'other'];
+  for (const key of order) {
+    const g = groups[key];
+    if (!g.entries.length) continue;
+    html += `
+      <div class="fc-group" data-testid="fc-group-${key}">
+        <div class="fc-group-title">${g.title}</div>
+        ${g.entries.map(e => `
+          <div class="fc-row fc-row-${e.status}" data-testid="fc-row-${e.status}">
+            ${iconFor(e.status)}
+            <div class="fc-row-body">
+              <div class="fc-row-name">${escapeHtml(e.name)}</div>
+              ${e.hint ? `<div class="fc-row-hint">${escapeHtml(e.hint)}</div>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  elements.resultsList.innerHTML = html;
+}
+
+function renderLegacyList(result) {
+  if (result.success) {
+    showSuccess(elements.successMsg, `Successfully filled ${result.filledCount} fields!`);
+  }
+  let html = '';
+  (result.filled || []).forEach(field => {
+    html += `<div class="result-item"><span class="result-icon success">✓</span><span>${escapeHtml(field)}</span></div>`;
+  });
+  (result.failed || []).forEach(field => {
+    html += `<div class="result-item"><span class="result-icon error">✗</span><span>${escapeHtml(field)}</span></div>`;
+  });
+  (result.skipped || []).forEach(field => {
+    html += `<div class="result-item"><span class="result-icon" style="color: #fbbf24;">–</span><span>${escapeHtml(field)} (skipped)</span></div>`;
+  });
+  elements.resultsList.innerHTML = html || '<p style="color: rgba(255,255,255,0.6); font-size: 13px;">No fields were filled.</p>';
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 async function handleDisconnect() {

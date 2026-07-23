@@ -66,6 +66,7 @@
       filled: [],
       failed: [],
       skipped: [],
+      entries: [],
       filledCount: 0,
       frameHadForm: false
     };
@@ -129,7 +130,7 @@
     // Skip EEO questions
     if (/gender|race|ethnicity|veteran|disability|hispanic|latino/i.test(label)) {
       log('Skipping EEO question');
-      results.skipped.push(`${label.substring(0, 30)} (EEO)`);
+      pushEntry(results, label, 'attention', 'screening', 'EEO question — please answer manually');
       return;
     }
 
@@ -146,7 +147,7 @@
     const answer = getAnswerForQuestion(label.toLowerCase(), profile);
     if (!answer) {
       log('No answer for this question');
-      results.skipped.push(`${label.substring(0, 30)} (no match)`);
+      pushEntry(results, label, 'attention', 'screening', 'No profile match — please answer manually');
       return;
     }
 
@@ -216,7 +217,7 @@
     if (options.length === 0) {
       log('FAILED: No options found');
       closeDropdown(input);
-      results.failed.push(`${label.substring(0, 30)} (no options)`);
+      pushEntry(results, label, 'failed', 'screening', 'Dropdown did not open — please select manually');
       return;
     }
 
@@ -225,7 +226,7 @@
     if (!match) {
       log('No matching option');
       closeDropdown(input);
-      results.failed.push(`${label.substring(0, 30)} (no match)`);
+      pushEntry(results, label, 'failed', 'screening', `No option matched "${answer}" — please select manually`);
       return;
     }
 
@@ -237,7 +238,7 @@
     match.el.click();
     await sleep(100);
 
-    results.filled.push(`${label.substring(0, 30)} → ${match.text}`);
+    pushEntry(results, label, 'filled', 'screening', `Selected: ${match.text}`);
     log('SUCCESS');
   }
 
@@ -363,6 +364,26 @@
            parseFloat(style.opacity) > 0;
   }
 
+  // Push a structured field-coverage entry AND keep the legacy string arrays
+  // in sync (for backward compat with aggregation dedup logic).
+  // status: 'filled' | 'failed' | 'skipped' | 'attention'
+  // category: 'personal_info' | 'documents' | 'screening'
+  function pushEntry(results, name, status, category, hint) {
+    results.entries = results.entries || [];
+    results.entries.push({ name, status, category, hint: hint || '' });
+    if (status === 'filled') {
+      results.filled = results.filled || [];
+      results.filled.push(name);
+    } else if (status === 'failed') {
+      results.failed = results.failed || [];
+      results.failed.push(hint ? `${name} (${hint})` : name);
+    } else {
+      // skipped or attention
+      results.skipped = results.skipped || [];
+      results.skipped.push(hint ? `${name} (${hint})` : name);
+    }
+  }
+
   function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
   }
@@ -408,7 +429,8 @@
         ['first name', 'given name', 'prénom'],
         pi.first_name
       );
-      if (filled) results.filled.push('First Name');
+      if (filled) pushEntry(results, 'First Name', 'filled', 'personal_info');
+      else pushEntry(results, 'First Name', 'skipped', 'personal_info', 'Not detected on this page');
     }
     
     // Last Name
@@ -427,7 +449,8 @@
         ['last name', 'family name', 'surname', 'nom de famille'],
         pi.last_name
       );
-      if (filled) results.filled.push('Last Name');
+      if (filled) pushEntry(results, 'Last Name', 'filled', 'personal_info');
+      else pushEntry(results, 'Last Name', 'skipped', 'personal_info', 'Not detected on this page');
     }
     
     // Email
@@ -445,7 +468,8 @@
         ['email', 'e-mail', 'courriel'],
         pi.email
       );
-      if (filled) results.filled.push('Email');
+      if (filled) pushEntry(results, 'Email', 'filled', 'personal_info');
+      else pushEntry(results, 'Email', 'skipped', 'personal_info', 'Not detected on this page');
     }
     
     // Phone
@@ -464,7 +488,8 @@
         ['phone', 'telephone', 'mobile', 'cell', 'téléphone'],
         pi.phone
       );
-      if (filled) results.filled.push('Phone');
+      if (filled) pushEntry(results, 'Phone', 'filled', 'personal_info');
+      else pushEntry(results, 'Phone', 'skipped', 'personal_info', 'Not detected on this page');
     }
     
     // LinkedIn
@@ -478,7 +503,7 @@
         ['linkedin'],
         pi.linkedin
       );
-      if (filled) results.filled.push('LinkedIn');
+      if (filled) pushEntry(results, 'LinkedIn', 'filled', 'personal_info');
     }
     
     // GitHub
@@ -492,7 +517,7 @@
         ['github'],
         pi.github
       );
-      if (filled) results.filled.push('GitHub');
+      if (filled) pushEntry(results, 'GitHub', 'filled', 'personal_info');
     }
     
     // Portfolio/Website
@@ -508,7 +533,7 @@
         ['portfolio', 'website', 'personal site'],
         pi.portfolio
       );
-      if (filled) results.filled.push('Portfolio/Website');
+      if (filled) pushEntry(results, 'Portfolio/Website', 'filled', 'personal_info');
     }
     
     // Full Name (if site asks for combined name)
@@ -525,7 +550,7 @@
         fullName,
         true // exactLabelMatch to avoid matching "first name" or "last name"
       );
-      if (filled) results.filled.push('Full Name');
+      if (filled) pushEntry(results, 'Full Name', 'filled', 'personal_info');
     }
     
     // City
@@ -539,7 +564,7 @@
         ['city', 'ville'],
         profile.city
       );
-      if (filled) results.filled.push('City');
+      if (filled) pushEntry(results, 'City', 'filled', 'personal_info');
     }
 
     // Location (City) — Greenhouse's new job-boards UI uses a Google Places
@@ -560,7 +585,7 @@
           ['location', 'location (city)', 'current location', 'where are you located'],
           locationValue
         );
-        if (filled) results.filled.push('Location');
+        if (filled) pushEntry(results, 'Location', 'filled', 'personal_info');
       }
     }
     
@@ -572,7 +597,7 @@
           const inp = document.getElementById(forId);
           if (inp?.tagName === 'INPUT' && !inp.value && inp.type !== 'password') {
             await fillInput(inp, profile.firstName);
-            results.filled.push('Preferred Name');
+            pushEntry(results, 'Preferred Name', 'filled', 'personal_info');
           }
         }
       }
@@ -705,6 +730,7 @@
         }
       }
       
+      const resumeLabel = resume.is_optimized ? 'Resume (optimized for this job)' : 'Resume';
       if (inp) {
         try {
           const f = b64ToFile(resume.file_data, resume.filename, resume.mime_type);
@@ -713,21 +739,20 @@
           inp.files = dt.files;
           inp.dispatchEvent(new Event('change', { bubbles: true }));
           inp.dispatchEvent(new Event('input', { bubbles: true }));
-          
-          const label = resume.is_optimized ? 'Resume (Optimized for this job)' : 'Resume';
-          results.filled.push(label);
-          log(`Uploaded: ${label}`);
+
+          pushEntry(results, resumeLabel, 'filled', 'documents');
+          log(`Uploaded: ${resumeLabel}`);
         } catch(e) {
           log('Resume upload error:', e);
-          results.failed.push('Resume upload failed');
+          pushEntry(results, resumeLabel, 'failed', 'documents', 'Upload failed — please attach manually');
         }
       } else {
         log('Resume file input not found');
-        results.skipped.push('Resume (no file input)');
+        pushEntry(results, resumeLabel, 'attention', 'documents', 'No file input found — attach manually');
       }
     } else {
       log('No resume file data available');
-      results.skipped.push('Resume (no file data)');
+      pushEntry(results, 'Resume', 'attention', 'documents', 'Add a resume in your MyCareerCopilot profile first');
     }
     
     const cover = data.documents?.cover_letter;
@@ -738,7 +763,8 @@
         hasFileData: !!cover.file_data,
         mimeType: cover.mime_type
       });
-      
+
+      const coverLabel = cover.is_optimized ? 'Cover Letter (optimized for this job)' : 'Cover Letter';
       const inp = document.querySelector('#cover_letter');
       if (inp) {
         try {
@@ -747,28 +773,27 @@
           dt.items.add(f);
           inp.files = dt.files;
           inp.dispatchEvent(new Event('change', { bubbles: true }));
-          
-          const label = cover.is_optimized ? 'Cover Letter (Optimized for this job)' : 'Cover Letter';
-          results.filled.push(label);
-          log(`Uploaded: ${label}`);
+
+          pushEntry(results, coverLabel, 'filled', 'documents');
+          log(`Uploaded: ${coverLabel}`);
         } catch(e) {
           log('Cover letter upload error:', e);
-          results.failed.push('Cover letter upload failed');
+          pushEntry(results, coverLabel, 'failed', 'documents', 'Upload failed — please attach manually');
         }
       } else {
         log('Cover letter file input not found');
-        results.skipped.push('Cover Letter (no file input)');
+        pushEntry(results, coverLabel, 'attention', 'documents', 'No file input found — attach manually');
       }
     } else if (cover?.text) {
       // Try filling cover letter as text in a textarea
       log('Cover letter text found (no file data)');
       const textarea = document.querySelector('textarea[id*="cover" i], textarea[name*="cover" i]');
+      const coverLabel = cover.is_optimized ? 'Cover Letter (optimized for this job)' : 'Cover Letter';
       if (textarea) {
         textarea.value = cover.text;
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
         textarea.dispatchEvent(new Event('change', { bubbles: true }));
-        const label = cover.is_optimized ? 'Cover Letter Text (Optimized)' : 'Cover Letter Text';
-        results.filled.push(label);
+        pushEntry(results, coverLabel, 'filled', 'documents');
       }
     }
   }

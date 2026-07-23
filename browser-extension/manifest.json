@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CareerCopilot AI - Auto-Fill",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Auto-fill job applications on ANY website with your profile from CareerCopilot AI",
   "permissions": [
     "activeTab",
