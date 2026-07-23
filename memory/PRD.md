@@ -33,6 +33,12 @@ Comprehensive career management application ("MyCareerCopilot") + universal brow
   - Added `content_scripts` with `all_frames: true` in manifest, exposed `window.__mccHandleAutoFill` for cross-frame invocation, added `aggregateFrameResults` in popup.js to combine per-frame results and suppress duplicates, added Location (City) field support
   - Regression tests at `/app/browser-extension/tests/` (JSDOM + aggregation) — both pass
   - Repackaged zip at `/app/frontend/public/downloads/mycareer-copilot-extension.zip`
+- **Extension v1.3.0** (Feb 2026) — Field Coverage Report:
+  - Every autofill now returns a structured `entries: Array<{name, status, category, hint}>` alongside the legacy string arrays. `status` ∈ filled|failed|attention|skipped, `category` ∈ personal_info|documents|screening.
+  - popup.js renders a grouped, color-coded report: summary card ("X / Y filled" + coverage %), attention indicator, per-category groups (Personal Info, Documents, Screening Questions), per-field rows with green ✓ / red ! / amber ? icons and one-line hints telling users exactly what to do next ("No file input found — attach manually", "No profile match — please answer manually", "EEO question — please answer manually", "Selected: <value>").
+  - `aggregateFrameResults` now dedupes entries across frames by (name+status) and suppresses attention/failed entries whose base name was filled in another frame.
+  - New XSS-safe HTML escaper for rendered names/hints.
+  - New regression test `/app/browser-extension/tests/test_coverage_report.js` (7 assertions). All 3 test suites pass. Extension repackaged at v1.3.0.
 
 ## Completed (earlier sessions)
 - Full app: auth (JWT sessions + Google via Emergent), profile with completion tracker, job search (JSearch hybrid cache), applications tracker, AI interview prep (streaming, fixed markdown renderer), career coach, career paths, Stripe free/pro, admin dashboard, audit logging, CSRF, per-user rate limits, resume upload with magic-byte validation, React.lazy code splitting.
