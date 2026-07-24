@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { API } from "@/App";
 import { COMPANY_LOGOS } from "@/data/companyLogos";
+import FeaturePreviews from "@/components/FeaturePreviews";
 
 const handleGoogleLogin = () => {
   const redirectUrl = window.location.origin + "/dashboard";
@@ -274,6 +275,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Feature Previews — visual mockups of every core surface */}
+        <FeaturePreviews />
 
         {/* Features */}
         <section className="max-w-5xl mx-auto px-6 py-20">
