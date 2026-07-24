@@ -52,16 +52,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function handleConnect() {
-  const apiUrl = elements.apiUrl.value.trim();
-  
-  if (!apiUrl) {
+  const rawInput = elements.apiUrl.value.trim();
+
+  if (!rawInput) {
     showError(elements.loginError, 'Please enter your CareerCopilot AI URL');
     return;
   }
 
-  // Clean up URL
-  const cleanUrl = apiUrl.replace(/\/$/, '');
-  
+  // Normalise the URL:
+  //  - strip trailing slash
+  //  - strip trailing "/api" if the user pasted the api root
+  //  - auto-prepend https:// if no protocol is present (users often type
+  //    just "mycareercopilot.ca")
+  //  - reject http:// on non-localhost so we never downgrade real traffic
+  let cleanUrl = rawInput.replace(/\/+$/, '').replace(/\/api$/i, '');
+  if (!/^https?:\/\//i.test(cleanUrl)) {
+    cleanUrl = 'https://' + cleanUrl;
+  }
+  // Validate it's a well-formed URL before hitting fetch (fetch throws
+  // opaque TypeError for malformed URLs which we can't distinguish from a
+  // network failure).
+  let parsed;
+  try {
+    parsed = new URL(cleanUrl);
+  } catch (_) {
+    showError(elements.loginError, `That doesn't look like a valid URL. Try "https://mycareercopilot.ca".`);
+    return;
+  }
+  cleanUrl = parsed.origin;
+  // Reflect the corrected URL back into the input so the user sees what
+  // we actually used (e.g. added "https://").
+  elements.apiUrl.value = cleanUrl;
+
   elements.connectBtn.innerHTML = '<div class="spinner"></div><span>Connecting...</span>';
   elements.connectBtn.disabled = true;
   hideError(elements.loginError);
@@ -73,13 +95,17 @@ async function handleConnect() {
         method: 'GET',
         credentials: 'omit' // No credentials for initial check
       });
-      
+
       if (!healthResponse.ok) {
-        throw new Error('Could not reach CareerCopilot AI. Please check the URL and try again.');
+        throw new Error(`We reached ${parsed.hostname} but /api/health returned ${healthResponse.status}. Make sure the URL points to your CareerCopilot AI site.`);
       }
     } catch (healthError) {
-      // Network error or API unreachable
-      throw new Error('Could not connect to CareerCopilot AI. Please check the URL is correct.');
+      // Network error or API unreachable — surface the host so users can spot typos
+      const isNetErr = healthError instanceof TypeError || /network|Failed to fetch/i.test(healthError.message || '');
+      if (isNetErr) {
+        throw new Error(`Could not reach ${parsed.hostname}. Check the URL for typos, or make sure you have internet.`);
+      }
+      throw healthError;
     }
     
     // Step 2: Now try to fetch profile using a different approach
